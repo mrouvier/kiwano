@@ -22,4 +22,4 @@ python3 local/download_rirs_noises.py db/rirs_noises/
 python3 local/prepapre_rirs_noises.py db/musan/ data/rirs_noises
 
 
-python3 local/train_resnet.py data/voxceleb1/
+python3 utils/train_resnet.py data/voxceleb1/

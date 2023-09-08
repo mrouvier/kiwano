@@ -3,6 +3,12 @@
 import sys
 from pathlib import Path
 from typing import Optional
+
+import torch
+from torch import nn
+from torchvision.models.resnet import conv3x3, conv1x1
+import torch.nn.functional as F
+
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
 from typing import Union
@@ -10,11 +16,9 @@ import librosa
 
 from torch.utils.data import DataLoader, Sampler
 
+# add_reverb,add_noise,filtering,phone_filtering,codec
 
-#add_reverb,add_noise,filtering,phone_filtering,codec
-
-#add_reverb,add_noise,phone_filtering,codec
-
+# add_reverb,add_noise,phone_filtering,codec
 
 
 '''
@@ -68,9 +72,9 @@ class BasicBlock(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
-        
+
         out += residual
-        
+
         return out
 
 
@@ -107,7 +111,6 @@ class AMSMLoss(nn.Module):
         return output
 
 
-
 class ResNet(nn.Module):
     def __init__(self, embed_features=256, num_classes=6000):
         super(ResNet, self).__init__()
@@ -119,25 +122,25 @@ class ResNet(nn.Module):
         self.pre_bn1 = nn.BatchNorm2d(128)
         self.pre_relu1 = nn.ReLU(inplace=True)
 
-        self.layer1 = self._make_layer(128,  128, 3, stride=1)
+        self.layer1 = self._make_layer(128, 128, 3, stride=1)
         self.layer2 = self._make_layer(128, 128, 4, stride=2)
         self.layer3 = self._make_layer(128, 256, 6, stride=2)
         self.layer4 = self._make_layer(256, 256, 3, stride=2)
-        
-        self.norm_stats = torch.nn.BatchNorm1d(2*8*256)
 
-        self.fc_embed = nn.Linear(2*8*256, self.embed_features)
+        self.norm_stats = torch.nn.BatchNorm1d(2 * 8 * 256)
+
+        self.fc_embed = nn.Linear(2 * 8 * 256, self.embed_features)
         self.norm_embed = torch.nn.BatchNorm1d(self.embed_features)
 
         self.attention = nn.Sequential(
-            nn.Conv1d(256*8, 128, kernel_size=1),
+            nn.Conv1d(256 * 8, 128, kernel_size=1),
             nn.ReLU(),
             nn.BatchNorm1d(128),
-            nn.Conv1d(128, 256*8, kernel_size=1),
+            nn.Conv1d(128, 256 * 8, kernel_size=1),
             nn.Softmax(dim=2),
         )
 
-        self.output = AMSMLoss(self.embed_features, sel.num_classes)
+        self.output = AMSMLoss(self.embed_features, self.num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -151,7 +154,7 @@ class ResNet(nn.Module):
         nn.init.xavier_normal_(out)
         return out
 
-    def _make_layer(self,  inchannel, outchannel, block_num, stride=1):
+    def _make_layer(self, inchannel, outchannel, block_num, stride=1):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
@@ -176,14 +179,14 @@ class ResNet(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        x = x.transpose(2,3)
-        x = x.flatten(1,2)
+        x = x.transpose(2, 3)
+        x = x.flatten(1, 2)
 
         w = self.attention(x)
 
         mu = torch.sum(x * w, dim=2)
-        sg = torch.sqrt( ( torch.sum((x**2) * w, dim=2) - mu**2 ).clamp(min=1e-5) )
-        x = torch.cat([mu,sg], dim=1)
+        sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-5))
+        x = torch.cat([mu, sg], dim=1)
         x = self.norm_stats(x)
 
         x = self.fc_embed(x)
@@ -194,18 +197,10 @@ class ResNet(nn.Module):
         return x
 
 
-
-
-
-
 class Augmentation():
 
     def __init__(self):
-
-
-
-
-
+        pass
 
 
 class Segment():
@@ -214,7 +209,7 @@ class Segment():
     spkid: str
     file_path: str
 
-    def __init__(self, segmentid : str, spkid : str, duration : float, file_path : str):
+    def __init__(self, segmentid: str, spkid: str, duration: float, file_path: str):
         self.segmentid = segmentid
         self.spkid = spkid
         self.duration = duration
@@ -223,8 +218,30 @@ class Segment():
     def compute_features(self):
         audio_data, sample_rate = librosa.load(self.file_path)
         fb = Fbank()
-        return fb.extract(audio_data, sampling_rate=16000)
+        audio_data = fb.extract(audio_data, sampling_rate=16000)
+        audio_data = self._load_specific_size_from_extracted(audio_data, size)
+        return audio_data
 
+    def _load_specific_size_from_extracted(self, audio_data: np.ndarray, size: int):
+        """
+        Get specific duration within the extracted audio
+
+        @param audio_data: the extracted audio data
+        @type audio_data: np.ndarray
+        @param size: the size of the frame to take
+        @type size: int
+        @return: the frame
+        @rtype: np.ndarray
+        """
+        max_start_time = self.duration - size
+
+        start_time = np.random.uniform(0.0, max_start_time)
+        end_time = start_time + size
+
+        start_sample = int(start_time * 100)
+        end_sample = int(end_time * 100)
+
+        return audio_data[start_sample:end_sample, :]
 
 
 class SegmentSet():
@@ -238,7 +255,7 @@ class SegmentSet():
         print("ttt")
         if isinstance(segment_id_or_index, str):
             return self.segments[segment_id_or_index]
-        return next( val for idx, val in enumerate(self.segments.values()) if idx == segment_id_or_index )
+        return next(val for idx, val in enumerate(self.segments.values()) if idx == segment_id_or_index)
 
     def from_dict(self, target_dir: Pathlike):
         with open(target_dir / "liste") as f:
@@ -246,9 +263,9 @@ class SegmentSet():
                 segmentid, spkid, duration, audio = line.strip().split(" ")
                 self.segments[segmentid] = Segment(segmentid, spkid, (float)(duration), audio)
 
-
     def summarize(self):
         print(len(self.segments))
+
 
 if __name__ == '__main__':
     s = SegmentSet()
@@ -256,6 +273,3 @@ if __name__ == '__main__':
     f = s["id10001_J9lHsKG98U8_00007"].compute_features()
     print(f)
     print(f.shape)
-
-
-
