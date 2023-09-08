@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 import torch
 from torch import nn
 from torchvision.models.resnet import conv3x3, conv1x1
@@ -215,7 +216,7 @@ class Segment():
         self.duration = duration
         self.file_path = file_path
 
-    def compute_features(self):
+    def compute_features(self, size=3):
         audio_data, sample_rate = librosa.load(self.file_path)
         fb = Fbank()
         audio_data = fb.extract(audio_data, sampling_rate=16000)
@@ -258,7 +259,7 @@ class SegmentSet():
         return next(val for idx, val in enumerate(self.segments.values()) if idx == segment_id_or_index)
 
     def from_dict(self, target_dir: Pathlike):
-        with open(target_dir / "liste") as f:
+        with open(f"{target_dir}/liste") as f:
             for line in f:
                 segmentid, spkid, duration, audio = line.strip().split(" ")
                 self.segments[segmentid] = Segment(segmentid, spkid, (float)(duration), audio)
