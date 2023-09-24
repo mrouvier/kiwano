@@ -10,10 +10,10 @@ from torch import nn
 
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
-from kiwano.augmentation import Augmentation
-from kiwano.dataset import Segment
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
+from kiwano.dataset import Segment, SegmentSet
 
-import librosa
+import soundfile as sf
 
 from torch.utils.data import DataLoader, Sampler
 
@@ -56,21 +56,61 @@ class SpeakerTrainingSegmentSet():
         print(len(self.segments))
 
 
-class Toto:
+
+class Toto():
     def __init__(self):
-        print("toto")
+        print("oki")
 
-    def __call__(self, a: int, b: int):
-        print("salut")
 
-    def __call__(self, a: str):
-        print("soso")
+    def __call__(self, *args):
+        if len(args) == 2:
+            return 3, 4
+        else:
+            return 9
 
 
 if __name__ == '__main__':
-    s = SpeakerTrainingSegmentSet()
+
+    musan = SegmentSet()
+    musan.from_dict(Path("data/musan/"))
+
+    musan_music = musan.get_speaker("music")
+    musan_speech = musan.get_speaker("speech")
+    musan_noise = musan.get_speaker("noise")
+
+
+    #s = SegmentSet()
+    s = SpeakerTrainingSegmentSet( audio_transforms=Sometimes( [
+                                        Noise(musan_music, snr_range=[5,15]),
+                                        Noise(musan_speech, snr_range=[13,20]),
+                                        Noise(musan_noise, snr_range=[0,15]),
+                                        Codec(),
+                                        Filtering(),
+                                        Normal(),
+                                    ] ),
+                                feature_transforms=Linear( [
+                                        CMVN(),
+                                        Crop(300),
+                                    ] ),
+                                )
+
+
     s.from_dict(Path("data/voxceleb1/"))
 
-    for i in range(0, 100*128):
-        f = s[i]
-        #print(f.shape)
+    print(s[0])
+
+
+    #n = Noise( musan, snr_range=[10,15] )
+    #n = Filtering()
+    #n = Codec()
+
+    #arr, sample_rate = s[10].load_audio()
+
+
+    #arr, sr = n(arr, sample_rate)
+
+    #print( arr )
+
+
+
+
