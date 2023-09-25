@@ -147,15 +147,20 @@ class Crop(Augmentation):
         self.duration = duration
 
     def __call__(self, tensor: torch.Tensor):
-        print("Crop")
+        max_start_time = tensor.shape[0] - self.duration 
+        start_time = random.randint(0, max_start_time)
+        return tensor[start_time:start_time+self.duration, :]
         return tensor
 
 
+
 class CMVN(Augmentation):
-    def __init__(self):
-        pass
+    def __init__(self, norm_means = True, norm_vars = False):
+        self.norm_means = norm_means
+        self.norm_vars = norm_vars
 
     def __call__(self, tensor: torch.Tensor):
-        print("CMVN")
+        if self.norm_means == True:
+            tensor = tensor - tensor.mean(dim=0)
         return tensor
 

@@ -33,28 +33,6 @@ class Segment():
 
         return audio_data[0], self.sample_rate
 
-'''
-    def _load_specific_size_from_extracted(self, audio_data: np.ndarray, size: int):
-        """
-        Get specific duration within the extracted audio
-
-        @param audio_data: the extracted audio data
-        @type audio_data: np.ndarray
-        @param size: the size of the frame to take
-        @type size: int
-        @return: the frame
-        @rtype: np.ndarray
-        """
-        max_start_time = self.duration - size
-
-        start_time = np.random.uniform(0.0, max_start_time)
-        end_time = start_time + size
-
-        start_sample = int(start_time * 100)
-        end_sample = int(end_time * 100)
-
-        return audio_data[start_sample:end_sample, :]
-'''
 
 class SegmentSet():
     def __init__(self):

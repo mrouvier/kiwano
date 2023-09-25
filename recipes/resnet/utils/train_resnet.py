@@ -15,18 +15,15 @@ from kiwano.dataset import Segment, SegmentSet
 
 import soundfile as sf
 
-from torch.utils.data import DataLoader, Sampler
+from torch.utils.data import Dataset, DataLoader, Sampler
 
 
-class SpeakerTrainingSegmentSet():
-    def __init__(self, audio_transforms: List[Augmentation] = None, feature_transforms: List[Augmentation] = None):
+class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
+    def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor = None, feature_transforms: List[Augmentation] = None):
         self.segments = {}
         self.audio_transforms = audio_transforms
         self.feature_transforms = feature_transforms
-        self.acoustic_strategy = Fbank()
-
-    def __len__(self):
-        return len(self.segments)
+        self.feature_extractor = feature_extractor
 
     def __getitem__(self, segment_id_or_index: Union[int, str]) -> Segment:
         segment = None
@@ -39,34 +36,14 @@ class SpeakerTrainingSegmentSet():
         if self.audio_transforms != None:
             audio, sample_rate = self.audio_transforms(audio, sample_rate)
 
-        feature = self.acoustic_strategy.extract(audio, sampling_rate=sample_rate)
+        if self.feature_extractor != None:
+            feature = self.feature_extractor.extract(audio, sampling_rate=sample_rate)
 
         if self.feature_transforms != None:
             feature = self.feature_transforms(feature)
+
         return feature
 
-
-    def from_dict(self, target_dir: Pathlike):
-        with open(target_dir / "liste") as f:
-            for line in f:
-                segmentid, spkid, duration, audio = line.strip().split(" ")
-                self.segments[segmentid] = Segment(segmentid, spkid, (float)(duration), audio)
-
-    def summarize(self):
-        print(len(self.segments))
-
-
-
-class Toto():
-    def __init__(self):
-        print("oki")
-
-
-    def __call__(self, *args):
-        if len(args) == 2:
-            return 3, 4
-        else:
-            return 9
 
 
 if __name__ == '__main__':
@@ -79,8 +56,8 @@ if __name__ == '__main__':
     musan_noise = musan.get_speaker("noise")
 
 
-    #s = SegmentSet()
-    s = SpeakerTrainingSegmentSet( audio_transforms=Sometimes( [
+    training_data = SpeakerTrainingSegmentSet(
+                                    audio_transforms=Sometimes( [
                                         Noise(musan_music, snr_range=[5,15]),
                                         Noise(musan_speech, snr_range=[13,20]),
                                         Noise(musan_noise, snr_range=[0,15]),
@@ -88,29 +65,24 @@ if __name__ == '__main__':
                                         Filtering(),
                                         Normal(),
                                     ] ),
-                                feature_transforms=Linear( [
+                                    feature_extractor=Fbank(),
+                                    feature_transforms=Linear( [
                                         CMVN(),
                                         Crop(300),
                                     ] ),
                                 )
 
 
-    s.from_dict(Path("data/voxceleb1/"))
-
-    print(s[0])
+    training_data.from_dict(Path("data/voxceleb1/"))
 
 
-    #n = Noise( musan, snr_range=[10,15] )
-    #n = Filtering()
-    #n = Codec()
+    #print(training_data[0])
+    #print(training_data[0].shape)
 
-    #arr, sample_rate = s[10].load_audio()
-
-
-    #arr, sr = n(arr, sample_rate)
-
-    #print( arr )
+    train_dataloader = DataLoader(training_data, batch_size=128, shuffle=True)
 
 
+    print(train_dataloader)
 
 
+     
