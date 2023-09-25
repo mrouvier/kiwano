@@ -35,4 +35,9 @@ def prepare_voxceleb1(in_data: Pathlike, out_data: Pathlike):
 
 
 if __name__ == '__main__':
-    prepare_voxceleb1(sys.argv[1], sys.argv[2])
+
+    if len(sys.argv) == 3:
+        prepare_voxceleb1(sys.argv[1], sys.argv[2])
+    else:
+        print("Erreur, usage correct : prepare_voxceleb1.py in_data out_data ")
+

@@ -4,12 +4,11 @@ import logging
 import zipfile
 import shutil
 import sys
-from kiwano.utils import Pathlike, urlretrieve_progress
+from kiwano.utils import Pathlike, urlretrieve_progress, check_md5
 from pathlib import Path
 from typing import Optional
 
-import hashlib
-import os
+
 
 VOXCELEB1_PARTS_URL = [
     ["https://thor.robots.ox.ac.uk/~vgg/data/voxceleb/vox1a/vox1_dev_wav_partaa", "e395d020928bc15670b570a21695ed96"],
@@ -29,37 +28,6 @@ VOXCELEB1_META_URL = [
 ]
 
 
-def check_md5(dir, liste):
-    """
-    arg1 dir: the directory where the files in the liste are stocked
-    arg2 liste: the name of the liste
-    This function check if all the files in the list are downloaded correctly,
-    if not, there are 3 attempts to re-download the file
-    """
-
-    for url in liste:
-        fname = dir / url[0].split("/")[-1]
-
-        for i in range(3):
-            try:
-                md5 = hashlib.md5(fname.read_bytes()).hexdigest()
-                if md5 != url[1]:
-                    raise ValueError()
-                else:
-                    print("File ", fname, " correctly downloaded")
-                    break
-            except ValueError:
-                print("error downloading file ", fname)
-                os.remove(fname)
-                urlretrieve_progress(url[0], filename=dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
-
-        else:
-            if hashlib.md5(fname.read_bytes()).hexdigest() != url[1]:
-                print("Download failed for file ", fname)
-                os.remove(fname)
-            else:
-                print("File ", fname," finally correctly downloaded")
-
 
 
 def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool] = False):
@@ -75,6 +43,8 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
         for url in VOXCELEB1_PARTS_URL:
             fname=target_dir / url[0].split("/")[-1]
             if not fname.exists() and not force_download:
+                urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
+            elif force_download :
                 urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
 
         with open(zip_path, "wb") as outFile:
@@ -96,6 +66,8 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
         fname=target_dir / url[0].split("/")[-1]
         if not fname.exists() and not force_download:
             urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
+        elif force_download:
+            urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
 
     check_md5(target_dir, VOXCELEB1_TRIALS_URL)
 
@@ -103,8 +75,16 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
         fname=target_dir / url[0].split("/")[-1]
         if not fname.exists() and not force_download:
             urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
+        elif force_download:
+            urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
 
     check_md5(target_dir, VOXCELEB1_META_URL)
 
 if __name__ == '__main__':
-    download_voxceleb1(sys.argv[1])
+
+    if len(sys.argv) == 2 :
+        download_voxceleb1(sys.argv[1])
+    elif len(sys.argv) == 3 :
+        download_voxceleb1(sys.argv[1], bool(sys.argv[2]))
+    else :
+        print("Erreur, usage correct : download_voxceleb1.py target_dir [force_download] ")

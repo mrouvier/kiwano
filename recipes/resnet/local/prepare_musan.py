@@ -31,4 +31,8 @@ def prepare_musan(in_data: Pathlike, out_data: Pathlike):
 
 
 if __name__ == '__main__':
-    prepare_musan(sys.argv[1], sys.argv[2])
+
+    if len(sys.argv) == 3:
+        prepare_musan(sys.argv[1], sys.argv[2])
+    else:
+        print("Erreur, usage correct : prepare_musan.py in_data out_data ")
