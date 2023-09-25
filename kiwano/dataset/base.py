@@ -34,9 +34,11 @@ class Segment():
         return audio_data[0], self.sample_rate
 
 
+
 class SegmentSet():
     def __init__(self):
         self.segments = {}
+        self.labels = {}
 
     def __len__(self):
         return len(self.segments)
@@ -50,11 +52,22 @@ class SegmentSet():
         for key in self.segments:
             self.segments[key].load_audio(keep_memory=True)
 
+    def get_labels(self):
+        spkid_dict = {}
+        self.labels = {}
+        for key in self.segments:
+            spkid_dict[ self.segments[ key ].spkid ] = 0
+
+        for index, token in enumerate(spkid_dict.keys()):
+            self.labels[token] = index
+
     def from_dict(self, target_dir: Pathlike):
         with open(target_dir / "liste") as f:
             for line in f:
                 segmentid, spkid, duration, audio = line.strip().split(" ")
                 self.segments[segmentid] = Segment(segmentid, spkid, (float)(duration), audio)
+        self.get_labels()
+
 
     def get_random(self):
         name, segment = random.choice(list(self.segments.items()))
@@ -69,6 +82,8 @@ class SegmentSet():
         for key in self.segments:
             if self.segments[key].spkid == spkid:
                 s.append( self.segments[key] )
+
+        self.get_labels()
 
         return s
 

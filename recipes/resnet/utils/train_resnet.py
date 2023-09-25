@@ -6,12 +6,14 @@ from typing import Optional, Union, List
 
 import numpy as np
 import torch
+import time
 from torch import nn
 
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
 from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
 from kiwano.dataset import Segment, SegmentSet
+from kiwano.model import ResNet
 
 import soundfile as sf
 
@@ -20,7 +22,7 @@ from torch.utils.data import Dataset, DataLoader, Sampler
 
 class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
     def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor = None, feature_transforms: List[Augmentation] = None):
-        self.segments = {}
+        super().__init__()
         self.audio_transforms = audio_transforms
         self.feature_transforms = feature_transforms
         self.feature_extractor = feature_extractor
@@ -42,7 +44,7 @@ class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
         if self.feature_transforms != None:
             feature = self.feature_transforms(feature)
 
-        return feature
+        return feature, self.labels[ segment.spkid ]
 
 
 
@@ -75,14 +77,37 @@ if __name__ == '__main__':
 
     training_data.from_dict(Path("data/voxceleb1/"))
 
+    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
+    iterator = iter(train_dataloader)
 
-    #print(training_data[0])
-    #print(training_data[0].shape)
+    resnet_model = ResNet()
 
-    train_dataloader = DataLoader(training_data, batch_size=128, shuffle=True)
+    optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.2, momentum=0.9)
+    criterion = nn.CrossEntropyLoss()
+
+    num_iterations = 150000
+    for iterations in range(0, num_iterations):
+        feats, iden = next(iterator)
+        feats = feats.unsqueeze(1)
+
+        preds = resnet_model(feats, iden)
+
+        loss = criterion(preds, iden)
+
+        optimizer.zero_grad()
+
+        loss.backward()
+
+        optimizer.step()
+
+        msg = "{}: [{}/{}] \t C-Loss:{:.4f}".format(time.ctime(), iterations, num_iterations, loss.item())
+        print(msg)
 
 
-    print(train_dataloader)
+
+
+
+
 
 
      
