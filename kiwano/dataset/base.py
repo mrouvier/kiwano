@@ -90,3 +90,42 @@ class SegmentSet():
     def display(self):
         print(self.segments)
 
+    def describe(self):
+    #This function calculate and display several information about the segments
+    # (number of different speakers, the total duration, min, max, mean...)
+
+
+        listDuration = []
+        differentSpeakers = []
+        totalDuration = 0
+
+        for key in self.segments:
+            duration = self.segments[key].duration
+            totalDuration = totalDuration + duration
+
+            listDuration.append(duration)
+            spkid = self.segments[key].spkid
+
+            if spkid not in differentSpeakers:
+                differentSpeakers.append(spkid)
+
+        mean = np.mean(listDuration)
+        max = np.max(listDuration)
+        min = np.min(listDuration)
+        std = np.std(listDuration)
+        quartiles = np.quantile(listDuration, [0.25, 0.5, 0.75])
+
+        print("Speaker count: ", len(differentSpeakers))
+        print("Total duration (hours): ", totalDuration/3600)
+        print("***")
+        print("Duration statistics (seconds):")
+        print("mean   ", mean)
+        print("std    ", std)
+        print("min    ", min)
+        print("max    ", max)
+        print("25%    ", quartiles[0])
+        print("50%    ", quartiles[1])
+        print("75%    ", quartiles[2])
+
+
+
