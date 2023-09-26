@@ -8,6 +8,7 @@ from kiwano.utils import Pathlike, urlretrieve_progress, check_md5
 from pathlib import Path
 from typing import Optional
 
+import argparse
 
 RIRS_NOISES_PARTS_URL = [
     ["http://www.openslr.org/resources/28/rirs_noises.zip", "e6f48e257286e05de56413b4779d8ffb"],
@@ -38,9 +39,13 @@ def download_rirs_noises(target_dir: Pathlike = ".", force_download: Optional[bo
 
 if __name__ == '__main__':
 
-    if len(sys.argv) == 2:
-        download_rirs_noises(sys.argv[1])
-    elif len(sys.argv) == 3:
-        download_rirs_noises(sys.argv[1], bool(sys.argv[2]))
-    else:
-        print("Erreur, usage correct : download_rirs_noises.py target_dir [force_download] ")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('target_dir', metavar='target_dir', type=str,
+                        help='the path to the target directory where the data will be stored')
+    parser.add_argument('--force_download', action="store_true", default=False,
+                        help='force the download, overwrites files (default: False)')
+
+    args = parser.parse_args()
+
+    download_rirs_noises(args.target_dir, args.force_download)
+

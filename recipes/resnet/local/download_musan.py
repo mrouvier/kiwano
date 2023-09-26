@@ -8,6 +8,7 @@ from kiwano.utils import Pathlike, urlretrieve_progress, check_md5
 from pathlib import Path
 from typing import Optional
 
+import argparse
 
 MUSAN_PARTS_URL = [
     ["https://www.openslr.org/resources/17/musan.tar.gz", "0c472d4fc0c5141eca47ad1ffeb2a7df"],
@@ -38,9 +39,13 @@ def download_musan(target_dir: Pathlike = ".", force_download: Optional[bool] = 
 
 if __name__ == '__main__':
 
-    if len(sys.argv) == 2:
-        download_musan(sys.argv[1])
-    elif len(sys.argv) == 3:
-        download_musan(sys.argv[1], bool(sys.argv[2]))
-    else:
-        print("Erreur, usage correct : download_musan.py target_dir [force_download] ")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('target_dir', metavar='target_dir', type=str,
+                        help='the path to the target directory where the data will be stored')
+    parser.add_argument('--force_download', action="store_true", default=False,
+                        help='force the download, overwrites files (default: False)')
+
+    args = parser.parse_args()
+
+    download_musan(args.target_dir, args.force_download)
+
