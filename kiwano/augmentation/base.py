@@ -5,8 +5,6 @@ import random
 import math
 from kiwano.dataset import SegmentSet
 
-import soundfile as sf
-
 from typing import List
 
 
@@ -152,6 +150,33 @@ class Crop(Augmentation):
         return tensor[start_time:start_time+self.duration, :]
         return tensor
 
+class SpecAugment(Augmentation):
+    def __init__(self,  num_t_mask=1, num_f_mask=1, max_t=10, max_f=8, prob=0.6):
+        self.num_t_mask = num_t_mask
+        self.num_f_mask = num_f_mask
+        self.max_t = max_t
+        self.max_f = max_f
+        self.prob = prob
+
+    def __call__(self, tensor: torch.Tensor):
+        if random.random() < self.prob:
+                max_frames, max_freq = tensor.shape
+
+                # time mask
+                for i in range(self.num_t_mask):
+                    start = random.randint(0, max_frames - 1)
+                    length = random.randint(1, self.max_t)
+                    end = min(max_frames, start + length)
+                    tensor[start:end, :] = 0
+
+                # freq mask
+                for i in range(self.num_f_mask):
+                    start = random.randint(0, max_freq - 1)
+                    length = random.randint(1, self.max_f)
+                    end = min(max_freq, start + length)
+                    tensor[:, start:end] = 0
+
+        return tensor
 
 
 class CMVN(Augmentation):

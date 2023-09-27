@@ -31,10 +31,16 @@ def read_xvector(file_path: str):
     return h
 
 
+#scoring_xvector.py <key> <xvector enrollment> <xvector test>
+
+
 
 if __name__ == '__main__':
+    trials = read_keys(sys.argv[1])
     enrollment = read_xvector(sys.argv[2])
     test = read_xvector(sys.argv[3])
+
+
 
 
     print(enrollment)
