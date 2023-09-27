@@ -11,7 +11,7 @@ from torch import nn
 
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
-from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, SpecAugment
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.model import ResNet
 
@@ -72,6 +72,7 @@ if __name__ == '__main__':
                                     feature_transforms=Linear( [
                                         CMVN(),
                                         Crop(200),
+                                        SpecAugment(),
                                     ] ),
                                 )
 
@@ -86,6 +87,7 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
     criterion = nn.CrossEntropyLoss()
+
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
 
@@ -123,4 +125,3 @@ if __name__ == '__main__':
 
             iterations += 1
 
-     
