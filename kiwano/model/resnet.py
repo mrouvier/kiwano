@@ -143,7 +143,7 @@ class ResNet(nn.Module):
             layers.append(BasicBlock(outchannel, outchannel))
         return nn.Sequential(*layers)
 
-    def forward(self, x, iden):
+    def forward(self, x, iden = None):
         x = self.pre_conv1(x)
         x = self.pre_bn1(x)
         x = self.pre_relu1(x)
@@ -165,6 +165,9 @@ class ResNet(nn.Module):
 
         x = self.fc_embed(x)
         x = self.norm_embed(x)
+
+        if iden == None:
+            return x
 
         x = self.output(x, iden)
 
