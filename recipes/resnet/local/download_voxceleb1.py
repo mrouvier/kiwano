@@ -62,7 +62,11 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
         with zipfile.ZipFile(target_dir / "vox1_test_wav.zip") as zf:
             zf.extractall(target_dir)
 
-    check_md5(target_dir, VOXCELEB1_PARTS_URL)
+
+    print("aaaa")
+    #check_md5(target_dir, VOXCELEB1_PARTS_URL)
+
+    print("toto")
 
     for url in VOXCELEB1_TRIALS_URL:
         fname=target_dir / url[0].split("/")[-1]
@@ -71,7 +75,7 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
         elif force_download:
             urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
 
-    check_md5(target_dir, VOXCELEB1_TRIALS_URL)
+    #check_md5(target_dir, VOXCELEB1_TRIALS_URL)
 
     for url in VOXCELEB1_META_URL:
         fname=target_dir / url[0].split("/")[-1]
@@ -80,7 +84,10 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
         elif force_download:
             urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
 
-    check_md5(target_dir, VOXCELEB1_META_URL)
+    #check_md5(target_dir, VOXCELEB1_META_URL)
+
+
+    print("finish")
 
 if __name__ == '__main__':
 

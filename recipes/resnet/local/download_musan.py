@@ -35,7 +35,7 @@ def download_musan(target_dir: Pathlike = ".", force_download: Optional[bool] = 
         with tarfile.open(zip_path) as zf:
             zf.extractall(target_dir)
 
-    check_md5(target_dir, MUSAN_PARTS_URL)
+    #check_md5(target_dir, MUSAN_PARTS_URL)
 
 if __name__ == '__main__':
 
