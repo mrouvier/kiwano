@@ -3,15 +3,23 @@
 import sys
 from kiwano.utils import Pathlike
 from pathlib import Path
-import librosa
+import torchaudio
 from tqdm import tqdm
+from concurrent.futures.process import ProcessPoolExecutor
 
 import argparse
 
-def get_duration_librosa(file_path: str):
-   audio_data, sample_rate = librosa.load(file_path)
-   duration = librosa.get_duration(y=audio_data, sr=sample_rate)
-   return duration
+def get_duration(file_path: str):
+   info = torchaudio.info(file_path)
+   return info.num_frames/info.sample_rate
+
+def process_file(segment: Pathlike):
+    name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
+    spkid = str(segment).split("/")[-3]
+    duration = str(round(float(get_duration(segment)),2))
+    return name, spkid, duration, segment
+
+
 
 
 def prepare_voxceleb1(in_data: Pathlike, out_data: Pathlike):
@@ -22,17 +30,23 @@ def prepare_voxceleb1(in_data: Pathlike, out_data: Pathlike):
 
     liste = open(out_data / "liste", "w")
 
-    with open(in_data / "vox1_meta.csv", "r") as f:
-        next(f)
-        for line in tqdm(f):
-            spkid, name, gender, nationality, split = line.strip().split("\t")
+    with ProcessPoolExecutor(20) as ex:
+        futures = []
 
-            for segment in (in_data / "wav" / spkid).rglob("*.wav"):
-                name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
-                duration = str(round(float(get_duration_librosa(segment)),2))
-                liste.write(f"{name} {spkid} {duration} {segment}\n")
+        for segment in (in_data / "wav").rglob("*.wav"):
+            futures.append(ex.submit(process_file, segment))
+        for future in tqdm(futures, desc="Processing VoxCeleb1"):
+
+            name, spkid, duration, segment = future.result()
+            liste.write(f"{name} {spkid} {duration} {segment}\n")
+
+            #print(f"{name} {spkid} {duration} {segment}\n")
 
     liste.close()
+
+
+
+
 
 
 if __name__ == '__main__':

@@ -4,18 +4,37 @@ import sys
 import glob
 from kiwano.utils import Pathlike
 from pathlib import Path
-import librosa
+import torchaudio
 
-from concurrent.futures import as_completed
 from concurrent.futures.process import ProcessPoolExecutor
 from tqdm import tqdm
 from subprocess import PIPE, run
 
 
-def get_duration_librosa(file_path: str):
-   audio_data, sample_rate = librosa.load(file_path)
-   duration = librosa.get_duration(y=audio_data, sr=sample_rate)
-   return duration
+def get_duration(file_path: str):
+   info = torchaudio.info(file_path)
+   return info.num_frames/info.sample_rate
+
+
+def process_file(segment: Pathlike, in_data: Pathlike):
+    name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
+    spkid = str(segment).split("/")[-3]
+    emission = str(segment).split("/")[-2]
+    n = str(segment).split("/")[-1].split(".")[0]
+
+    out = Path(in_data / "data" / spkid / emission)
+    out.mkdir()
+
+    output = Path(in_data / "data" / spkid / emission / n ) 
+    print(segment)
+    print(output)
+
+    _process_file(segment, str(output)+".wav")
+    duration = str(round(float(get_duration(output)),2))
+
+    return name, spkid, duration, segment
+
+
 
 
 
@@ -26,36 +45,22 @@ def prepare_voxceleb2(in_data: Pathlike = ".", out_data: Pathlike = ".", num_job
 
     liste = open(out_data / "liste", "w")
 
-
-    with ProcessPoolExecutor(num_jobs) as ex:
+    with ProcessPoolExecutor(20) as ex:
         futures = []
 
-        with open(in_data / "vox2_meta.csv", "r") as f:
-            for line in f:
-                name, spkid, vggfaceid, gender, split = line.strip().split(" \t")
+        for segment in Path(in_data / "dev" / "aac").rglob("*.m4a"):
+            futures.append( ex.submit(process_file, segment, in_data) )
 
-                d = Path(in_data / "dev" / "wav" / spkid)
-                d.mkdir(parents=True, exist_ok=True)
-
-                for segment in Path(in_data / "dev" / "aac" /spkid ).rglob("*.m4a"):
-                    futures.append( ex.submit(_process_file,  segment) )
-
-        for future in tqdm(as_completed(futures), total=len(futures), desc=f"Processing VoxCeleb2...", leave=False):
-            future.result()
-
-
-    with open(in_data / "vox2_meta.csv", "r") as f:
-        next(f)
-        for line in f:
-            name, spkid, vggfaceid, gender, split = line.strip().split(" \t")
-
-            for segment in Path(in_data / "dev" / "wav" /spkid ).rglob("*.wav"):
-                name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
-                duration = str(round(float(get_duration_librosa(segment)),2))
-                liste.write(f"{name} {spkid} {duration} {segment}\n")
+        for future in tqdm( futures, desc=f"Processing VoxCeleb2..."):
+            name, spkid, duration, segment = future.result()
+            liste.write(f"{name} {spkid} {duration} {segment}\n")
 
 
     liste.close()
+
+
+
+
 
 
 def _process_file(file_path: Pathlike):
