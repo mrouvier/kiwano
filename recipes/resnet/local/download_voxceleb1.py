@@ -22,7 +22,9 @@ VOXCELEB1_PARTS_URL = [
 
 
 VOXCELEB1_TRIALS_URL = [
-    ["http://www.openslr.org/resources/49/voxceleb1_test_v2.txt", "29fc7cc1c5d59f0816dc15d6e8be60f7"]
+    ["http://www.openslr.org/resources/49/voxceleb1_test_v2.txt", "29fc7cc1c5d59f0816dc15d6e8be60f7"],
+    ["https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_hard2.txt", "857790e09d579a68eb2e339a090343c8"], #voxceleb1-h
+    ["https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_all2.txt", "a53e059deb562ffcfc092bf5d90d9f3a"] #voxceleb1-e
 ]
 
 VOXCELEB1_META_URL = [
@@ -63,10 +65,8 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
             zf.extractall(target_dir)
 
 
-    print("aaaa")
     #check_md5(target_dir, VOXCELEB1_PARTS_URL)
 
-    print("toto")
 
     for url in VOXCELEB1_TRIALS_URL:
         fname=target_dir / url[0].split("/")[-1]
@@ -75,7 +75,7 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
         elif force_download:
             urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
 
-    #check_md5(target_dir, VOXCELEB1_TRIALS_URL)
+    check_md5(target_dir, VOXCELEB1_TRIALS_URL)
 
     for url in VOXCELEB1_META_URL:
         fname=target_dir / url[0].split("/")[-1]
@@ -87,7 +87,7 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
     #check_md5(target_dir, VOXCELEB1_META_URL)
 
 
-    print("finish")
+
 
 if __name__ == '__main__':
 

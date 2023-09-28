@@ -16,6 +16,8 @@ from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, S
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.model import ResNet
 
+import argparse
+
 
 
 #trials
@@ -39,7 +41,7 @@ def read_keys(file_path: str):
         label = line[0]
         enrollmentName = line[1]
         testName = line[2]
-        if file_path.split("/")[-1] == "voxceleb1_test_v2.txt":
+        if file_path.split("/")[-1] == "voxceleb1_test_v2.txt" or file_path.split("/")[-1] == "list_test_hard2.txt" or file_path.split("/")[-1] == "list_test_all2.txt":
             enrollmentName = enrollmentName.replace("/", "_")[:-4]
             testName = testName.replace("/", "_").replace('\n', "")[:-4]
         h[(enrollmentName, testName)] = label
@@ -47,7 +49,20 @@ def read_keys(file_path: str):
     return h
 
 
-def scoring_xvector_V2(keys, xvectors_enrollment, xvectors_test):
+def read_scores(file_path: str):
+    h = {}
+    f = open(file_path, "r")
+    for line in f:
+        line = line.strip().split(" ")
+        enrollmentName = line[0]
+        testName = line[1]
+        score = line[2]
+        h[(enrollmentName, testName)] = score
+    f.close
+    return h
+
+
+def scoring_xvector(keys, xvectors_enrollment, xvectors_test):
     """
     arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value labels (0 : not the same speaker, 1 : same speaker)
     arg2 xvectors_enrollment: dictionary with key : the name of the audio file, value : the corresponding xvector enrollment
@@ -69,10 +84,10 @@ def scoring_xvector_V2(keys, xvectors_enrollment, xvectors_test):
             outputFile.write(enrollmentName + " " + testName + " " + str(score.item()) + "\n")
 
 
-def compute_score_V2(keys, scores):
+def compute_score(keys, scores):
     """
-     arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value labels (0 : not the same speaker, 1 : same speaker)
-     arg2 scores: path to the file with the names of the pairs of audio files and the similarity between their two xvectors
+     arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value : labels (0 : not the same speaker, 1 : same speaker)
+     arg2 scores: dictionary with key : tuple with the names of the pairs of audio files, value : the similarity between their two xvectors
      This function calculates the value of the EER of all the scores
      A part of this code is taken from https://github.com/YuanGongND/python-compute-eer
      """
@@ -83,10 +98,8 @@ def compute_score_V2(keys, scores):
     for label in keys.values():
         labels.append(int(label))
 
-    with open(scores, "r") as file:
-        for line in file:
-            line = line.split(" ")
-            distances.append(float(line[2]))
+    for distance in scores.values():
+        distances.append(float(distance))
 
 
     positive_label = 1
@@ -108,12 +121,26 @@ def compute_score_V2(keys, scores):
 
 
 if __name__ == '__main__':
-    trials = read_keys(sys.argv[1])
-    enrollment = read_xvector(sys.argv[2])
-    test = read_xvector(sys.argv[3])
 
-    scoring_xvector_V2(trials, enrollment, test)
-    err = compute_score_V2(trials, "../exp/scores.txt")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('keys', metavar='keys', type=str,
+                        help='the path to the the file where the keys are stocked')
+    parser.add_argument('xvectorEnrollment', metavar='xvectorEnrollment', type=str,
+                        help='the path to the the file where the xvector enrollment are stocked')
+    parser.add_argument('xvectorTest', metavar='xvectorTest', type=str,
+                        help='the path to the the file where the xvector test are stocked')
+
+    args = parser.parse_args()
+
+    trials = read_keys(args.keys)
+    enrollment = read_xvector(args.xvectorEnrollment)
+    test = read_xvector(args.xvectorTest)
+
+    scoring_xvector(trials, enrollment, test)
+
+    scores = read_scores("../exp/scores.txt")
+
+    err = compute_score(trials, scores)
     print(err)
 
 
