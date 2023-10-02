@@ -4,6 +4,7 @@ class SpkScheduler:
 
     def __init__(self, optimizer, num_epochs = 150, initial_lr = 0.1, final_lr = 0.00005, warm_up_epoch = 6):
         self.current_iter = 0
+        self.optimizer = optimizer
         self.num_epochs = num_epochs
         self.initial_lr = initial_lr
         self.final_lr = final_lr
@@ -17,11 +18,11 @@ class SpkScheduler:
 
     def get_current_lr(self):
         if self.current_iter <= self.warm_up_epoch:
-            l = 0.0000001
+            l = 0.00000001
             step = (self.initial_lr - l) / self.warm_up_epoch
             return l+step*self.current_iter
         else:
-            step = (self.initial_lr - self.final_lr) / (self.num_epochs - warm_up_epoch)
+            step = (self.initial_lr - self.final_lr) / (self.num_epochs - self.warm_up_epoch)
             return self.final_lr + step * (self.num_epochs - self.current_iter)
 
 
