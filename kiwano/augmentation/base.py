@@ -7,6 +7,8 @@ from kiwano.dataset import SegmentSet
 
 from typing import List
 
+from scipy import signal
+
 
 
 class Augmentation:
@@ -117,11 +119,25 @@ class Codec(Augmentation):
 
 
 class Reverb(Augmentation):
-    def __init__(self):
-        pass
+    def __init__(self, segs: SegmentSet):
+        self.segs = segs
+        self.rir_scaling_factor = 0.5**15
 
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
-        pass
+        reverb_tensor, reverb_sample_rate = self.segs.get_random().load_audio()
+
+        power_before_reverb = sum(abs(tensor ** 2)) / len(tensor)
+
+        reverb_tensor *= self.rir_scaling_factor
+
+        tensor = torch.Tensor(signal.convolve(tensor, reverb_tensor, mode='full')[:len(tensor)])
+
+        power_after_reverb = sum(abs(tensor ** 2)) / len(tensor)
+
+        if power_after_reverb > 0:
+            tensor *= torch.sqrt(power_before_reverb / power_after_reverb)
+
+        return tensor, sample_rate
 
 
 class Filtering(Augmentation):

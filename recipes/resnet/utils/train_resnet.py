@@ -13,7 +13,7 @@ from kiwano.utils import Pathlike
 from kiwano.features import Fbank
 from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, SpecAugment
 from kiwano.dataset import Segment, SegmentSet
-from kiwano.model import ResNet
+from kiwano.model import ResNet, SpkScheduler
 
 import soundfile as sf
 
@@ -85,11 +85,11 @@ if __name__ == '__main__':
     resnet_model = ResNet()
     resnet_model.to(device)
 
-    spk_scheduler = SpkScheduler(resnet_model, num_epochs=150, initial_lr=0.1, final_lr=0.00005, warm_up_epoch=6)
-
 
     optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
     criterion = nn.CrossEntropyLoss()
+
+    spk_scheduler = SpkScheduler(optimizer, num_epochs=150, initial_lr=0.1, final_lr=0.00005, warm_up_epoch=6)
 
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
@@ -118,7 +118,7 @@ if __name__ == '__main__':
             #optimizer.step()
 
             if iterations%100 == 0:
-                msg = "{}: [{}/{}] {} \t C-Loss:{:.4f} \t LR : {:.4f}".format(time.ctime(), epochs, 150, iterations, loss.item(), spk_scheduler.get_current_lr())
+                msg = "{}: [{}/{}] {} \t C-Loss:{:.4f} \t LR : {:.8f}".format(time.ctime(), epochs, 150, iterations, loss.item(), spk_scheduler.get_current_lr())
                 print(msg)
 
             iterations += 1

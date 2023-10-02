@@ -86,7 +86,7 @@ class AMSMLoss(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, embed_features=256, num_classes=6000):
+    def __init__(self, input_features=81, embed_features=256, num_classes=6000):
         super(ResNet, self).__init__()
 
         self.embed_features = embed_features

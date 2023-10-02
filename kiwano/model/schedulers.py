@@ -16,12 +16,13 @@ class SpkScheduler:
             param_group["lr"] = current_lr
 
     def get_current_lr(self):
-        if self.current_iter <= warm_up_epoch:
-            step = initial_lr / warm_up_epoch
-            return step*self.current_iter
+        if self.current_iter <= self.warm_up_epoch:
+            l = 0.0000001
+            step = (self.initial_lr - l) / self.warm_up_epoch
+            return l+step*self.current_iter
         else:
-            step = (initial_lr - final_lr) / (num_epochs - warm_up_epoch)
-            return final_lr + step * (num_epochs - self.current_iter)
+            step = (self.initial_lr - self.final_lr) / (self.num_epochs - warm_up_epoch)
+            return self.final_lr + step * (self.num_epochs - self.current_iter)
 
 
     def step(self):
