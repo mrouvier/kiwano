@@ -85,16 +85,17 @@ if __name__ == '__main__':
     resnet_model = ResNet()
     resnet_model.to(device)
 
+    spk_scheduler = SpkScheduler(resnet_model, num_epochs=150, initial_lr=0.1, final_lr=0.00005, warm_up_epoch=6)
+
+
     optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
     criterion = nn.CrossEntropyLoss()
 
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
 
-
-    num_iterations = 150000
-    iterations = 0
     for epochs in range(0, 150):
+        iterations = 0
         for feats, iden in train_dataloader:
 
             feats = feats.unsqueeze(1)
@@ -117,11 +118,11 @@ if __name__ == '__main__':
             #optimizer.step()
 
             if iterations%100 == 0:
-                msg = "{}: [{}/{}] \t C-Loss:{:.4f}".format(time.ctime(), iterations, num_iterations, loss.item())
+                msg = "{}: [{}/{}] {} \t C-Loss:{:.4f} \t LR : {:.4f}".format(time.ctime(), epochs, 150, iterations, loss.item(), spk_scheduler.get_current_lr())
                 print(msg)
 
-            if iterations%500 == 0:
-                torch.save(resnet_model, "exp/model"+str(iterations)+".mat")
-
             iterations += 1
+
+        spk_scheduler.step()
+        torch.save(resnet_model, "exp/resnet/model"+str(epochs)+".mat")
 
