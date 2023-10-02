@@ -41,7 +41,15 @@ def check_md5(dir, liste):
 
         for i in range(3):
             try:
-                md5 = hashlib.md5(fname.read_bytes()).hexdigest()
+                with open(fname, 'rb') as file:
+                    hash = hashlib.md5()
+                    while True:
+                        chunk = file.read(8096)
+                        if not chunk:
+                            break
+                        hash.update(chunk)
+                    md5 = hash.hexdigest()
+
                 if md5 != url[1]:
                     raise ValueError()
                 else:
