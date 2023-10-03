@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('in_data', metavar='in_data', type=str,
-                        help='the path to vox1_meta.csv')
+                        help='the path to the directory where the directory "wav" is stored')
     parser.add_argument('out_data', metavar="out_data", type=str,
                         help='the path to the target directory where the liste will be stored')
 
