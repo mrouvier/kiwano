@@ -62,11 +62,12 @@ def read_scores(file_path: str):
     return h
 
 
-def scoring_xvector(keys, xvectors_enrollment, xvectors_test):
+def scoring_xvector(keys, xvectors_enrollment, xvectors_test, output_dir):
     """
     arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value labels (0 : not the same speaker, 1 : same speaker)
     arg2 xvectors_enrollment: dictionary with key : the name of the audio file, value : the corresponding xvector enrollment
     arg3 xvectors_test: dictionary with key : the name of the audio file, value : the corresponding xvector test
+    arg4 output_dir : the path and the name of the file where the scores will be saved
     This function creates a file scores.txt which contains the names of each pairs of audio files and their cosine similarity
     """
 
@@ -80,15 +81,15 @@ def scoring_xvector(keys, xvectors_enrollment, xvectors_test):
         xvectorTest = xvectors_test[testName]
         score = cos(xvectorEnrollment, xvectorTest)
 
-        with open("../exp/scores.txt", "a") as outputFile:
+        with open(output_dir, "a") as outputFile:
             outputFile.write(enrollmentName + " " + testName + " " + str(score.item()) + "\n")
 
 
-def compute_score(keys, scores):
+def compute_fpr_fnr(keys, scores):
     """
      arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value : labels (0 : not the same speaker, 1 : same speaker)
      arg2 scores: dictionary with key : tuple with the names of the pairs of audio files, value : the similarity between their two xvectors
-     This function calculates the value of the EER of all the scores
+     This function calculates and returns the fpr and the fnr
      A part of this code is taken from https://github.com/YuanGongND/python-compute-eer
      """
 
@@ -101,14 +102,21 @@ def compute_score(keys, scores):
     for distance in scores.values():
         distances.append(float(distance))
 
-
     positive_label = 1
     # all fpr, tpr, fnr, fnr, threshold are lists (in the format of np.array)
-    fpr, tpr, threshold = sklearn.metrics.roc_curve(labels, distances, pos_label = positive_label)
+    fpr, tpr, threshold = sklearn.metrics.roc_curve(labels, distances, pos_label=positive_label)
     fnr = 1 - tpr
 
+    return fpr, fnr
+
+
+def compute_eer(fpr, fnr):
+    """
+     This function calculates the value of the EER on the values fpr and fnr
+     A part of this code is taken from https://github.com/YuanGongND/python-compute-eer
+     """
     # the threshold of fnr == fpr
-    eer_threshold = threshold[np.nanargmin(np.absolute((fnr - fpr)))]
+    #eer_threshold = threshold[np.nanargmin(np.absolute((fnr - fpr)))]
 
     # theoretically eer from fpr and eer from fnr should be identical but they can be slightly differ in reality
     eer_1 = fpr[np.nanargmin(np.absolute((fnr - fpr)))]
@@ -116,8 +124,19 @@ def compute_score(keys, scores):
 
     # return the mean of eer from fpr and from fnr
     eer = (eer_1 + eer_2) / 2
-
     return eer
+
+
+def compute_score(keys, scores):
+    """
+     arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value : labels (0 : not the same speaker, 1 : same speaker)
+     arg2 scores: dictionary with key : tuple with the names of the pairs of audio files, value : the similarity between their two xvectors
+     This function calculates the value of the EER of all the scores
+     """
+
+    fpr, fnr = compute_fpr_fnr(keys, scores)
+
+    return compute_eer(fpr, fnr)
 
 
 if __name__ == '__main__':
@@ -129,6 +148,8 @@ if __name__ == '__main__':
                         help='the path to the the file where the xvector enrollment are stocked')
     parser.add_argument('xvectorTest', metavar='xvectorTest', type=str,
                         help='the path to the the file where the xvector test are stocked')
+    parser.add_argument('output_dir', metavar='output_dir', type=str,
+                        help='the path and the name of the file where the scores will be saved')
 
     args = parser.parse_args()
 
@@ -136,9 +157,9 @@ if __name__ == '__main__':
     enrollment = read_xvector(args.xvectorEnrollment)
     test = read_xvector(args.xvectorTest)
 
-    scoring_xvector(trials, enrollment, test)
+    scoring_xvector(trials, enrollment, test, args.output_dir)
 
-    scores = read_scores("../exp/scores.txt")
+    scores = read_scores(args.output_dir)
 
     err = compute_score(trials, scores)
     print(err)
