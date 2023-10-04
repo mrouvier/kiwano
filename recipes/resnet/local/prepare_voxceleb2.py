@@ -24,7 +24,7 @@ def process_file(segment: Pathlike, in_data: Pathlike):
     n = str(segment).split("/")[-1].split(".")[0]
 
     out = Path(in_data / "data" / spkid / emission)
-    out.mkdir(parents=True, exist_ok=False)
+    out.mkdir(parents=True, exist_ok=True)
 
     output = str(Path(in_data / "data" / spkid / emission / n ) )+".wav"
 
@@ -64,9 +64,9 @@ def prepare_voxceleb2(in_data: Pathlike = ".", out_data: Pathlike = ".", num_job
 
 def _process_file(file_path: Pathlike, output: Pathlike):
     #ffmpeg -v 8 -i {segment} -f wav -acodec pcm_s16le - |
-    cmd = "ffmpeg -threads 1 -i "+str(file_path)+" -acodec pcm_s16le -ac 1 -ar 16000 -ab 48 -threads 1 "+str(output)
+    cmd = "ffmpeg -y -threads 1 -i "+str(file_path)+" -acodec pcm_s16le -ac 1 -ar 16000 -ab 48 -threads 1 "+str(output)
     proc = run(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-    #raw_audio = proc.stdout
+
     #audio = np.frombuffer(raw_audio, dtype=np.float32)
 
 if __name__ == '__main__':
@@ -76,4 +76,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    prepare_voxceleb2(Path(args.in_data), Path(args.out_data), 10)
+    prepare_voxceleb2(Path(args.in_data), Path(args.out_data), 20)
