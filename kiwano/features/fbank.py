@@ -17,6 +17,7 @@ BLACKMAN = "blackman"
 
 EPSILON = 1e-10
 
+
 def asdict_nonull(dclass) -> Dict[str, Any]:
     """
     Recursively convert a dataclass into a dict, removing all the fields with `None` value.
@@ -36,18 +37,16 @@ def asdict_nonull(dclass) -> Dict[str, Any]:
     return asdict(dclass, dict_factory=non_null_dict_factory)
 
 
-
-
-
 def _rfft(x: torch.Tensor) -> torch.Tensor:
     return torch_rfft(x, dim=-1)
+
 
 def _pow_spectrogram(x: torch.Tensor) -> torch.Tensor:
     return x.abs() ** 2
 
+
 def _spectrogram(x: torch.Tensor) -> torch.Tensor:
     return x.abs()
-
 
 
 def _get_log_energy(x: torch.Tensor, energy_floor: float) -> torch.Tensor:
@@ -73,7 +72,7 @@ def next_power_of_2(x: int) -> int:
 
 
 def _get_strided_batch(
-    waveform: torch.Tensor, window_length: int, window_shift: int, snip_edges: bool
+        waveform: torch.Tensor, window_length: int, window_shift: int, snip_edges: bool
 ) -> torch.Tensor:
     r"""Given a waveform (2D tensor of size ``(batch_size, num_samples)``,
     it returns a 2D tensor ``(batch_size, num_frames, window_length)``
@@ -120,7 +119,6 @@ def _get_strided_batch(
     return waveform.as_strided(sizes, strides)
 
 
-
 def create_frame_window(window_size, window_type: str = "povey", blackman_coeff=0.42):
     r"""Returns a window function with the given type and size"""
     if window_type == HANNING:
@@ -135,13 +133,12 @@ def create_frame_window(window_size, window_type: str = "povey", blackman_coeff=
         a = 2 * math.pi / window_size
         window_function = torch.arange(window_size, dtype=torch.get_default_dtype())
         return (
-            blackman_coeff
-            - 0.5 * torch.cos(a * window_function)
-            + (0.5 - blackman_coeff) * torch.cos(2 * a * window_function)
+                blackman_coeff
+                - 0.5 * torch.cos(a * window_function)
+                + (0.5 - blackman_coeff) * torch.cos(2 * a * window_function)
         )
     else:
         raise Exception(f"Invalid window type: {window_type}")
-
 
 
 class Wav2Win(nn.Module):
@@ -163,19 +160,19 @@ class Wav2Win(nn.Module):
     """
 
     def __init__(
-        self,
-        sampling_rate: int = 16000,
-        frame_length: float = 0.025,
-        frame_shift: float = 0.01,
-        pad_length: Optional[int] = None,
-        remove_dc_offset: bool = True,
-        preemph_coeff: float = 0.97,
-        window_type: str = "povey",
-        dither: float = 0.0,
-        snip_edges: bool = False,
-        energy_floor: float = EPSILON,
-        raw_energy: bool = True,
-        return_log_energy: bool = False,
+            self,
+            sampling_rate: int = 16000,
+            frame_length: float = 0.025,
+            frame_shift: float = 0.01,
+            pad_length: Optional[int] = None,
+            remove_dc_offset: bool = True,
+            preemph_coeff: float = 0.97,
+            window_type: str = "povey",
+            dither: float = 0.0,
+            snip_edges: bool = False,
+            energy_floor: float = EPSILON,
+            raw_energy: bool = True,
+            return_log_energy: bool = False,
     ) -> None:
         super().__init__()
         self.sampling_rate = sampling_rate
@@ -205,7 +202,7 @@ class Wav2Win(nn.Module):
         )
         self.pad_length = N if pad_length is None else pad_length
         assert (
-            self.pad_length >= N
+                self.pad_length >= N
         ), f"pad_length (or fft_length) = {pad_length} cannot be smaller than N = {N}"
 
     def __repr__(self):
@@ -234,7 +231,7 @@ class Wav2Win(nn.Module):
         return s
 
     def _forward_strided(
-        self, x_strided: torch.Tensor
+            self, x_strided: torch.Tensor
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         # remove offset
         if self.remove_dc_offset:
@@ -282,8 +279,6 @@ class Wav2Win(nn.Module):
         return self._forward_strided(x_strided)
 
 
-
-
 class Wav2FFT(nn.Module):
     """
     Apply standard Kaldi preprocessing (dithering, removing DC offset, pre-emphasis, etc.)
@@ -302,19 +297,19 @@ class Wav2FFT(nn.Module):
     """
 
     def __init__(
-        self,
-        sampling_rate: int = 16000,
-        frame_length: float = 0.025,
-        frame_shift: float = 0.01,
-        round_to_power_of_two: bool = True,
-        remove_dc_offset: bool = True,
-        preemph_coeff: float = 0.97,
-        window_type: str = "povey",
-        dither: float = 0.0,
-        snip_edges: bool = False,
-        energy_floor: float = EPSILON,
-        raw_energy: bool = True,
-        use_energy: bool = True,
+            self,
+            sampling_rate: int = 16000,
+            frame_length: float = 0.025,
+            frame_shift: float = 0.01,
+            round_to_power_of_two: bool = True,
+            remove_dc_offset: bool = True,
+            preemph_coeff: float = 0.97,
+            window_type: str = "povey",
+            dither: float = 0.0,
+            snip_edges: bool = False,
+            energy_floor: float = EPSILON,
+            raw_energy: bool = True,
+            use_energy: bool = True,
     ) -> None:
         super().__init__()
         self.use_energy = use_energy
@@ -364,7 +359,7 @@ class Wav2FFT(nn.Module):
         return self.wav2win.dither
 
     def _forward_strided(
-        self, x_strided: torch.Tensor, log_e: Optional[torch.Tensor]
+            self, x_strided: torch.Tensor, log_e: Optional[torch.Tensor]
     ) -> torch.Tensor:
         # Note: subclasses of this module can override ``_forward_strided()`` and get a working
         # implementation of ``forward()`` and ``online_inference()`` for free.
@@ -379,8 +374,6 @@ class Wav2FFT(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_strided, log_e = self.wav2win(x)
         return self._forward_strided(x_strided=x_strided, log_e=log_e)
-
-
 
 
 class Wav2LogFilterBank(Wav2FFT):
@@ -399,25 +392,25 @@ class Wav2LogFilterBank(Wav2FFT):
     """
 
     def __init__(
-        self,
-        sampling_rate: int = 16000,
-        frame_length: float = 0.025,
-        frame_shift: float = 0.01,
-        round_to_power_of_two: bool = True,
-        remove_dc_offset: bool = True,
-        preemph_coeff: float = 0.97,
-        window_type: str = "povey",
-        dither: float = 0.0,
-        snip_edges: bool = False,
-        energy_floor: float = EPSILON,
-        raw_energy: bool = True,
-        use_energy: bool = False,
-        use_fft_mag: bool = False,
-        low_freq: float = 20.0,
-        high_freq: float = -400.0,
-        num_filters: int = 80,
-        norm_filters: bool = False,
-        torchaudio_compatible_mel_scale: bool = True,
+            self,
+            sampling_rate: int = 16000,
+            frame_length: float = 0.025,
+            frame_shift: float = 0.01,
+            round_to_power_of_two: bool = True,
+            remove_dc_offset: bool = True,
+            preemph_coeff: float = 0.97,
+            window_type: str = "povey",
+            dither: float = 0.0,
+            snip_edges: bool = False,
+            energy_floor: float = EPSILON,
+            raw_energy: bool = True,
+            use_energy: bool = False,
+            use_fft_mag: bool = False,
+            low_freq: float = 20.0,
+            high_freq: float = -400.0,
+            num_filters: int = 80,
+            norm_filters: bool = False,
+            torchaudio_compatible_mel_scale: bool = True,
     ):
 
         super().__init__(
@@ -478,7 +471,7 @@ class Wav2LogFilterBank(Wav2FFT):
         self._fb = nn.Parameter(fb, requires_grad=False)
 
     def _forward_strided(
-        self, x_strided: torch.Tensor, log_e: Optional[torch.Tensor]
+            self, x_strided: torch.Tensor, log_e: Optional[torch.Tensor]
     ) -> torch.Tensor:
         X = _rfft(x_strided)
         pow_spec = self._to_spec(X)
@@ -491,8 +484,6 @@ class Wav2LogFilterBank(Wav2FFT):
             pow_spec = torch.cat((log_e.unsqueeze(-1), pow_spec), dim=-1)
 
         return pow_spec
-
-
 
 
 @dataclass
@@ -540,8 +531,8 @@ class FeatureExtractor(metaclass=ABCMeta):
     def extract(self, samples: np.ndarray, sampling_rate: int) -> np.ndarray:
         pass
 
-class Fbank(FeatureExtractor):
 
+class Fbank(FeatureExtractor):
     name = "kaldi-fbank"
     config_type = FbankConfig
 
@@ -576,5 +567,3 @@ class Fbank(FeatureExtractor):
             return feats.cpu().numpy()
         else:
             return feats
-
-

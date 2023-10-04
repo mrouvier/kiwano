@@ -10,7 +10,6 @@ from typing import List
 from scipy import signal
 
 
-
 class Augmentation:
     pass
 
@@ -19,9 +18,10 @@ class Pipeline:
     def __init__(self, transforms: List[Augmentation]):
         self.transforms = transforms
 
+
 class Sometimes(Pipeline):
     def __call__(self, *args):
-        transform = random.choice(self.transforms) 
+        transform = random.choice(self.transforms)
         if len(args) == 1:
             tensor = args[0]
             return transform(tensor)
@@ -29,6 +29,7 @@ class Sometimes(Pipeline):
             tensor = args[0]
             sample_rate = args[1]
             return transform(tensor, sample_rate)
+
 
 class Linear(Pipeline):
     def __call__(self, *args):
@@ -67,25 +68,24 @@ class Normal(Augmentation):
         return tensor, sample_rate
 
 
-
 class Noise(Augmentation):
     def __init__(self, segs: SegmentSet, snr_range: List[int]):
         self.segs = segs
-        #self.segs.load_audio()
+        # self.segs.load_audio()
         self.snr_range = snr_range
 
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
-        snr_db = random.randint( self.snr_range[0], self.snr_range[1] )
+        snr_db = random.randint(self.snr_range[0], self.snr_range[1])
         noise_tensor, noise_sample_rate = self.segs.get_random().load_audio()
 
         if len(noise_tensor) > len(tensor):
-            start=random.randint(0, len(noise_tensor)-len(tensor))
-            noise_tensor=noise_tensor[start:start+len(tensor)]
+            start = random.randint(0, len(noise_tensor) - len(tensor))
+            noise_tensor = noise_tensor[start:start + len(tensor)]
         else:
-            n=math.ceil(len(tensor)/len(noise_tensor))
-            noise_tensor=noise_tensor.repeat(n)
-            start=random.randint(0, len(noise_tensor)-len(tensor))
-            noise_tensor=noise_tensor[start:start+len(tensor)]
+            n = math.ceil(len(tensor) / len(noise_tensor))
+            noise_tensor = noise_tensor.repeat(n)
+            start = random.randint(0, len(noise_tensor) - len(tensor))
+            noise_tensor = noise_tensor[start:start + len(tensor)]
 
         speech_power = torch.linalg.vector_norm(tensor, ord=2) ** 2
         noise_power = torch.linalg.vector_norm(noise_tensor, ord=2) ** 2
@@ -93,23 +93,22 @@ class Noise(Augmentation):
         original_snr_db = 10 * (torch.log10(speech_power) - torch.log10(noise_power))
         scale = 10 ** ((original_snr_db - snr_db) / 20.0)
         tensor = scale * noise_tensor + tensor
-        
+
         return tensor, sample_rate
-        
+
 
 class Codec(Augmentation):
     def __init__(self):
         self.codec = [
-                ({"format": "wav", "encoding": 'ULAW', "bits_per_sample": 8}, "8 bit mu-law"),
-                ({"format": "wav", "encoding": 'ALAW', "bits_per_sample": 8}, "8 bit a-law"),
-                #({"format": "mp3", "compression": -9}, "MP3"),
-                #({"format": "vorbis", "compression": -1}, "Vorbis")
-            ]
+            ({"format": "wav", "encoding": 'ULAW', "bits_per_sample": 8}, "8 bit mu-law"),
+            ({"format": "wav", "encoding": 'ALAW', "bits_per_sample": 8}, "8 bit a-law"),
+            # ({"format": "mp3", "compression": -9}, "MP3"),
+            # ({"format": "vorbis", "compression": -1}, "Vorbis")
+        ]
 
-        #{"format": "mp3", "codec_config": CodecConfig(compression_level=9)},
-        #{"format": "ogg", "encoder": "vorbis"},
+        # {"format": "mp3", "codec_config": CodecConfig(compression_level=9)},
+        # {"format": "ogg", "encoder": "vorbis"},
         #
-
 
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
         param, title = random.choice(self.codec)
@@ -146,9 +145,9 @@ class Filtering(Augmentation):
 
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
         effects = [
-                ["bandpass", "2000", "3500"],
-                ["bandreject", "200", "500"]
-            ]
+            ["bandpass", "2000", "3500"],
+            ["bandreject", "200", "500"]
+        ]
         e = effects[random.randint(0, 1)]
 
         speech, _ = torchaudio.sox_effects.apply_effects_tensor(tensor.unsqueeze(0), sample_rate, effects=[e])
@@ -161,11 +160,10 @@ class Crop(Augmentation):
         self.duration = duration
 
     def __call__(self, tensor: torch.Tensor):
-        max_start_time = tensor.shape[0] - self.duration 
+        max_start_time = tensor.shape[0] - self.duration
         start_time = random.randint(0, max_start_time)
-        return tensor[start_time:start_time+self.duration, :]
-        return tensor
-
+        result = tensor[start_time:start_time + self.duration, :]
+        return result
 class SpecAugment(Augmentation):
     def __init__(self,  num_t_mask=1, num_f_mask=1, max_t=10, max_f=8, prob=0.6):
         self.num_t_mask = num_t_mask
@@ -196,7 +194,7 @@ class SpecAugment(Augmentation):
 
 
 class CMVN(Augmentation):
-    def __init__(self, norm_means = True, norm_vars = False):
+    def __init__(self, norm_means=True, norm_vars=False):
         self.norm_means = norm_means
         self.norm_vars = norm_vars
 
@@ -204,4 +202,3 @@ class CMVN(Augmentation):
         if self.norm_means == True:
             tensor = tensor - tensor.mean(dim=0)
         return tensor
-

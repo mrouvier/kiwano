@@ -1,9 +1,8 @@
-import numpy as np
 from typing import Union
+
 from kiwano.utils import Pathlike
 import random
 import torchaudio
-
 
 
 class Segment():
@@ -34,7 +33,6 @@ class Segment():
         return audio_data[0], self.sample_rate
 
 
-
 class SegmentSet():
     def __init__(self):
         self.segments = {}
@@ -56,7 +54,7 @@ class SegmentSet():
         spkid_dict = {}
         self.labels = {}
         for key in self.segments:
-            spkid_dict[ self.segments[ key ].spkid ] = 0
+            spkid_dict[self.segments[key].spkid] = 0
 
         for index, token in enumerate(spkid_dict.keys()):
             self.labels[token] = index
@@ -68,20 +66,19 @@ class SegmentSet():
                 self.segments[segmentid] = Segment(segmentid, spkid, (float)(duration), audio)
         self.get_labels()
 
-
     def get_random(self):
         name, segment = random.choice(list(self.segments.items()))
         return segment
 
     def append(self, segment: Segment):
-        self.segments[ segment.segmentid ] = segment
+        self.segments[segment.segmentid] = segment
 
     def get_speaker(self, spkid: str):
         s = SegmentSet()
 
         for key in self.segments:
             if self.segments[key].spkid == spkid:
-                s.append( self.segments[key] )
+                s.append(self.segments[key])
 
         self.get_labels()
 
@@ -89,7 +86,6 @@ class SegmentSet():
 
     def display(self):
         print(self.segments)
-
     def describe(self):
     #This function calculate and display several information about the segments
     # (number of different speakers, the total duration, min, max, mean...)
