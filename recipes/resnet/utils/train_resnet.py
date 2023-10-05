@@ -11,7 +11,7 @@ from torch import nn
 
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
-from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, SpecAugment
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, SpecAugment, Reverb
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.model import ResNet, SpkScheduler
 
@@ -59,6 +59,25 @@ if __name__ == '__main__':
     musan_noise = musan.get_speaker("noise")
 
 
+    reverb = SegmentSet()
+    reverb.from_dict(Path("data/rirs_noises/"))
+
+
+
+    d = SegmentSet()
+    d.from_dict(Path("data/voxceleb1/"))
+
+    r = Reverb(reverb)
+   
+    a, s = d[0].load_audio()
+
+    sf.write("a.wav", a, s)
+
+    a, s=  r( a, s ) 
+
+    sf.write("b.wav", a, s)
+
+
     training_data = SpeakerTrainingSegmentSet(
                                     audio_transforms=Sometimes( [
                                         Noise(musan_music, snr_range=[5,15]),
@@ -67,6 +86,7 @@ if __name__ == '__main__':
                                         Codec(),
                                         Filtering(),
                                         Normal(),
+                                        Reverb(reverb)
                                     ] ),
                                     feature_extractor=Fbank(),
                                     feature_transforms=Linear( [
@@ -77,12 +97,12 @@ if __name__ == '__main__':
                                 )
 
 
-    training_data.from_dict(Path("data/voxceleb1/"))
+    training_data.from_dict(Path("data/voxceleb2/"))
 
-    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=20)
+    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=40)
     iterator = iter(train_dataloader)
 
-    resnet_model = ResNet()
+    resnet_model = ResNet(num_blocks=[3,10,10,3])
     resnet_model.to(device)
 
 
@@ -100,7 +120,7 @@ if __name__ == '__main__':
 
             feats = feats.unsqueeze(1)
 
-            feats = feats.to(device)
+            feats = feats.float().to(device)
             iden = iden.to(device)
 
             optimizer.zero_grad()

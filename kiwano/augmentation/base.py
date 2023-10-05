@@ -9,6 +9,9 @@ from typing import List
 
 from scipy import signal
 
+from torch.fft import irfft, rfft
+
+
 
 
 class Augmentation:
@@ -118,6 +121,49 @@ class Codec(Augmentation):
         return speech[0], sample_rate
 
 
+_NEXT_FAST_LEN = {}
+
+def next_fast_len(size):
+    try:
+        return _NEXT_FAST_LEN[size]
+    except KeyError:
+        pass
+
+    assert isinstance(size, int) and size > 0
+    next_size = size
+    while True:
+        remaining = next_size
+        for n in (2, 3, 5):
+            while remaining % n == 0:
+                remaining //= n
+        if remaining == 1:
+            _NEXT_FAST_LEN[size] = next_size
+            return next_size
+        next_size += 1
+
+
+
+def convolve1d(signal: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
+    assert (
+            signal.ndim == 1 and kernel.ndim == 1
+            ), "signal and kernel must be 1-dimensional"
+    m = signal.size(-1)
+    n = kernel.size(-1)
+
+    # Compute convolution using fft.
+    padded_size = m + n - 1
+    # Round up for cheaper fft.
+    fast_ftt_size = next_fast_len(padded_size)
+    f_signal = rfft(signal, n=fast_ftt_size)
+    f_kernel = rfft(kernel, n=fast_ftt_size)
+    f_result = f_signal * f_kernel
+    result = irfft(f_result, n=fast_ftt_size)
+
+    return result[:padded_size]
+
+
+
+
 class Reverb(Augmentation):
     def __init__(self, segs: SegmentSet):
         self.segs = segs
@@ -125,17 +171,17 @@ class Reverb(Augmentation):
 
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
         reverb_tensor, reverb_sample_rate = self.segs.get_random().load_audio()
+        size = len(tensor)
 
-        power_before_reverb = sum(abs(tensor ** 2)) / len(tensor)
+        power_before = torch.dot(tensor, tensor) / len(tensor)
 
-        reverb_tensor *= self.rir_scaling_factor
+        #tensor = convolve1d(tensor, reverb_tensor)
+        #tensor = torch.Tensor(signal.convolve(tensor, reverb_tensor, mode='full')[:len(tensor)])
 
-        tensor = torch.Tensor(signal.convolve(tensor, reverb_tensor, mode='full')[:len(tensor)])
-
-        power_after_reverb = sum(abs(tensor ** 2)) / len(tensor)
-
-        if power_after_reverb > 0:
-            tensor *= torch.sqrt(power_before_reverb / power_after_reverb)
+        tensor = torch.Tensor(signal.convolve(tensor, reverb_tensor, mode='full')[:size])
+        power_after = torch.dot(tensor, tensor) / size
+        tensor *= (power_before / power_after).sqrt()
+        tensor = torch.clamp(tensor, -1.0, 1.0)
 
         return tensor, sample_rate
 

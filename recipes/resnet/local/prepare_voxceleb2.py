@@ -31,7 +31,7 @@ def process_file(segment: Pathlike, in_data: Pathlike):
     _process_file(segment, Path(output))
     duration = str(round(float(get_duration(output)),2))
 
-    return name, spkid, duration, segment
+    return name, spkid, duration, output
 
 
 
