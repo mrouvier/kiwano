@@ -86,31 +86,33 @@ class AMSMLoss(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, input_features=81, embed_features=256, num_classes=6000):
+    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[128, 128, 256, 256], num_blocks=[3,4,6,3]):
         super(ResNet, self).__init__()
 
         self.embed_features = embed_features
         self.num_classes = num_classes
+        self.channels = channels
+        self.num_blocks = num_blocks
 
-        self.pre_conv1 = nn.Conv2d(1, 64, 3, 1, 1, bias=False)
-        self.pre_bn1 = nn.BatchNorm2d(64)
+        self.pre_conv1 = nn.Conv2d(1, channels[0], 3, 1, 1, bias=False)
+        self.pre_bn1 = nn.BatchNorm2d(channels[0])
         self.pre_relu1 = nn.ReLU(inplace=True)
 
-        self.layer1 = self._make_layer(64, 64, 3, stride=1)
-        self.layer2 = self._make_layer(64, 64, 4, stride=2)
-        self.layer3 = self._make_layer(64, 128, 6, stride=2)
-        self.layer4 = self._make_layer(128, 128, 3, stride=2)
+        self.layer1 = self._make_layer(channels[0], channels[0], num_blocks[0], stride=1)
+        self.layer2 = self._make_layer(channels[0], channels[1], num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(channels[1], channels[2], num_blocks[2], stride=2)
+        self.layer4 = self._make_layer(channels[2], channels[3], num_blocks[3], stride=2)
 
-        self.norm_stats = torch.nn.BatchNorm1d(2 * 11 * 128)
+        self.norm_stats = torch.nn.BatchNorm1d(2 * 11 * channels[3])
 
-        self.fc_embed = nn.Linear(2 * 11 * 128, self.embed_features)
+        self.fc_embed = nn.Linear(2 * 11 * channels[3], self.embed_features)
         self.norm_embed = torch.nn.BatchNorm1d(self.embed_features)
 
         self.attention = nn.Sequential(
-            nn.Conv1d(128 * 11, 64, kernel_size=1),
+            nn.Conv1d(channels[3] * 11, channels[3]//2, kernel_size=1),
             nn.ReLU(),
-            nn.BatchNorm1d(64),
-            nn.Conv1d(64, 128 * 11, kernel_size=1),
+            nn.BatchNorm1d(channels[3]//2),
+            nn.Conv1d(channels[3]//2, channels[3] * 11, kernel_size=1),
             nn.Softmax(dim=2),
         )
 

@@ -2,24 +2,26 @@
 
 import sys
 from pathlib import Path
-from typing import List, Union
+from typing import Optional, Union, List
 
+import numpy as np
 import torch
 import time
 from torch import nn
 
+from kiwano.utils import Pathlike
 from kiwano.features import Fbank
-from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, Augmentation
-from kiwano.dataset import SegmentSet, Segment
-from kiwano.model import ResNet
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, SpecAugment, Reverb
+from kiwano.dataset import Segment, SegmentSet
+from kiwano.model import ResNet, SpkScheduler
 
+import soundfile as sf
 
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset, DataLoader, Sampler
 
 
 class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
-    def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor=None,
-                 feature_transforms: List[Augmentation] = None):
+    def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor = None, feature_transforms: List[Augmentation] = None):
         super().__init__()
         self.audio_transforms = audio_transforms
         self.feature_transforms = feature_transforms
@@ -37,14 +39,17 @@ class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
             audio, sample_rate = self.audio_transforms(audio, sample_rate)
 
         if self.feature_extractor != None:
-            audio = self.feature_extractor.extract(audio, sampling_rate=sample_rate)
+            feature = self.feature_extractor.extract(audio, sampling_rate=sample_rate)
 
         if self.feature_transforms != None:
-            audio = self.feature_transforms(audio)
+            feature = self.feature_transforms(feature)
 
-        return audio, self.labels[segment.spkid]
+        return feature, self.labels[ segment.spkid ]
+
+
 
 if __name__ == '__main__':
+    device = torch.device("cuda")
 
     musan = SegmentSet()
     musan.from_dict(Path("data/musan/"))
@@ -53,49 +58,91 @@ if __name__ == '__main__':
     musan_speech = musan.get_speaker("speech")
     musan_noise = musan.get_speaker("noise")
 
+
+    reverb = SegmentSet()
+    reverb.from_dict(Path("data/rirs_noises/"))
+
+
+
+    d = SegmentSet()
+    d.from_dict(Path("data/voxceleb1/"))
+
+    r = Reverb(reverb)
+   
+    a, s = d[0].load_audio()
+
+    sf.write("a.wav", a, s)
+
+    a, s=  r( a, s ) 
+
+    sf.write("b.wav", a, s)
+
+
     training_data = SpeakerTrainingSegmentSet(
-        audio_transforms=Sometimes([
-            Noise(musan_music, snr_range=[5, 15]),
-            Noise(musan_speech, snr_range=[13, 20]),
-            Noise(musan_noise, snr_range=[0, 15]),
-            Codec(),
-            Filtering(),
-            Normal()
-        ]),
-        feature_extractor=Fbank(),
-        feature_transforms=Linear([
-            CMVN(),
-            Crop(300)
-        ]),
-    )
+                                    audio_transforms=Sometimes( [
+                                        Noise(musan_music, snr_range=[5,15]),
+                                        Noise(musan_speech, snr_range=[13,20]),
+                                        Noise(musan_noise, snr_range=[0,15]),
+                                        Codec(),
+                                        Filtering(),
+                                        Normal(),
+                                        Reverb(reverb)
+                                    ] ),
+                                    feature_extractor=Fbank(),
+                                    feature_transforms=Linear( [
+                                        CMVN(),
+                                        Crop(200),
+                                        SpecAugment(),
+                                    ] ),
+                                )
 
-    training_data.from_dict(Path("data/voxceleb1/"))
 
-    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
+    training_data.from_dict(Path("data/voxceleb2/"))
+
+    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=40)
     iterator = iter(train_dataloader)
 
-    model = ResNet()
-    # model = ECAPA_TDNN()
+    resnet_model = ResNet(num_blocks=[3,10,10,3])
+    resnet_model.to(device)
 
-    # optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.2, momentum=0.9)
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.2, momentum=0.9)
+
+    optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
     criterion = nn.CrossEntropyLoss()
 
-    num_iterations = 150000
-    for iterations in range(0, num_iterations):
-        feats, iden = next(iterator)
-        feats = feats.unsqueeze(1)
+    spk_scheduler = SpkScheduler(optimizer, num_epochs=150, initial_lr=0.1, final_lr=0.00005, warm_up_epoch=6)
 
-        preds = model(feats, iden)
-        # preds = model(feats)
 
-        loss = criterion(preds, iden)
+    scaler = torch.cuda.amp.GradScaler(enabled=True)
 
-        optimizer.zero_grad()
+    for epochs in range(0, 150):
+        iterations = 0
+        for feats, iden in train_dataloader:
 
-        loss.backward()
+            feats = feats.unsqueeze(1)
 
-        optimizer.step()
+            feats = feats.float().to(device)
+            iden = iden.to(device)
 
-        msg = "{}: [{}/{}] \t C-Loss:{:.4f}".format(time.ctime(), iterations, num_iterations, loss.item())
-        print(msg)
+            optimizer.zero_grad()
+
+            with torch.cuda.amp.autocast(enabled=True):
+                preds = resnet_model(feats, iden)
+                loss = criterion(preds, iden)
+
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
+            #loss.backward()
+            #optimizer.step()
+
+            if iterations%100 == 0:
+                msg = "{}: [{}/{}] {} \t C-Loss:{:.4f} \t LR : {:.8f}".format(time.ctime(), epochs, 150, iterations, loss.item(), spk_scheduler.get_current_lr())
+                print(msg)
+
+            iterations += 1
+
+        spk_scheduler.step()
+        torch.save(resnet_model, "exp/resnet/model"+str(epochs)+".mat")
+
