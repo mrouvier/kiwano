@@ -1,18 +1,24 @@
 from pathlib import Path
 
-import sys
-
 import torch
-from torch.utils.data import DataLoader
-
-from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
+from torch.utils.data import Dataset, DataLoader
+from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN
 from kiwano.dataset import SegmentSet
-from kiwano.features import Fbank
 from kiwano.model import ECAPAModel
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor, AutoModelForCTC, AutoTokenizer, AutoFeatureExtractor, \
-    AutoProcessor, Wav2Vec2Model
+
+
+class Wav2Vec2Dataset(Dataset):
+    def __init__(self, data):
+        self.data = data
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx]
+
 
 if __name__ == '__main__':
     musan = SegmentSet()
@@ -43,16 +49,33 @@ if __name__ == '__main__':
 
     training_data.from_dict(Path("data/voxceleb1/"))
 
-    # train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
-    # iterator = iter(train_dataloader)
-
-    iterator = iter(training_data)
-    # load pretrained model
-    num_iterations = 3
-
-    print(num_iterations)
-    for iterations in range(0, num_iterations):
-        feats, iden = next(iterator)
+    wav2vec2_outputs = []
+    i = 0
+    segments = training_data.segments
+    nb_segments = len(segments)
+    for feats, iden in training_data:
         feats = feats.squeeze(dim=0)
         output = model(feats)
-        print(output)
+        wav2vec2_outputs.append((output, iden))
+        if i % 128 == 0:
+            print(f"{i}/{nb_segments}")
+            if i != 0 and i % 128*5 == 0:
+                break
+        i += 1
+    print(wav2vec2_outputs)
+
+    wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
+    train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
+
+    num_iterations = 2
+
+    ecapa_tdnn_model = ECAPAModel(
+        lr=0.001,
+        lr_decay=0.97,
+        channel_size=1024,
+        n_class=6000,
+        loss_margin=0.2,
+        loss_scale=30,
+        test_step=1
+    )
+    loss, lr, acc = ecapa_tdnn_model.train_network(epoch=num_iterations, loader=train_dataloader)

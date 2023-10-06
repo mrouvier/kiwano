@@ -6,13 +6,10 @@ import torch.nn as nn
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor, AutoModelForCTC, AutoTokenizer, AutoFeatureExtractor
 
 
-def get_output_rep(hidden_states):
-    nb_layers = len(hidden_states)
-    sum_hiddens = torch.zeros_like(hidden_states[0])
-    for layer in range(nb_layers):
-        sum_hiddens += hidden_states[layer]
-
-    sum_hiddens = (1 / nb_layers) * sum_hiddens
+def get_output_rep(hidden_states, learnable_weigths, n_layers, n_frames):
+    sum_hiddens = torch.zeros(size=(1, n_frames))
+    for layer in range(n_layers):
+        sum_hiddens += learnable_weigths[layer] @ hidden_states[layer]
     return sum_hiddens
 
 
@@ -24,14 +21,20 @@ class CustomWav2Vec2Model(nn.Module):
 
     def forward(self, x):
         x = self.processor(x, return_tensor='pt', sampling_rate=16_000)
-        x = torch.tensor(x.input_values)
+        x = x.input_values[0]
+        x = torch.tensor(x)
+        x = x.unsqueeze(0)
         with torch.no_grad():
             output = self.model(x)
 
         hidden_states = list(output.hidden_states)
         # hidden_states = [h.squeeze(dim=0) for h in hidden_states]
-
-        output = get_output_rep(hidden_states)
+        state_dict = self.model.state_dict()
+        input_size = hidden_states[0].shape[1]  # Number of frames
+        n_layers = len(hidden_states)  # Number of layers
+        n_frames = hidden_states[0].shape[-1]
+        learnable_weights = [torch.randn(size=(input_size,)) for _ in range(n_layers)]
+        output = get_output_rep(hidden_states, learnable_weights, n_layers, n_frames)
 
         return output
 
