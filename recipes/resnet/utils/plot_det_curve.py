@@ -7,7 +7,8 @@ import sklearn.metrics
 import argparse
 import matplotlib.pyplot as plt
 from scipy.stats import norm
-from recipes.resnet.utils.compute_eer import read_scores, read_keys, compute_fpr_fnr, compute_eer
+from recipes.resnet.utils.scoring import read_scores, read_keys, compute_fpr_fnr_threshold
+from recipes.resnet.utils.compute_eer import compute_eer
 
 
 def plot_det_curve(keys, scores, systems, output_dir, nameOutputFile):
@@ -40,7 +41,8 @@ def plot_det_curve(keys, scores, systems, output_dir, nameOutputFile):
 
 
     for i in range(len(keys)):
-        fpr, fnr = compute_fpr_fnr(keys[i], scores[i])
+
+        fpr, fnr, _ = compute_fpr_fnr_threshold(keys[i], scores[i])
 
         p_miss = norm.ppf(fnr)
         p_fa = norm.ppf(fpr)
@@ -48,14 +50,16 @@ def plot_det_curve(keys, scores, systems, output_dir, nameOutputFile):
 
         plt.plot(p_fa, p_miss, label=systems[i]+", eer = "+str(round((eer*100),2))+" %")
         plt.plot(norm.ppf(eer), norm.ppf(eer), 'o')
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True)
-        plt.tight_layout()
-        plt.grid()
-        if output_dir is not None:
-            plt.savefig(output_file)
-            plt.clf()
-        else:
-            plt.show()
+
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True)
+    plt.tight_layout()
+    plt.grid()
+
+    if output_dir is not None:
+        plt.savefig(output_file)
+        plt.clf()
+    else:
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -66,7 +70,6 @@ if __name__ == '__main__':
                         help='the path to the directory where the plots will be stored')
     parser.add_argument('name_output_file', metavar='name_output_file', type=str,
                         help='the name of the future plot file')
-
     parser.add_argument('keys_scores_systems', metavar='keys_scores_systems', nargs="+", type=str,
                         help="sequence of : a path to a file where keys are stocked, path to the associated file where the scores are stocked, and then the name of the associated system")
 
