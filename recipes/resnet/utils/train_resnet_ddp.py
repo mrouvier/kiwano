@@ -19,6 +19,20 @@ import soundfile as sf
 
 from torch.utils.data import Dataset, DataLoader, Sampler
 
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+from torch.utils.data.distributed import DistributedSampler
+
+import argparse
+
+import idr_torch
+import logging
+import os
+
+
+logger = logging.getLogger(__name__)
+
 
 class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
     def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor = None, feature_transforms: List[Augmentation] = None):
@@ -49,7 +63,23 @@ class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
 
 
 if __name__ == '__main__':
+
+    #os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "29500"
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--rank", type=int)
+    parser.add_argument("--local_rank", type=int)
+    parser.add_argument("--master_addr", type=str)
+    parser.add_argument("--nproc_per_node", type=int)
+
+    args = parser.parse_args()
+
+    torch.cuda.set_device(args.local_rank)
     device = torch.device("cuda")
+
+    torch.distributed.init_process_group(backend='nccl', init_method='env://')
+
 
     musan = SegmentSet()
     musan.from_dict(Path("data/musan/"))
@@ -84,23 +114,30 @@ if __name__ == '__main__':
 
     training_data.from_dict(Path("data/voxceleb2/"))
 
-    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
+    train_sampler = DistributedSampler(training_data, num_replicas=dist.get_world_size(), rank=dist.get_rank(), shuffle=True)
+
+    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=False, num_workers=30, sampler=train_sampler, pin_memory=True)
     iterator = iter(train_dataloader)
 
+
     resnet_model = ResNet(num_blocks=[3,10,10,3])
+    resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)
     resnet_model.to(device)
 
+    resnet_model = torch.nn.parallel.DistributedDataParallel(resnet_model, device_ids=[args.local_rank], output_device=args.local_rank)
 
     optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
     criterion = nn.CrossEntropyLoss()
 
     spk_scheduler = SpkScheduler(optimizer, num_epochs=150, initial_lr=0.1, final_lr=0.00005, warm_up_epoch=6)
 
-
     scaler = torch.cuda.amp.GradScaler(enabled=True)
+
 
     for epochs in range(0, 150):
         iterations = 0
+        train_sampler.set_epoch(epochs)
+        torch.distributed.barrier()
         for feats, iden in train_dataloader:
 
             feats = feats.unsqueeze(1)
@@ -123,11 +160,12 @@ if __name__ == '__main__':
             #optimizer.step()
 
             if iterations%100 == 0:
-                msg = "{}: [{}/{}] {} \t C-Loss:{:.4f} \t LR : {:.8f}".format(time.ctime(), epochs, 150, iterations, loss.item(), spk_scheduler.get_current_lr())
+                msg = "{}: [{}/{}] {}/{} \t C-Loss:{:.4f} \t LR : {:.8f}".format(time.ctime(), epochs, 150, iterations, len(train_dataloader), loss.item(), spk_scheduler.get_current_lr())
                 print(msg)
 
             iterations += 1
 
         spk_scheduler.step()
-        torch.save(resnet_model, "exp/resnet/model"+str(epochs)+".mat")
+        if dist.get_rank() == 0:
+            torch.save(resnet_model.state_dict(), "exp/resnet/model"+str(epochs)+".mat")
 

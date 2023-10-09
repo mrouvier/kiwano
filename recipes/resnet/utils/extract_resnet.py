@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys
+import sys, os
 from pathlib import Path
 from typing import Optional, Union, List
 
@@ -14,11 +14,15 @@ from kiwano.features import Fbank
 from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.model import ResNet
+from kiwano.embedding import EmbeddingSet, write_pkl
+
+from torch.utils.data.distributed import DistributedSampler
 
 import soundfile as sf
 
 from torch.utils.data import Dataset, DataLoader, Sampler
 
+import argparse
 
 class SpeakerExtractingSegmentSet(Dataset, SegmentSet):
     def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor = None, feature_transforms: List[Augmentation] = None):
@@ -47,33 +51,83 @@ class SpeakerExtractingSegmentSet(Dataset, SegmentSet):
         return feature, segment.segmentid
 
 
+def get_parser():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--world_size",
+        default=1,
+        type=int,
+    )
+
+    parser.add_argument(
+        "--rank",
+        default=1,
+        type=int,
+    )
+
+    parser.add_argument(
+        "data_dir",
+        type=str,
+        help="data_dir",
+    )
+
+    parser.add_argument(
+        "model",
+        type=str,
+        help="Model",
+    )
+
+    parser.add_argument(
+        "output_dir",
+        type=str,
+        help="pkl:output.pkl",
+    )
+
+    return parser
+
+
 
 if __name__ == '__main__':
+    parser = get_parser()
+    args = parser.parse_args()
+
     device = torch.device("cuda")
+
 
     extracting_data = SpeakerExtractingSegmentSet(
                                     feature_extractor=Fbank(),
                                     feature_transforms=Linear( [
                                         CMVN(),
-                                        Crop(200),
                                     ] ),
                                 )
 
+    extracting_data.from_dict(Path(args.data_dir))
 
-    extracting_data.from_dict(Path("data/voxceleb1/"))
+    extracting_sampler = DistributedSampler(extracting_data, num_replicas=args.world_size, rank=args.rank)
 
-    resnet_model = ResNet()
-    resnet_model.load_state_dict(torch.load(sys.argv[1], map_location={"cuda" : "cpu"}).state_dict())
+    extracting_dataloader = DataLoader(extracting_data, batch_size=1, num_workers=10, sampler=extracting_sampler, pin_memory=True)
+    iterator = iter(extracting_dataloader)
+
+    resnet_model = ResNet(num_blocks=[3,10,10,3])
+    resnet_model.load_state_dict(torch.load(args.model, map_location={"cuda" : "cpu"}).state_dict())
     resnet_model.to(device)
+
     resnet_model.eval()
 
-    for feat, key in extracting_data:
-        feat = feat.unsqueeze(0).unsqueeze(1)
+    emb = EmbeddingSet()
+
+    for feat, key in extracting_dataloader:
+        feat = feat.unsqueeze(0)#.unsqueeze(1)
         feat = feat.to(device)
 
         pred = resnet_model(feat)
 
-        print(key+" "+" ".join(map(str, pred.cpu().detach().numpy()[0])))
+        emb[key[0]] = torch.Tensor( pred.cpu().detach()[0] )
+
+        print(key[0]+" extrated")
+
+    write_pkl(args.output_dir+"."+str(args.rank), emb)
 
 
 

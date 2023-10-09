@@ -16,5 +16,18 @@ python3 local/prepare_musan.py db/musan/ data/musan/
 
 
 #Train resnet
-python3 utils/train_resnet.py data/voxceleb1/
-python3 utils/extract_resnet.py exp/model3500.mat > exp/xvector.txt
+export NUM_NODES=1
+export NUM_GPUS_PER_NODE=2
+export NODE_RANK=0
+export WORLD_SIZE=$(($NUM_NODES * $NUM_GPUS_PER_NODE))
+
+
+export OMP_NUM_THREADS=10
+export CUDA_LAUNCH_BLOCKING=1
+export NCCL_ASYNC_ERROR_HANDLING=1
+
+
+python3 -m torch.distributed.launch --nproc_per_node=$NUM_GPUS_PER_NODE --nnodes=$NUM_NODES --node_rank $NODE_RANK utils/train_resnet_ddp.py
+
+
+#python3 utils/extract_resnet.py exp/model3500.mat > exp/xvector.txt
