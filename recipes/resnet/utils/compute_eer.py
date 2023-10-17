@@ -58,7 +58,7 @@ if __name__ == '__main__':
     scores = read_scores(args.scores)
 
     err = compute_score(trials, scores)
-    print(err)
+    print(err*100)
 
 
 

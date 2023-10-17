@@ -13,7 +13,7 @@ from kiwano.utils import Pathlike
 from kiwano.features import Fbank
 from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, SpecAugment, Reverb
 from kiwano.dataset import Segment, SegmentSet
-from kiwano.model import ResNet, SpkScheduler
+from kiwano.model import ResNet, IDRDScheduler
 
 import soundfile as sf
 
@@ -33,6 +33,9 @@ import os
 
 logger = logging.getLogger(__name__)
 
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
 
 class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
     def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor = None, feature_transforms: List[Augmentation] = None):
@@ -106,7 +109,7 @@ if __name__ == '__main__':
                                     feature_extractor=Fbank(),
                                     feature_transforms=Linear( [
                                         CMVN(),
-                                        Crop(200),
+                                        Crop(350),
                                         SpecAugment(),
                                     ] ),
                                 )
@@ -116,20 +119,20 @@ if __name__ == '__main__':
 
     train_sampler = DistributedSampler(training_data, num_replicas=dist.get_world_size(), rank=dist.get_rank(), shuffle=True)
 
-    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=False, num_workers=30, sampler=train_sampler, pin_memory=True)
+    train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=30, sampler=train_sampler, pin_memory=True)
     iterator = iter(train_dataloader)
 
 
-    resnet_model = ResNet(num_blocks=[3,10,10,3])
+    resnet_model = ResNet()
     resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)
     resnet_model.to(device)
 
     resnet_model = torch.nn.parallel.DistributedDataParallel(resnet_model, device_ids=[args.local_rank], output_device=args.local_rank)
 
-    optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
+    optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.2, momentum=0.9, weight_decay=0.0001)
     criterion = nn.CrossEntropyLoss()
 
-    spk_scheduler = SpkScheduler(optimizer, num_epochs=150, initial_lr=0.1, final_lr=0.00005, warm_up_epoch=6)
+    scheduler = IDRDScheduler(optimizer, num_epochs=100, initial_lr=0.2, warm_up_epoch=5, plateau_epoch=15, patience=5)
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
 
@@ -160,12 +163,18 @@ if __name__ == '__main__':
             #optimizer.step()
 
             if iterations%100 == 0:
-                msg = "{}: [{}/{}] {}/{} \t C-Loss:{:.4f} \t LR : {:.8f}".format(time.ctime(), epochs, 150, iterations, len(train_dataloader), loss.item(), spk_scheduler.get_current_lr())
+                msg = "{}: Epoch: [{}/{}] {}/{} \t C-Loss:{:.4f} \t LR : {:.8f} \t Margin : {:.4f}".format(time.ctime(), epochs, 150, iterations, len(train_dataloader), loss.item(), get_lr(optimizer), resnet_model.module.get_m())
                 print(msg)
 
             iterations += 1
 
-        spk_scheduler.step()
+        scheduler.step()
+        #resnet_model.module.set_m( scheduler.get_amsmloss() )
         if dist.get_rank() == 0:
-            torch.save(resnet_model.state_dict(), "exp/resnet/model"+str(epochs)+".mat")
+            state = {
+                'epochs': epochs,
+                'optimizer': optimizer.state_dict(),
+                'model': resnet_model.module.state_dict(),
+            }
+            torch.save(resnet_model.module.state_dict(), "exp/resnet/model"+str(epochs)+".mat")
 

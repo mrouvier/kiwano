@@ -49,21 +49,13 @@ class Linear(Pipeline):
             return tensor, sample_rate
 
 
-'''
-class Speed(Augmentation):
-    def __init__(self):
-        self.speeds = [
-                ["speed", 1.0],
-                ["speed", 0.9],
-                ["speed", 1.1]
-            ]
+class SpeedPerturb(Augmentation):
+    def __init__(self, factor):
+        self.factor = factor
 
-    def __call__(self, arr: np.ndarray, sample_rate: int):
-        speed = self.speeds[ random.randint(0, 2) ]
-        #Check if speed == 1.0 and do nothing
-        speech, _ = torchaudio.sox_effects.apply_effects_tensor(arr, sample_rate, effects=[s])
-        return arr
-'''
+    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+        sp = torchaudio.transforms.SpeedPerturbation(sample_rate, self.factor)
+        return sp(tensor), sample_rate
 
 
 class Normal(Augmentation):
@@ -210,6 +202,24 @@ class Crop(Augmentation):
         start_time = random.randint(0, max_start_time)
         result = tensor[start_time:start_time + self.duration, :]
         return result
+
+
+class CropNotRandom(Augmentation):
+    def __init__(self, duration: int):
+        self.duration = duration
+
+    def __call__(self, tensor: torch.Tensor):
+        max_start_time = self.duration
+
+        if tensor.shape[0] < self.duration:
+            max_start_time = tensor.shape[0]
+     
+        result = tensor[0:max_start_time, :]
+        return result
+
+
+
+
 class SpecAugment(Augmentation):
     def __init__(self,  num_t_mask=1, num_f_mask=1, max_t=10, max_f=8, prob=0.6):
         self.num_t_mask = num_t_mask

@@ -76,7 +76,7 @@ if __name__ == '__main__':
                                     feature_extractor=Fbank(),
                                     feature_transforms=Linear( [
                                         CMVN(),
-                                        Crop(200),
+                                        Crop(350),
                                         SpecAugment(),
                                     ] ),
                                 )
@@ -84,10 +84,10 @@ if __name__ == '__main__':
 
     training_data.from_dict(Path("data/voxceleb2/"))
 
-    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
+    train_dataloader = DataLoader(training_data, batch_size=48, drop_last=True, shuffle=True, num_workers=10)
     iterator = iter(train_dataloader)
 
-    resnet_model = ResNet(num_blocks=[3,10,10,3])
+    resnet_model = ResNet()
     resnet_model.to(device)
 
 
@@ -129,5 +129,5 @@ if __name__ == '__main__':
             iterations += 1
 
         spk_scheduler.step()
-        torch.save(resnet_model, "exp/resnet/model"+str(epochs)+".mat")
+        torch.save(resnet_model.state_dict(), "exp/resnet_noddp/model"+str(epochs)+".mat")
 

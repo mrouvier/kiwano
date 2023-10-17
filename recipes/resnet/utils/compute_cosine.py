@@ -2,8 +2,9 @@ import argparse
 from recipes.resnet.utils.scoring import read_xvector, read_keys
 import torch
 from pathlib import Path
+from kiwano.embedding import EmbeddingSet, read_pkl
 
-def scoring_xvector(keys, xvectors_enrollment, xvectors_test, output_dir):
+def scoring_xvector(keys, xvectors_enrollment, xvectors_test):
     """
     arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value labels (0 : not the same speaker, 1 : same speaker)
     arg2 xvectors_enrollment: dictionary with key : the name of the audio file, value : the corresponding xvector enrollment
@@ -22,8 +23,7 @@ def scoring_xvector(keys, xvectors_enrollment, xvectors_test, output_dir):
         xvectorTest = xvectors_test[testName]
         score = cos(xvectorEnrollment, xvectorTest)
 
-        with open(output_dir, "a") as outputFile:
-            outputFile.write(enrollmentName + " " + testName + " " + str(score.item()) + "\n")
+        print(enrollmentName + " " + testName + " " + str(score.item()))
 
 
 
@@ -38,15 +38,13 @@ if __name__ == '__main__':
                         help='the path to the the file where the xvector enrollment are stocked')
     parser.add_argument('xvectorTest', metavar='xvectorTest', type=str,
                         help='the path to the the file where the xvector test are stocked')
-    parser.add_argument('output_dir', metavar='output_dir', type=str,
-                        help='the path and the name of the file where the scores will be saved')
 
     args = parser.parse_args()
 
     trials = read_keys(args.keys)
-    enrollment = read_xvector(args.xvectorEnrollment)
-    test = read_xvector(args.xvectorTest)
+    enrollment = read_pkl(args.xvectorEnrollment)
+    test = read_pkl(args.xvectorTest)
 
-    scoring_xvector(trials, enrollment, test, args.output_dir)
+    scoring_xvector(trials, enrollment, test)
 
 
