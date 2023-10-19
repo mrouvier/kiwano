@@ -22,9 +22,9 @@ VOXCELEB1_PARTS_URL = [
 
 
 VOXCELEB1_TRIALS_URL = [
-    ["http://www.openslr.org/resources/49/voxceleb1_test_v2.txt", "29fc7cc1c5d59f0816dc15d6e8be60f7"],
-    ["https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_hard2.txt", "857790e09d579a68eb2e339a090343c8"], #voxceleb1-h
-    ["https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_all2.txt", "a53e059deb562ffcfc092bf5d90d9f3a"] #voxceleb1-e
+    ["https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test2.txt", "b73110731c9223c1461fe49cb48dddfc"], #voxceleb1-o cleaned
+    ["https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_hard2.txt", "857790e09d579a68eb2e339a090343c8"], #voxceleb1-h cleaned
+    ["https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_all2.txt", "a53e059deb562ffcfc092bf5d90d9f3a"] #voxceleb1-e cleaned
 ]
 
 VOXCELEB1_META_URL = [
@@ -92,10 +92,10 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('target_dir', metavar='target_dir', type=str,
-                        help='the path to the target directory where the data will be stored')
     parser.add_argument('--force_download', action="store_true", default=False,
                         help='force the download, overwrites files (default: False)')
+    parser.add_argument('target_dir', metavar='target_dir', type=str,
+                        help='the path to the target directory where the data will be stored')
 
     args = parser.parse_args()
 
