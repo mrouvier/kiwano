@@ -22,7 +22,7 @@ def process_file(segment: Pathlike):
 
 
 
-def prepare_voxceleb1(in_data: Pathlike, out_data: Pathlike):
+def prepare_voxceleb1(in_data: Pathlike, out_data: Pathlike, jobs: int):
     in_data = Path(in_data)
 
     out_data = Path(out_data)
@@ -30,7 +30,7 @@ def prepare_voxceleb1(in_data: Pathlike, out_data: Pathlike):
 
     liste = open(out_data / "liste", "w")
 
-    with ProcessPoolExecutor(20) as ex:
+    with ProcessPoolExecutor(jobs) as ex:
         futures = []
 
         for segment in (in_data / "wav").rglob("*.wav"):
@@ -40,18 +40,35 @@ def prepare_voxceleb1(in_data: Pathlike, out_data: Pathlike):
             name, spkid, duration, segment = future.result()
             liste.write(f"{name} {spkid} {duration} {segment}\n")
 
-            #print(f"{name} {spkid} {duration} {segment}\n")
 
     liste.close()
 
 
+    for txt, trials in zip( ["veri_test2.txt", "list_test_hard2.txt", "list_test_all2.txt"], ["voxceleb1-o-cleaned.trials", "voxceleb1-e-cleaned.trials", "voxceleb1-h-cleaned.trials"] ):
 
+        r_txt = open(in_data / txt, "r")
+        w_trials = open(out_data / trials, "w")
+
+        for line in r_txt:
+            line = line.strip().split(" ")
+
+            if line[0] == "0":
+                line[0] = "nontarget"
+            else:
+                line[0] = "target"
+
+            w_trials.write(line[1].replace("/", "_").split(".")[0]+" "+line[2].replace("/", "_").split(".")[0]+" "+line[0]+"\n")
+
+        w_trials.close()
+        r_txt.close()
 
 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--thread', type=int, default=10,
+                        help='number of parallel jobs')
     parser.add_argument('in_data', metavar='in_data', type=str,
                         help='the path to the directory where the directory "wav" is stored')
     parser.add_argument('out_data', metavar="out_data", type=str,
@@ -59,5 +76,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    prepare_voxceleb1(args.in_data, args.out_data)
+    prepare_voxceleb1(args.in_data, args.out_data, args.thread)
 

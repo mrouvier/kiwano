@@ -1,8 +1,15 @@
-from typing import Union
+from typing import Union, TypeVar
 
 from kiwano.utils import Pathlike
+#from kiwano.augmentation import SpeedPerturb
 import random
 import torchaudio
+
+T = TypeVar("T")
+
+
+def fastcopy(dataclass_obj: T, **kwargs) -> T:
+    return type(dataclass_obj)(**{**dataclass_obj.__dict__, **kwargs})
 
 
 class Segment():
@@ -14,6 +21,8 @@ class Segment():
     sample_rate: int
     audio_data: list
 
+    #augmentation: Augmentation
+
     def __init__(self, segmentid: str, spkid: str, duration: float, file_path: str):
         self.segmentid = segmentid
         self.spkid = spkid
@@ -23,14 +32,28 @@ class Segment():
         self.sample_rate = None
         self.audio_data = None
 
+        self.augmentation = None
+    '''
+    def perturb_speed(self, factor: float):
+        self.augmentation = SpeedPerturb(factor)
+        self.duration *= factor
+        spkid = "speed"+str(factor)+"_"+spkid
+    '''
+
     def load_audio(self, keep_memory: bool = False):
         audio_data, self.sample_rate = torchaudio.load(self.file_path)
+        audio_data = audio_data[0]
+
+        '''
+        if augmentation != None:
+            audio_data, self.sample_rate = self.augmentation(audio_data, self.sample_rate)
+        '''
 
         if keep_memory == True:
-            self.audio_data = audio_data[0]
+            self.audio_data = audio_data
             self.sample_rate = self.sample_rate
 
-        return audio_data[0], self.sample_rate
+        return audio_data, self.sample_rate
 
 
 class SegmentSet():
@@ -73,12 +96,34 @@ class SegmentSet():
     def append(self, segment: Segment):
         self.segments[segment.segmentid] = segment
 
+
+    def truncate(self, duration: float):
+        temp = SegmentSet()
+        for key in self.segments:
+            if self.segments[key].duration > duration:
+                temp.append( self.segments[key]  )
+        temp.get_labels()
+        return temp
+
+
     def get_speaker(self, spkid: str):
         s = SegmentSet()
 
         for key in self.segments:
             if self.segments[key].spkid == spkid:
-                s.append(self.segments[key])
+                s.append( self.segments[key] )
+
+        self.get_labels()
+
+        return s
+
+    def perturb_speed(self, factor: float):
+        s = SegmentSet()
+
+        for key in self.segments:
+            t = fastcopy( self.segments[key] ) 
+            t.perturb_speed()
+            s.append( t )
 
         self.get_labels()
 
@@ -86,6 +131,7 @@ class SegmentSet():
 
     def display(self):
         print(self.segments)
+
     def describe(self):
     #This function calculate and display several information about the segments
     # (number of different speakers, the total duration, min, max, mean...)

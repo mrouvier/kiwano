@@ -11,7 +11,8 @@ from torch import nn
 
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
-from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, SpecAugment, Reverb
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, \
+    SpecAugment, Reverb
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.model import ResNet, SpkScheduler
 
@@ -21,7 +22,8 @@ from torch.utils.data import Dataset, DataLoader, Sampler
 
 
 class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
-    def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor = None, feature_transforms: List[Augmentation] = None):
+    def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor=None,
+                 feature_transforms: List[Augmentation] = None):
         super().__init__()
         self.audio_transforms = audio_transforms
         self.feature_transforms = feature_transforms
@@ -44,8 +46,7 @@ class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
         if self.feature_transforms != None:
             feature = self.feature_transforms(feature)
 
-        return feature, self.labels[ segment.spkid ]
-
+        return feature, self.labels[segment.spkid]
 
 
 if __name__ == '__main__':
@@ -58,91 +59,72 @@ if __name__ == '__main__':
     musan_speech = musan.get_speaker("speech")
     musan_noise = musan.get_speaker("noise")
 
-
     reverb = SegmentSet()
     reverb.from_dict(Path("data/rirs_noises/"))
 
-
-
-    d = SegmentSet()
-    d.from_dict(Path("data/voxceleb1/"))
-
-    r = Reverb(reverb)
-   
-    a, s = d[0].load_audio()
-
-    sf.write("a.wav", a, s)
-
-    a, s=  r( a, s ) 
-
-    sf.write("b.wav", a, s)
-
-
     training_data = SpeakerTrainingSegmentSet(
-                                    audio_transforms=Sometimes( [
-                                        Noise(musan_music, snr_range=[5,15]),
-                                        Noise(musan_speech, snr_range=[13,20]),
-                                        Noise(musan_noise, snr_range=[0,15]),
-                                        Codec(),
-                                        Filtering(),
-                                        Normal(),
-                                        Reverb(reverb)
-                                    ] ),
-                                    feature_extractor=Fbank(),
-                                    feature_transforms=Linear( [
-                                        CMVN(),
-                                        Crop(200),
-                                        SpecAugment(),
-                                    ] ),
-                                )
-
+        audio_transforms=Sometimes([
+            Noise(musan_music, snr_range=[5, 15]),
+            Noise(musan_speech, snr_range=[13, 20]),
+            Noise(musan_noise, snr_range=[0, 15]),
+            Codec(),
+            Filtering(),
+            Normal(),
+            Reverb(reverb)
+        ]),
+        feature_extractor=Fbank(),
+        feature_transforms=Linear([
+            CMVN(),
+            Crop(350),
+            SpecAugment(),
+        ]),
+    )
 
     training_data.from_dict(Path("data/voxceleb2/"))
 
-    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=40)
-    iterator = iter(train_dataloader)
 
-    resnet_model = ResNet(num_blocks=[3,10,10,3])
-    resnet_model.to(device)
+train_dataloader = DataLoader(training_data, batch_size=48, drop_last=True, shuffle=True, num_workers=10)
+iterator = iter(train_dataloader)
 
+resnet_model = ResNet()
 
-    optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
-    criterion = nn.CrossEntropyLoss()
+resnet_model.to(device)
 
-    spk_scheduler = SpkScheduler(optimizer, num_epochs=150, initial_lr=0.1, final_lr=0.00005, warm_up_epoch=6)
+optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
+criterion = nn.CrossEntropyLoss()
 
+spk_scheduler = SpkScheduler(optimizer, num_epochs=150, initial_lr=0.1, final_lr=0.00005, warm_up_epoch=6)
 
-    scaler = torch.cuda.amp.GradScaler(enabled=True)
+scaler = torch.cuda.amp.GradScaler(enabled=True)
 
-    for epochs in range(0, 150):
-        iterations = 0
-        for feats, iden in train_dataloader:
+for epochs in range(0, 150):
+    iterations = 0
+    for feats, iden in train_dataloader:
 
-            feats = feats.unsqueeze(1)
+        feats = feats.unsqueeze(1)
 
-            feats = feats.float().to(device)
-            iden = iden.to(device)
+        feats = feats.float().to(device)
+        iden = iden.to(device)
 
-            optimizer.zero_grad()
+        optimizer.zero_grad()
 
-            with torch.cuda.amp.autocast(enabled=True):
-                preds = resnet_model(feats, iden)
-                loss = criterion(preds, iden)
+        with torch.cuda.amp.autocast(enabled=True):
+            preds = resnet_model(feats, iden)
+            loss = criterion(preds, iden)
 
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+        # loss.backward()
+        # optimizer.step()
 
-            #loss.backward()
-            #optimizer.step()
+        if iterations % 100 == 0:
+            msg = "{}: [{}/{}] {} \t C-Loss:{:.4f} \t LR : {:.8f}".format(time.ctime(), epochs, 150, iterations,
+                                                                          loss.item(), spk_scheduler.get_current_lr())
+            print(msg)
 
-            if iterations%100 == 0:
-                msg = "{}: [{}/{}] {} \t C-Loss:{:.4f} \t LR : {:.8f}".format(time.ctime(), epochs, 150, iterations, loss.item(), spk_scheduler.get_current_lr())
-                print(msg)
+        iterations += 1
 
-            iterations += 1
-
-        spk_scheduler.step()
-        torch.save(resnet_model, "exp/resnet/model"+str(epochs)+".mat")
-
+    spk_scheduler.step()
+    torch.save(resnet_model.state_dict(), "exp/resnet_noddp/model" + str(epochs) + ".mat")
