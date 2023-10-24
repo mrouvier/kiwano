@@ -67,7 +67,7 @@ if __name__ == '__main__':
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
     train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
 
-    num_iterations = 2
+    num_iterations = 10
 
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,
@@ -79,4 +79,5 @@ if __name__ == '__main__':
         loss_scale=30,
         test_step=1
     )
-    loss, lr, acc = ecapa_tdnn_model.train_network(epoch=num_iterations, loader=train_dataloader)
+    for epoch in range(1, num_iterations + 1):
+        loss, lr, acc = ecapa_tdnn_model.train_network(epoch=epoch, loader=train_dataloader)
