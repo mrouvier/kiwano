@@ -31,15 +31,7 @@ if __name__ == '__main__':
     model_name = "facebook/wav2vec2-base-960h"
     model = CustomWav2Vec2Model(model_name)
     training_data = SpeakerTrainingSegmentSet(
-        audio_transforms=Sometimes([
-            Codec(),
-            Filtering(),
-            Normal()
-        ]),
-        feature_extractor=model,
-        feature_transforms=Linear([
-            CMVN()
-        ]),
+        feature_extractor=model
     )
 
     training_data.from_dict(Path("data/voxceleb1/"))
@@ -57,7 +49,6 @@ if __name__ == '__main__':
             if i != 0 and i % 128 * 5 == 0:
                 break
         i += 1
-    print(wav2vec2_outputs)
 
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
     train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
