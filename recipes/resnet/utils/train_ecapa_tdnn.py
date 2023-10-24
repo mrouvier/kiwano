@@ -45,6 +45,7 @@ if __name__ == '__main__':
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,
         lr_decay=0.97,
+        channel_in=81,
         channel_size=1024,
         n_class=6000,
         loss_margin=0.2,
@@ -53,5 +54,5 @@ if __name__ == '__main__':
     )
 
     # num_iterations = 150000
-    num_iterations = 2
+    num_iterations = 10
     loss, lr, acc = ecapa_tdnn_model.train_network(epoch=num_iterations, loader=train_dataloader)

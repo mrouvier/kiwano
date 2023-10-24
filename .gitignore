@@ -1,0 +1,15 @@
+recipes/resnet/data/
+recipes/resnet/db/
+.idea/
+kiwano/__pycache__/
+kiwano/augmentation/__pycache__/
+kiwano/dataset/__pycache__/
+kiwano/features/__pycache__/
+kiwano/model/__pycache__/
+kiwano/utils/__pycache__/
+recipes/resnet/utils/__pycache__/
+kiwano.egg-info/
+recipes/resnet/a.wav
+
+
+

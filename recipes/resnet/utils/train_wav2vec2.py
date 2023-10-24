@@ -72,6 +72,7 @@ if __name__ == '__main__':
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,
         lr_decay=0.97,
+        channel_in=768,
         channel_size=1024,
         n_class=6000,
         loss_margin=0.2,

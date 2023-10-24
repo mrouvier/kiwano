@@ -16,10 +16,10 @@ from kiwano.model.tools import tuneThresholdfromScore, ComputeMinDcf, ComputeErr
 
 
 class ECAPAModel(nn.Module):
-    def __init__(self, lr, lr_decay, channel_size, n_class, loss_margin, loss_scale, test_step, **kwargs):
+    def __init__(self, lr, lr_decay, channel_in, channel_size, n_class, loss_margin, loss_scale, test_step, **kwargs):
         super(ECAPAModel, self).__init__()
         ## ECAPA-TDNN
-        self.speaker_encoder = ECAPA_TDNN(in_channels=81, out_channels=channel_size)
+        self.speaker_encoder = ECAPA_TDNN(in_channels=channel_in, out_channels=channel_size)
         ## Classifier
         self.speaker_loss = AAMsoftmax(n_class=n_class, loss_margin=loss_margin, loss_scale=loss_scale)
 

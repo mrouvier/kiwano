@@ -82,49 +82,48 @@ if __name__ == '__main__':
 
     training_data.from_dict(Path("data/voxceleb2/"))
 
+    train_dataloader = DataLoader(training_data, batch_size=48, drop_last=True, shuffle=True, num_workers=10)
+    iterator = iter(train_dataloader)
 
-train_dataloader = DataLoader(training_data, batch_size=48, drop_last=True, shuffle=True, num_workers=10)
-iterator = iter(train_dataloader)
+    resnet_model = ResNet()
 
-resnet_model = ResNet()
+    resnet_model.to(device)
 
-resnet_model.to(device)
+    optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
+    criterion = nn.CrossEntropyLoss()
 
-optimizer = torch.optim.SGD(resnet_model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
-criterion = nn.CrossEntropyLoss()
+    spk_scheduler = SpkScheduler(optimizer, num_epochs=150, initial_lr=0.1, final_lr=0.00005, warm_up_epoch=6)
 
-spk_scheduler = SpkScheduler(optimizer, num_epochs=150, initial_lr=0.1, final_lr=0.00005, warm_up_epoch=6)
+    scaler = torch.cuda.amp.GradScaler(enabled=True)
 
-scaler = torch.cuda.amp.GradScaler(enabled=True)
+    for epochs in range(0, 150):
+        iterations = 0
+        for feats, iden in train_dataloader:
 
-for epochs in range(0, 150):
-    iterations = 0
-    for feats, iden in train_dataloader:
+            feats = feats.unsqueeze(1)
 
-        feats = feats.unsqueeze(1)
+            feats = feats.float().to(device)
+            iden = iden.to(device)
 
-        feats = feats.float().to(device)
-        iden = iden.to(device)
+            optimizer.zero_grad()
 
-        optimizer.zero_grad()
+            with torch.cuda.amp.autocast(enabled=True):
+                preds = resnet_model(feats, iden)
+                loss = criterion(preds, iden)
 
-        with torch.cuda.amp.autocast(enabled=True):
-            preds = resnet_model(feats, iden)
-            loss = criterion(preds, iden)
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+            # loss.backward()
+            # optimizer.step()
 
-        # loss.backward()
-        # optimizer.step()
+            if iterations % 100 == 0:
+                msg = "{}: [{}/{}] {} \t C-Loss:{:.4f} \t LR : {:.8f}".format(time.ctime(), epochs, 150, iterations,
+                                                                              loss.item(), spk_scheduler.get_current_lr())
+                print(msg)
 
-        if iterations % 100 == 0:
-            msg = "{}: [{}/{}] {} \t C-Loss:{:.4f} \t LR : {:.8f}".format(time.ctime(), epochs, 150, iterations,
-                                                                          loss.item(), spk_scheduler.get_current_lr())
-            print(msg)
+            iterations += 1
 
-        iterations += 1
-
-    spk_scheduler.step()
-    torch.save(resnet_model.state_dict(), "exp/resnet_noddp/model" + str(epochs) + ".mat")
+        spk_scheduler.step()
+        torch.save(resnet_model.state_dict(), "exp/resnet_noddp/model" + str(epochs) + ".mat")
