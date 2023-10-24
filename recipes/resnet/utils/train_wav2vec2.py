@@ -32,18 +32,13 @@ if __name__ == '__main__':
     model = CustomWav2Vec2Model(model_name)
     training_data = SpeakerTrainingSegmentSet(
         audio_transforms=Sometimes([
-            Noise(musan_music, snr_range=[5, 15]),
-            Noise(musan_speech, snr_range=[13, 20]),
-            Noise(musan_noise, snr_range=[0, 15]),
             Codec(),
             Filtering(),
             Normal()
         ]),
         feature_extractor=model,
-        # feature_extractor=Fbank(),
         feature_transforms=Linear([
-            CMVN(),
-            # Crop(300)
+            CMVN()
         ]),
     )
 
@@ -59,7 +54,7 @@ if __name__ == '__main__':
         wav2vec2_outputs.append((output, iden))
         if i % 128 == 0:
             print(f"{i}/{nb_segments}")
-            if i != 0 and i % 128*5 == 0:
+            if i != 0 and i % 128 * 5 == 0:
                 break
         i += 1
     print(wav2vec2_outputs)
