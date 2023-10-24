@@ -3,6 +3,13 @@ recipes/resnet/db/
 .idea/
 kiwano.egg-info/
 recipes/resnet/a.wav
-
+kiwano.egg-info/
+kiwano/__pycache__/
+kiwano/augmentation/__pycache__/
+kiwano/utils/__pycache__/
+kiwano_error.log
+kiwano_output.log
+utils/__pycache__/
+kiwano/model/__pycache__/
 
 
