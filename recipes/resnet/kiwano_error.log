@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/local_disk/helios/mmlamah/projects/kiwano-project/recipes/resnet/utils/train_wav2vec2.py", line 5, in <module>
+    from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN
+ModuleNotFoundError: No module named 'kiwano.augmentation'
