@@ -22,9 +22,9 @@ def read_keys(file_path: str):
         label = line[2]
 
         if label == "target":
-            label = 0
+            label = "1"
         else:
-            label = 1
+            label = "0"
 
         '''
         if file_path.split("/")[-1] == "voxceleb1_test_v2.txt" or file_path.split("/")[-1] == "list_test_hard2.txt" or file_path.split("/")[-1] == "list_test_all2.txt":

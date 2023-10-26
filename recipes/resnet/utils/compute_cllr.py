@@ -4,7 +4,7 @@ import numpy as np
 from scipy.special import logit, expit
 import copy
 
-from recipes.resnet.utils.scoring import read_scores, read_xvector, read_keys
+from recipes.resnet.utils.scoring import read_scores, read_keys
 from recipes.resnet.utils.compute_cosine import scoring_xvector
 import argparse
 

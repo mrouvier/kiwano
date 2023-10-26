@@ -7,7 +7,7 @@ from typing import Optional, Union, List
 import numpy as np
 
 
-from recipes.resnet.utils.scoring import read_scores, read_xvector, read_keys, compute_fpr_fnr_threshold
+from recipes.resnet.utils.scoring import read_scores, read_keys, compute_fpr_fnr_threshold
 from recipes.resnet.utils.compute_cosine import scoring_xvector
 
 import argparse

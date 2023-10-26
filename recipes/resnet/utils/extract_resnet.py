@@ -114,7 +114,8 @@ if __name__ == '__main__':
     iterator = iter(extracting_dataloader)
 
     resnet_model = ResNet()
-    resnet_model.load_state_dict(torch.load(args.model))
+    #resnet_model.load_state_dict(torch.load(args.model))
+    resnet_model.load_state_dict(torch.load(args.model)["model"])
     resnet_model.to(device)
 
     resnet_model.eval()

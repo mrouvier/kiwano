@@ -1,5 +1,5 @@
 import argparse
-from recipes.resnet.utils.scoring import read_xvector, read_keys
+from recipes.resnet.utils.scoring import read_keys, read_xvector
 import torch
 from pathlib import Path
 from kiwano.embedding import EmbeddingSet, read_pkl
@@ -40,7 +40,6 @@ if __name__ == '__main__':
                         help='the path to the the file where the xvector test are stocked')
 
     args = parser.parse_args()
-
     trials = read_keys(args.keys)
     enrollment = read_pkl(args.xvectorEnrollment)
     test = read_pkl(args.xvectorTest)
