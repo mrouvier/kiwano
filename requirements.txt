@@ -1,8 +1,0 @@
-tqdm~=4.66.1
-numpy~=1.24.4
-torch~=2.0.1
-kiwano~=0.0.1
-librosa~=0.10.1
-torchvision~=0.15.2
-setuptools~=65.5.1
-torchaudio~=2.0.2

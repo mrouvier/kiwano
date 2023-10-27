@@ -20,9 +20,11 @@ def read_keys(file_path: str):
         label = line[0]
         enrollmentName = line[1]
         testName = line[2]
+        '''
         if file_path.split("/")[-1] == "voxceleb1_test_v2.txt" or file_path.split("/")[-1] == "list_test_hard2.txt" or file_path.split("/")[-1] == "list_test_all2.txt":
             enrollmentName = enrollmentName.replace("/", "_")[:-4]
             testName = testName.replace("/", "_").replace('\n', "")[:-4]
+        '''
         h[(enrollmentName, testName)] = label
     f.close
     return h

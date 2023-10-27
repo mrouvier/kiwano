@@ -48,15 +48,13 @@ class Linear(Pipeline):
                 tensor, sample_rate = transform(tensor, sample_rate)
             return tensor, sample_rate
 
-
 class SpeedPerturb(Augmentation):
-    def __init__(self, factor):
+    def __init__(self, factor: float):
         self.factor = factor
 
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
-        sp = torchaudio.transforms.SpeedPerturbation(sample_rate, self.factor)
-        return sp(tensor), sample_rate
-
+        wav, _ = torchaudio.sox_effects.apply_effects_tensor(tensor.unsqueeze(0), sample_rate, [['speed', str(self.factor)], ["rate", str(sample_rate)]])
+        return wav[0], sample_rate
 
 class Normal(Augmentation):
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
@@ -194,29 +192,24 @@ class Filtering(Augmentation):
 
 
 class Crop(Augmentation):
-    def __init__(self, duration: int):
+    def __init__(self, duration: int, random = True):
         self.duration = duration
+        self.random = random
 
     def __call__(self, tensor: torch.Tensor):
-        max_start_time = tensor.shape[0] - self.duration
-        start_time = random.randint(0, max_start_time)
-        result = tensor[start_time:start_time + self.duration, :]
-        return result
+        if self.random == True:
+            max_start_time = tensor.shape[0] - self.duration
+            start_time = random.randint(0, max_start_time)
+            result = tensor[start_time:start_time + self.duration, :]
+            return result
+        else:
+            max_start_time = self.duration
 
-
-class CropNotRandom(Augmentation):
-    def __init__(self, duration: int):
-        self.duration = duration
-
-    def __call__(self, tensor: torch.Tensor):
-        max_start_time = self.duration
-
-        if tensor.shape[0] < self.duration:
-            max_start_time = tensor.shape[0]
+            if tensor.shape[0] < self.duration:
+                max_start_time = tensor.shape[0]
      
-        result = tensor[0:max_start_time, :]
-        return result
-
+            result = tensor[0:max_start_time, :]
+            return result
 
 
 
