@@ -64,8 +64,8 @@ def read_pkl(arg: str):
             proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
             output, error = proc.communicate()
 
-            delimiter = b'\x80\x03ckiwano'
-            my_list = [delimiter+x for x in output.split(delimiter) if x]
+            delimiter = b'usb.'
+            my_list = [x+delimiter for x in output.split(delimiter) if x]
             if len(my_list) == 1:
                 arr = pickle.loads( output )
                 return arr
