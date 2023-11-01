@@ -32,19 +32,22 @@ class Segment():
         self.augmentation = None
 
     def perturb_speed(self, factor: float):
-        from kiwano.augmentation import SpeedPerturb
 
-        self.augmentation = SpeedPerturb(factor)
+        #self.augmentation = SpeedPerturbV2(factor)
+        self.augmentation = factor
         self.duration /= factor
         self.spkid = "speed"+str(factor)+"_"+self.spkid
         self.segmentid = "spped"+str(factor)+"_"+self.segmentid
 
     def load_audio(self, keep_memory: bool = False):
+        from kiwano.augmentation import SpeedPerturb
+
         audio_data, self.sample_rate = torchaudio.load(self.file_path)
         audio_data = audio_data[0]
 
         if self.augmentation != None:
-            audio_data, self.sample_rate = self.augmentation(audio_data, self.sample_rate)
+            s = SpeedPerturb(self.augmentation)
+            audio_data, self.sample_rate = s(audio_data, self.sample_rate)
 
         if keep_memory == True:
             self.audio_data = audio_data
@@ -94,10 +97,18 @@ class SegmentSet():
         self.segments[segment.segmentid] = segment
 
 
-    def truncate(self, duration: float):
+    def truncate(self, min_duration: float, max_duration: float):
         for key in list(self.segments):
-            if self.segments[key].duration < duration:
+            d = False
+            if self.segments[key].duration > max_duration:
+                d = True
+
+            if self.segments[key].duration < min_duration:
+                d = True
+            
+            if d == True:
                 del self.segments[key]
+
         self.get_labels()
 
     def get_speaker(self, spkid: str):

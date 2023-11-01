@@ -13,7 +13,7 @@ from kiwano.utils import Pathlike
 from kiwano.features import Fbank
 from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
 from kiwano.dataset import Segment, SegmentSet
-from kiwano.model import ResNet
+from kiwano.model import ResNet, ResNetV2
 from kiwano.embedding import EmbeddingSet, write_pkl
 
 from torch.utils.data.distributed import DistributedSampler
@@ -114,7 +114,8 @@ if __name__ == '__main__':
     extracting_dataloader = DataLoader(extracting_data, batch_size=1, num_workers=10, sampler=extracting_sampler, pin_memory=True)
     iterator = iter(extracting_dataloader)
 
-    resnet_model = ResNet()
+    #resnet_model = ResNet(num_classes=18000)
+    resnet_model = ResNetV2()
     resnet_model.load_state_dict(torch.load(args.model)["model"])
     resnet_model.to(device)
 

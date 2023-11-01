@@ -1,5 +1,6 @@
 import torchaudio
 import torch
+import torch.nn as nn
 import numpy as np
 import random
 import math
@@ -20,6 +21,34 @@ class Augmentation:
 class Pipeline:
     def __init__(self, transforms: List[Augmentation]):
         self.transforms = transforms
+
+
+
+class OneOf(Pipeline):
+    def __call__(self, *args):
+        transform = random.choice(self.transforms)
+        if len(args) == 1:
+            tensor = args[0]
+            return transform(tensor)
+        else:
+            tensor = args[0]
+            sample_rate = args[1]
+            return transform(tensor, sample_rate)
+
+
+class Compose(Pipeline):
+    def __call__(self, *args):
+        if len(args) == 1:
+            tensor = args[0]
+            for transform in self.transforms:
+                tensor = transform(tensor)
+            return tensor
+        else:
+            tensor = args[0]
+            sample_rate = args[1]
+            for transform in self.transforms:
+                tensor, sample_rate = transform(tensor, sample_rate)
+            return tensor, sample_rate
 
 
 class Sometimes(Pipeline):
@@ -55,6 +84,19 @@ class SpeedPerturb(Augmentation):
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
         wav, _ = torchaudio.sox_effects.apply_effects_tensor(tensor.unsqueeze(0), sample_rate, [['speed', str(self.factor)], ["rate", str(sample_rate)]])
         return wav[0], sample_rate
+
+class SpeedPerturbV2(Augmentation):
+    def __init__(self, factor: float):
+        self.factor = factor
+
+    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+        old_length = tensor.shape[0]
+        new_length = int(old_length / self.factor)
+        old_indices = torch.arange(old_length)
+        new_indices = torch.linspace(0, old_length, new_length)
+        a = nn.functional.interpolate(tensor.flatten()[None,None,:], size=new_length, mode='linear', align_corners=True).flatten()
+        return a, sample_rate
+
 
 class Normal(Augmentation):
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
