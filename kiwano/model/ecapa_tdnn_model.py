@@ -1,4 +1,5 @@
 import os
+import pdb
 import sys
 import time
 
@@ -35,6 +36,7 @@ class ECAPAModel(nn.Module):
         index, top1, loss = 0, 0, 0
         lr = self.optim.param_groups[0]['lr']
         for num, (data, labels) in enumerate(loader, start=1):
+            pdb.set_trace()
             self.zero_grad()
             data = data.permute(0, 2, 1)  # We change dim [128, 300, 81] to [128, 81, 300]
             labels = torch.LongTensor(labels)
@@ -48,8 +50,8 @@ class ECAPAModel(nn.Module):
             top1 += prec
             loss += nloss.detach().cpu().numpy()
             print(time.strftime("%m-%d %H:%M:%S") + \
-                             " [%2d] Lr: %5f, Training: %.2f%%, " % (epoch, lr, 100 * (num / loader.__len__())) + \
-                             " Loss: %.5f, ACC: %2.2f%%" % (loss / num, top1 / index * len(labels)))
+                  " [%2d] Lr: %5f, Training: %.2f%%, " % (epoch, lr, 100 * (num / loader.__len__())) + \
+                  " Loss: %.5f, ACC: %2.2f%%" % (loss / num, top1 / index * len(labels)))
         return loss / num, lr, top1 / index * len(labels)
 
     def eval_network(self, eval_list, eval_path):
