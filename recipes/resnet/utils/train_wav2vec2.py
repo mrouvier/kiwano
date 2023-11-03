@@ -6,7 +6,7 @@ from kiwano.dataset import SegmentSet
 from kiwano.model import ECAPAModel
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
-
+import pdb
 
 class Wav2Vec2Dataset(Dataset):
     def __init__(self, data):
@@ -39,6 +39,7 @@ if __name__ == '__main__':
     i = 0
     segments = training_data.segments
     nb_segments = len(segments)
+    pdb.set_trace()
     for feats, iden in training_data:
         feats = feats.squeeze(dim=0)
         output = model(feats)
