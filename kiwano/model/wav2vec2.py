@@ -10,7 +10,7 @@ def get_output_rep(hidden_states, learnable_weigths, n_layers, n_frames):
     sum_hiddens = torch.zeros(size=(1, n_frames))
     for layer in range(n_layers):
         sum_hiddens += learnable_weigths[layer] @ hidden_states[layer]
-    return sum_hiddens
+    return sum_hiddens.squeeze(dim=0)
 
 
 class CustomWav2Vec2Model(nn.Module):
@@ -39,16 +39,4 @@ class CustomWav2Vec2Model(nn.Module):
         return output
 
     def extract(self, samples: Union[np.ndarray, torch.Tensor], sampling_rate: int) -> Union[np.ndarray, torch.Tensor]:
-
-        is_numpy = False
-        if not isinstance(samples, torch.Tensor):
-            samples = torch.from_numpy(samples)
-            is_numpy = True
-
-        if samples.ndim == 1:
-            samples = samples.unsqueeze(0)
-
-        if is_numpy:
-            return samples.cpu().numpy()
-        else:
-            return samples
+        return self.forward(samples)

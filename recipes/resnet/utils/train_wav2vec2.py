@@ -9,17 +9,6 @@ from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 import pdb
 
-class Wav2Vec2Dataset(Dataset):
-    def __init__(self, data):
-        self.data = data
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        return self.data[idx]
-
-
 if __name__ == '__main__':
     musan = SegmentSet()
     musan.from_dict(Path("data/musan/"))
@@ -29,31 +18,14 @@ if __name__ == '__main__':
     musan_noise = musan.get_speaker("noise")
 
     model_name = "facebook/wav2vec2-base-960h"
-    model = CustomWav2Vec2Model(model_name)
     training_data = SpeakerTrainingSegmentSet(
-        feature_extractor=model
+        feature_extractor=CustomWav2Vec2Model(model_name)
     )
 
     training_data.from_dict(Path("data/voxceleb1/"))
 
-    wav2vec2_outputs = []
-    i = 0
-    segments = training_data.segments
-    nb_segments = len(segments)
     pdb.set_trace()
-    # The wav2vec2 output
-    for i, key in enumerate(training_data):
-        feats, iden = training_data[key]
-        feats = feats.squeeze(dim=0)
-        output = model(feats)
-        output = output.squeeze(dim=0)
-        wav2vec2_outputs.append((output, iden))
-        if i != 0 and i % 128*5 == 0:
-            break
-
-    pdb.set_trace()
-    wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
-    train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
+    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
 
     num_iterations = 1
 
