@@ -138,12 +138,13 @@ class FbankAug(nn.Module):
 
 class ECAPA_TDNN(nn.Module):
 
-    def __init__(self, in_channels=81, out_channels=1024):
+    def __init__(self, in_channels=80, out_channels=1024):
         super(ECAPA_TDNN, self).__init__()
         self.torchfbank = torch.nn.Sequential(
             PreEmphasis(),
             torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_fft=512, win_length=400, hop_length=160, \
-                                                 f_min=20, f_max=7600, window_fn=torch.hamming_window, n_mels=80),
+                                                 f_min=20, f_max=7600, window_fn=torch.hamming_window,
+                                                 n_mels=in_channels),
         )
 
         self.specaug = FbankAug()  # Spec augmentation
