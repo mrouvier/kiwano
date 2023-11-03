@@ -53,7 +53,7 @@ if __name__ == '__main__':
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
     train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
 
-    num_iterations = 10
+    num_iterations = 1
 
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,

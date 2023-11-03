@@ -110,11 +110,15 @@ class ECAPA_TDNN(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
+
         x = self.relu(x)
+
         x = self.bn1(x)
 
         x1 = self.layer1(x)
+
         x2 = self.layer2(x + x1)
+
         x3 = self.layer3(x + x1 + x2)
 
         x = self.layer4(torch.cat((x1, x2, x3), dim=1))
@@ -122,17 +126,42 @@ class ECAPA_TDNN(nn.Module):
 
         t = x.size()[-1]
 
+        x_mean = torch.mean(x, dim=2, keepdim=True)
+
+        x_mean_repeat = x_mean.repeat(1, 1, t)
+        x_var = torch.var(x, dim=2, keepdim=True)
+
+        x_var_clamp = x_var.clamp(min=1e-4)
+
+
+        x_var_clamp_sqrt = torch.sqrt(x_var_clamp)
+
         global_x = torch.cat((x, torch.mean(x, dim=2, keepdim=True).repeat(1, 1, t),
                               torch.sqrt(torch.var(x, dim=2, keepdim=True).clamp(min=1e-4)).repeat(1, 1, t)), dim=1)
 
+        print(f'Step 9: \n{global_x}\n\t==>shape: {global_x.shape}\n\tNan values: {torch.isnan(global_x).any()}\n\tIs there inf values: {torch.isinf(global_x).any()}')
+
+
         w = self.attention(global_x)
+        print(f'Step 10: \n{w}\n\t==>shape: {w.shape}\n\tNan values: {torch.isnan(w).any()}\n\tIs there inf values: {torch.isinf(w).any()}')
 
         mu = torch.sum(x * w, dim=2)
+
+
         sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-4))
 
         x = torch.cat((mu, sg), 1)
+        print(f'Step 11: \n{x}')
+
+
         x = self.bn5(x)
+        print(f'Step 12: \n{x}')
+
+
         x = self.fc6(x)
+        print(f'Step 13: \n{x}')
+
         x = self.bn6(x)
+        print(f'Step 14: \n{x}')
 
         return x

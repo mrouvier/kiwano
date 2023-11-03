@@ -2,6 +2,7 @@
 #SBATCH --job-name=kiwano
 #SBATCH --partition=gpu
 #SBATCH --time=0-00:00
+#SBATCH --cpus-per-task=5
 #SBATCH --output=kiwano_output.log
 #SBATCH --error=kiwano_error.log
 #SBATCH --mail-type=BEGIN,END
