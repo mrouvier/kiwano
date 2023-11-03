@@ -1,3 +1,4 @@
+import pdb
 from pathlib import Path
 
 from torch.utils.data import Dataset, DataLoader
@@ -40,7 +41,11 @@ if __name__ == '__main__':
     segments = training_data.segments
     nb_segments = len(segments)
     pdb.set_trace()
-    for feats, iden in training_data:
+    iterator = iter(training_data)
+    pdb.set_trace()
+    # The wav2vec2 output
+    for i in range(0, nb_segments):
+        feats, iden = next(iterator)
         feats = feats.squeeze(dim=0)
         output = model(feats)
         wav2vec2_outputs.append((output, iden))
@@ -48,8 +53,8 @@ if __name__ == '__main__':
             print(f"{i}/{nb_segments}")
             if i != 0 and i % 128 * 5 == 0:
                 break
-        i += 1
 
+    pdb.set_trace()
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
     train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
 
