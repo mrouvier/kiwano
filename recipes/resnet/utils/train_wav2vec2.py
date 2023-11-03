@@ -31,6 +31,8 @@ if __name__ == '__main__':
     musan_speech = musan.get_speaker("speech")
     musan_noise = musan.get_speaker("noise")
 
+    reverb = SegmentSet()
+    reverb.from_dict(Path("data/rirs_noises/"))
     model_name = "facebook/wav2vec2-base-960h"
     model_wav2vec2 = CustomWav2Vec2Model(model_name)
     training_data = SpeakerTrainingSegmentSet(
