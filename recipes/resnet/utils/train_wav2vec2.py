@@ -48,7 +48,7 @@ if __name__ == '__main__':
         feats = feats.squeeze(dim=0)
         output = model_wav2vec2(feats)
         wav2vec2_outputs.append((output, iden))
-        if i != 0 and i % 128 * 5 == 0:
+        if i != 0 and i % 128 * 1 == 0:
             break
 
     pdb.set_trace()
