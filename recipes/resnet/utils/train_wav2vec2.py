@@ -41,19 +41,15 @@ if __name__ == '__main__':
     i = 0
     segments = training_data.segments
     nb_segments = len(segments)
-
-    iterator = iter(training_data)
     pdb.set_trace()
     # The wav2vec2 output
-    for i in range(0, nb_segments):
-        feats, iden = next(iterator)
+    for i, key in enumerate(training_data):
+        feats, iden = training_data[key]
         feats = feats.squeeze(dim=0)
         output = model(feats)
         wav2vec2_outputs.append((output, iden))
-        if i % 128 == 0:
-            print(f"{i}/{nb_segments}")
-            if i != 0 and i % 128 * 5 == 0:
-                break
+        if i != 0 and i % 128 * 5 == 0:
+            break
 
     pdb.set_trace()
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
