@@ -8,6 +8,8 @@ from kiwano.model import ECAPAModel
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 import pdb
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, \
+    SpecAugment, Reverb
 
 
 class Wav2Vec2Dataset(Dataset):
@@ -32,6 +34,15 @@ if __name__ == '__main__':
     model_name = "facebook/wav2vec2-base-960h"
     model_wav2vec2 = CustomWav2Vec2Model(model_name)
     training_data = SpeakerTrainingSegmentSet(
+        audio_transforms=Sometimes([
+            Noise(musan_music, snr_range=[5, 15]),
+            Noise(musan_speech, snr_range=[13, 20]),
+            Noise(musan_noise, snr_range=[0, 15]),
+            Codec(),
+            Filtering(),
+            Normal(),
+            Reverb(reverb)
+        ]),
         feature_extractor=model_wav2vec2
     )
 
