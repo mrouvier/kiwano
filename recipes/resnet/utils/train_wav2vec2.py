@@ -7,6 +7,7 @@ from kiwano.dataset import SegmentSet
 from kiwano.model import ECAPAModel
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
+import pdb
 
 
 class Wav2Vec2Dataset(Dataset):
