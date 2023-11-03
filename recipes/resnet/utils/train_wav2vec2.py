@@ -45,7 +45,7 @@ if __name__ == '__main__':
     for i, key in enumerate(training_data):
         feats, iden = training_data[key]
         feats = feats.squeeze(dim=0)
-        output = model(feats)
+        output = model_wav2vec2(feats)
         wav2vec2_outputs.append((output, iden))
         if i != 0 and i % 128 * 5 == 0:
             break
