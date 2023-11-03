@@ -29,8 +29,7 @@ class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
         self.feature_transforms = feature_transforms
         self.feature_extractor = feature_extractor
 
-    def __getitem__(self, segment_id_or_index: Union[int, str]) -> Segment:
-        segment = None
+    def __getitem__(self, segment_id_or_index: Union[int, str]):
         if isinstance(segment_id_or_index, str):
             segment = self.segments[segment_id_or_index]
         else:
