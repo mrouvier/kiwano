@@ -38,10 +38,8 @@ class ECAPAModel(nn.Module):
         for num, (data, labels) in enumerate(loader, start=1):
             pdb.set_trace()
             self.zero_grad()
-            data = data.permute(0, 2, 1)  # We change dim [128, 300, 81] to [128, 81, 300]
+            data = data.permute(1, 0)  # We change dim [768, 128] to [128, 768]
             labels = torch.LongTensor(labels)
-            print(f"Data: {data}")
-            print(f"Labels: {labels}")
             speaker_embedding = self.speaker_encoder.forward(data)
             nloss, prec = self.speaker_loss.forward(speaker_embedding, labels)
             nloss.backward()
