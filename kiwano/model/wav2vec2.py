@@ -39,4 +39,15 @@ class CustomWav2Vec2Model(nn.Module):
         return output
 
     def extract(self, samples: Union[np.ndarray, torch.Tensor], sampling_rate: int) -> Union[np.ndarray, torch.Tensor]:
-        return self.forward(samples)
+        is_numpy = False
+        if not isinstance(samples, torch.Tensor):
+            samples = torch.from_numpy(samples)
+            is_numpy = True
+
+        if samples.ndim == 1:
+            samples = samples.unsqueeze(0)
+
+        if is_numpy:
+            return samples.cpu().numpy()
+        else:
+            return samples
