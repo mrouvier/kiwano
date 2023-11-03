@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, os
+import sys, os, time
 from pathlib import Path
 from typing import Optional, Union, List
 
@@ -11,9 +11,9 @@ from torch import nn
 
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
-from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, CropNotRandom, Crop
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
 from kiwano.dataset import Segment, SegmentSet
-from kiwano.model import ResNet
+from kiwano.model import ResNet, ResNetV2
 from kiwano.embedding import EmbeddingSet, write_pkl
 
 from torch.utils.data.distributed import DistributedSampler
@@ -93,6 +93,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print("#"+" ".join( sys.argv[0:]  ))
+    print("# Started at "+time.ctime())
+    print("#")
 
     device = torch.device("cuda")
 
@@ -101,8 +103,7 @@ if __name__ == '__main__':
                                     feature_extractor=Fbank(),
                                     feature_transforms=Linear( [
                                         CMVN(),
-                                        #Crop(300),
-                                        CropNotRandom(1400)
+                                        Crop(1400, random=False),
                                     ] ),
                                 )
 
@@ -113,8 +114,9 @@ if __name__ == '__main__':
     extracting_dataloader = DataLoader(extracting_data, batch_size=1, num_workers=10, sampler=extracting_sampler, pin_memory=True)
     iterator = iter(extracting_dataloader)
 
-    resnet_model = ResNet()
-    resnet_model.load_state_dict(torch.load(args.model))
+    #resnet_model = ResNet(num_classes=18000)
+    resnet_model = ResNetV2()
+    resnet_model.load_state_dict(torch.load(args.model)["model"])
     resnet_model.to(device)
 
     resnet_model.eval()
@@ -123,7 +125,7 @@ if __name__ == '__main__':
     emb = EmbeddingSet()
 
     for feat, key in extracting_dataloader:
-        feat = feat.unsqueeze(1)#.unsqueeze(1)
+        feat = feat.unsqueeze(1)
 
         feat = feat.float().to(device)
 
@@ -131,10 +133,10 @@ if __name__ == '__main__':
 
         emb[key[0]] = torch.Tensor( pred.cpu().detach()[0] )
 
-        print(key[0]+" extrated -- ")
+        print("Processed x-vector for key : "+key[0])
 
     write_pkl(args.output_dir, emb)
 
-
+    print("# Ended at "+time.ctime())
 
 

@@ -1,15 +1,11 @@
-from typing import Union, TypeVar
+from typing import Union, TypeVar, List
 
 from kiwano.utils import Pathlike
-#from kiwano.augmentation import SpeedPerturb
+#from kiwano.augmentation import Augmentation
 import random
 import torchaudio
-
-T = TypeVar("T")
-
-
-def fastcopy(dataclass_obj: T, **kwargs) -> T:
-    return type(dataclass_obj)(**{**dataclass_obj.__dict__, **kwargs})
+import copy
+import numpy as np
 
 
 class Segment():
@@ -21,7 +17,8 @@ class Segment():
     sample_rate: int
     audio_data: list
 
-    #augmentation: Augmentation
+    augmentation: None
+
 
     def __init__(self, segmentid: str, spkid: str, duration: float, file_path: str):
         self.segmentid = segmentid
@@ -33,21 +30,24 @@ class Segment():
         self.audio_data = None
 
         self.augmentation = None
-    '''
+
     def perturb_speed(self, factor: float):
-        self.augmentation = SpeedPerturb(factor)
-        self.duration *= factor
-        spkid = "speed"+str(factor)+"_"+spkid
-    '''
+
+        #self.augmentation = SpeedPerturbV2(factor)
+        self.augmentation = factor
+        self.duration /= factor
+        self.spkid = "speed"+str(factor)+"_"+self.spkid
+        self.segmentid = "spped"+str(factor)+"_"+self.segmentid
 
     def load_audio(self, keep_memory: bool = False):
+        from kiwano.augmentation import SpeedPerturb
+
         audio_data, self.sample_rate = torchaudio.load(self.file_path)
         audio_data = audio_data[0]
 
-        '''
-        if augmentation != None:
-            audio_data, self.sample_rate = self.augmentation(audio_data, self.sample_rate)
-        '''
+        if self.augmentation != None:
+            s = SpeedPerturb(self.augmentation)
+            audio_data, self.sample_rate = s(audio_data, self.sample_rate)
 
         if keep_memory == True:
             self.audio_data = audio_data
@@ -97,14 +97,19 @@ class SegmentSet():
         self.segments[segment.segmentid] = segment
 
 
-    def truncate(self, duration: float):
-        temp = SegmentSet()
-        for key in self.segments:
-            if self.segments[key].duration > duration:
-                temp.append( self.segments[key]  )
-        temp.get_labels()
-        return temp
+    def truncate(self, min_duration: float, max_duration: float):
+        for key in list(self.segments):
+            d = False
+            if self.segments[key].duration > max_duration:
+                d = True
 
+            if self.segments[key].duration < min_duration:
+                d = True
+            
+            if d == True:
+                del self.segments[key]
+
+        self.get_labels()
 
     def get_speaker(self, spkid: str):
         s = SegmentSet()
@@ -118,19 +123,38 @@ class SegmentSet():
         return s
 
     def perturb_speed(self, factor: float):
-        s = SegmentSet()
+        c = SegmentSet()
 
         for key in self.segments:
-            t = fastcopy( self.segments[key] ) 
-            t.perturb_speed()
-            s.append( t )
+            sset = copy.copy( self.segments[ key ] )
+            sset.perturb_speed(factor)
+            c.append( sset )
+        c.get_labels()
 
-        self.get_labels()
-
-        return s
+        return c
 
     def display(self):
         print(self.segments)
+
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def __iter__(self):
+        for key in self.segments:
+            yield key
+
+
+    def combine(self, l: List):
+        for x in l:
+            #counter = 0
+            for s in x:
+                #print(str(counter)+" "+str(len(x)))
+                #counter += 1
+                self.segments[ s ] = x[ s ]
+                #self.append( s )
+        self.get_labels()
+
 
     def describe(self):
     #This function calculate and display several information about the segments
@@ -138,7 +162,7 @@ class SegmentSet():
 
 
         listDuration = []
-        differentSpeakers = []
+        differentSpeakers = {}
         totalDuration = 0
 
         for key in self.segments:
@@ -146,10 +170,8 @@ class SegmentSet():
             totalDuration = totalDuration + duration
 
             listDuration.append(duration)
-            spkid = self.segments[key].spkid
+            differentSpeakers[ self.segments[key].spkid ] = True
 
-            if spkid not in differentSpeakers:
-                differentSpeakers.append(spkid)
 
         mean = np.mean(listDuration)
         max = np.max(listDuration)
@@ -158,6 +180,7 @@ class SegmentSet():
         quartiles = np.quantile(listDuration, [0.25, 0.5, 0.75])
 
         print("Speaker count: ", len(differentSpeakers))
+        print("Number of segments : ", len(self.segments))
         print("Total duration (hours): ", totalDuration/3600)
         print("***")
         print("Duration statistics (seconds):")

@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-
 def conv3x3(in_planes, out_planes, stride=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
 
@@ -67,9 +66,9 @@ class SEBasicBlock(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
-        
+
         out += residual
-        
+
         return out
 
 
@@ -201,6 +200,9 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
+    def extra_repr(self):
+        return 'embed_features={}, num_classes={}'.format(self.embed_features, self.num_classes)
+
     def get_m(self):
         return self.output.get_m()
 
@@ -273,6 +275,171 @@ class ResNet(nn.Module):
 
         x = self.fc_embed(x)
         x = self.norm_embed(x)
+
+        if iden == None:
+            return x
+
+        x = self.output(x, iden)
+
+        return x
+
+
+
+class ASTP(nn.Module):
+    """
+    Attentive statistics pooling: Channel- and context-dependent
+    statistics pooling, first used in ECAPA_TDNN.
+    """
+
+    def __init__(self, in_dim, bottleneck_dim):
+        super(ASTP, self).__init__()
+
+        self.in_dim = in_dim
+        self.bottleneck_dim = bottleneck_dim
+
+        self.attention = nn.Sequential(
+            nn.Conv1d(self.in_dim, self.bottleneck_dim, kernel_size=1),
+            nn.Tanh(),
+            nn.Conv1d(self.bottleneck_dim, self.in_dim, kernel_size=1),
+            nn.Softmax(dim=2),
+        )
+
+    def forward(self, x):
+        w = self.attention(x)
+
+        mu = torch.sum(x * w, dim=2)
+        sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-5))
+
+        return torch.cat([mu, sg], dim=1)
+
+
+
+class PreResNet(nn.Module):
+    def __init__(self, channels=[128, 128, 256, 256], num_blocks=[3,8,18,3]):
+        super(PreResNet, self).__init__()
+
+        self.channels = channels
+        self.num_blocks = num_blocks
+
+        self.pre_conv1 = nn.Conv2d(1, channels[0], 3, 1, 1, bias=False)
+        self.pre_bn1 = nn.BatchNorm2d(channels[0])
+        self.pre_activation1 = nn.SiLU()
+
+        self.layer1 = self._make_layer_se(channels[0], channels[0], num_blocks[0], stride=1)
+        self.layer2 = self._make_layer_se(channels[0], channels[1], num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(channels[1], channels[2], num_blocks[2], stride=2)
+        self.layer4 = self._make_layer(channels[2], channels[3], num_blocks[3], stride=2)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def _make_layer_se(self, inchannel, outchannel, block_num, stride=1):
+        downsample = None
+        if stride != 1 or inchannel != outchannel:
+            downsample = nn.Sequential(
+                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(outchannel)
+            )
+
+        layers = []
+        layers.append(SEBasicBlock(inchannel, outchannel, 1, stride, downsample))
+
+        for i in range(1, block_num):
+            layers.append(SEBasicBlock(outchannel, outchannel, 1))
+        return nn.Sequential(*layers)
+
+
+    def _make_layer(self, inchannel, outchannel, block_num, stride=1):
+        downsample = None
+        if stride != 1 or inchannel != outchannel:
+            downsample = nn.Sequential(
+                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(outchannel)
+            )
+
+        layers = []
+        layers.append(BasicBlock(inchannel, outchannel, stride, downsample))
+
+        for i in range(1, block_num):
+            layers.append(BasicBlock(outchannel, outchannel))
+        return nn.Sequential(*layers)
+
+    def forward(self, x, iden = None):
+        x = self.pre_conv1(x)
+        x = self.pre_bn1(x)
+        x = self.pre_activation1(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = x.transpose(2, 3)
+        x = x.flatten(1, 2)
+
+        return x
+
+
+class SpeakerEmbedding(nn.Module):
+    def __init__(self, in_dim, embed_dim):
+        super(SpeakerEmbedding, self).__init__()
+
+        self.in_dim = in_dim
+        self.embed_dim = embed_dim
+
+        self.norm_stats = torch.nn.BatchNorm1d(self.in_dim)
+        self.fc_embed = nn.Linear(self.in_dim, self.embed_dim)
+        self.norm_embed = torch.nn.BatchNorm1d(self.embed_dim)
+
+    def forward(self, x):
+        x = self.norm_stats(x)
+        x = self.fc_embed(x)
+        x = self.norm_embed(x)
+        return x
+
+
+class ResNetV2(nn.Module):
+    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[128, 128, 256, 256], num_blocks=[3,8,18,3]):
+        super(ResNetV2, self).__init__()
+
+        self.embed_features = embed_features
+        self.num_classes = num_classes
+        self.channels = channels
+        self.num_blocks = num_blocks
+
+        self.preresnet = PreResNet(self.channels, self.num_blocks)
+
+        self.temporal_pooling = ASTP(channels[3] * 11, channels[3]//2)
+
+        self.embedding = SpeakerEmbedding(2*11*channels[3], self.embed_features)
+
+        self.output = AMSMLoss(self.embed_features, self.num_classes)
+
+    def extra_repr(self):
+        return 'embed_features={}, num_classes={}'.format(self.embed_features, self.num_classes)
+
+    def get_m(self):
+        return self.output.get_m()
+
+    def get_s(self):
+        return self.output.get_s()
+
+    def set_m(self, m):
+        self.output.set_m(m)
+
+    def set_s(self, s):
+        self.output.set_s(s)
+
+    def forward(self, x, iden = None):
+        x = self.preresnet(x)
+
+        x = self.temporal_pooling(x)
+
+        x = self.embedding(x)
 
         if iden == None:
             return x

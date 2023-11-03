@@ -10,6 +10,7 @@ from concurrent.futures import as_completed
 from concurrent.futures.process import ProcessPoolExecutor
 from tqdm import tqdm
 from subprocess import PIPE, run
+import os
 
 
 def get_duration(file_path: str):
@@ -17,18 +18,26 @@ def get_duration(file_path: str):
    return info.num_frames/info.sample_rate
 
 
-def process_file(segment: Pathlike, in_data: Pathlike):
+def process_file(segment: Pathlike, in_data: Pathlike, sampling_frequency: int ):
     name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
     spkid = str(segment).split("/")[-3]
     emission = str(segment).split("/")[-2]
     n = str(segment).split("/")[-1].split(".")[0]
 
-    out = Path(in_data / "data" / spkid / emission)
+
+
+    nameDir = "data"
+    if sampling_frequency != 16000 :
+        nameDir = nameDir+"_"+str(sampling_frequency)
+
+    out = Path(in_data / nameDir / spkid / emission)
     out.mkdir(parents=True, exist_ok=True)
 
-    output = str(Path(in_data / "data" / spkid / emission / n ) )+".wav"
-
-    _process_file(segment, Path(output))
+    output = str(Path(in_data / nameDir / spkid / emission / n)) + ".wav"
+    print(Path(output))
+    if not Path(output).exists():
+        print("here")
+        _process_file(segment, Path(output), sampling_frequency)
     duration = str(round(float(get_duration(output)),2))
 
     return name, spkid, duration, output
@@ -38,17 +47,21 @@ def process_file(segment: Pathlike, in_data: Pathlike):
 
 
 
-def prepare_voxceleb2(in_data: Pathlike = ".", out_data: Pathlike = ".", num_jobs: int = 20):
+def prepare_voxceleb2(sampling_frequency: int, canDeleteZIP: bool, in_data: Pathlike = ".", out_data: Pathlike = ".", num_jobs: int = 20):
     out_data = Path(out_data)
     out_data.mkdir(parents=True, exist_ok=True)
 
-    liste = open(out_data / "liste", "w")
+    nameListe = "liste"
+    if sampling_frequency != 16000:
+        nameListe = nameListe + "_" + str(sampling_frequency)
+
+    liste = open(out_data / nameListe, "w")
 
     with ProcessPoolExecutor(num_jobs) as ex:
         futures = []
 
         for segment in Path(in_data / "dev" / "aac").rglob("*.m4a"):
-            futures.append( ex.submit(process_file, segment, out_data) )
+            futures.append( ex.submit(process_file, segment, out_data, sampling_frequency) )
 
         for future in tqdm( futures, total=len(futures), desc=f"Processing VoxCeleb2..."):
             name, spkid, duration, segment = future.result()
@@ -57,23 +70,37 @@ def prepare_voxceleb2(in_data: Pathlike = ".", out_data: Pathlike = ".", num_job
 
     liste.close()
 
+    if canDeleteZIP :
+        for file in sorted(in_data.glob("vox2_dev_aac_part*")):
+
+            os.remove(file)
+
+        os.remove(in_data / "vox2_aac.zip")
 
 
 
 
 
-def _process_file(file_path: Pathlike, output: Pathlike):
+
+def _process_file(file_path: Pathlike, output: Pathlike, sampling_frequency: int):
     #ffmpeg -v 8 -i {segment} -f wav -acodec pcm_s16le - |
-    cmd = "ffmpeg -y -threads 1 -i "+str(file_path)+" -acodec pcm_s16le -ac 1 -ar 16000 -ab 48 -threads 1 "+str(output)
+    cmd = "ffmpeg -y -threads 1 -i "+str(file_path)+" -acodec pcm_s16le -ac 1 -ar "+str(sampling_frequency)+" -ab 48 -threads 1 "+str(output)
     proc = run(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+    print(cmd)
 
     #audio = np.frombuffer(raw_audio, dtype=np.float32)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('in_data', metavar='in_data', type=str, help='the path to vox1_meta.csv')
-    parser.add_argument('out_data', metavar="out_data", type=str, help='the path to the target directory where the liste will be stored')
+    parser.add_argument('in_data', metavar='in_data', type=str,
+                        help='the path to the directory where the directory "dev" is stored')
+    parser.add_argument('out_data', metavar="out_data", type=str,
+                        help='the path to the target directory where the liste will be stored')
+    parser.add_argument('--downsampling', type=int, default=16000,
+                        help='the value of sampling frequency (default: 16000)')
+    parser.add_argument('--deleteZIP', action="store_true", default=False,
+                        help='to delete the ZIP files already extracted (default: False)')
 
     args = parser.parse_args()
 
-    prepare_voxceleb2(Path(args.in_data), Path(args.out_data), 20)
+    prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
