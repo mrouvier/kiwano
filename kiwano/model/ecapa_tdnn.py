@@ -11,6 +11,7 @@ import math
 
 import torch
 from torch import nn
+import torchaudio
 
 
 class SEModule(nn.Module):
@@ -81,6 +82,7 @@ class Bottle2neck(nn.Module):
         out += residual
         return out
 
+
 class PreEmphasis(torch.nn.Module):
 
     def __init__(self, coef: float = 0.97):
@@ -94,6 +96,7 @@ class PreEmphasis(torch.nn.Module):
         input = input.unsqueeze(1)
         input = F.pad(input, (1, 0), 'reflect')
         return F.conv1d(input, self.flipped_filter).squeeze(1)
+
 
 class FbankAug(nn.Module):
 
