@@ -58,14 +58,12 @@ if __name__ == '__main__':
         feats = feats.squeeze(dim=0)
         output = model_wav2vec2(feats)
         wav2vec2_outputs.append((output, iden))
-        if i != 0 and i % 128 * 5 == 0:
-            break
 
     pdb.set_trace()
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
     train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
 
-    num_iterations = 1
+    num_iterations = 5
 
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,
