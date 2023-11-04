@@ -54,7 +54,7 @@ if __name__ == '__main__':
     pdb.set_trace()
     # The wav2vec2 output
     for i, key in enumerate(training_data):
-        with torch.no_nograd():
+        with torch.no_grad():
             feats, iden = training_data[key]
             feats = feats.squeeze(dim=0)
             output = model_wav2vec2(feats)
