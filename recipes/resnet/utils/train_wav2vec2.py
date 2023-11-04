@@ -10,6 +10,7 @@ from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 import pdb
 from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, \
     SpecAugment, Reverb
+import torch
 
 
 class Wav2Vec2Dataset(Dataset):
@@ -48,16 +49,18 @@ if __name__ == '__main__':
     training_data.from_dict(Path("data/voxceleb1/"))
 
     wav2vec2_outputs = []
-    i = 0
     segments = training_data.segments
     nb_segments = len(segments)
     pdb.set_trace()
     # The wav2vec2 output
     for i, key in enumerate(training_data):
-        feats, iden = training_data[key]
-        feats = feats.squeeze(dim=0)
-        output = model_wav2vec2(feats)
-        wav2vec2_outputs.append((output, iden))
+        with torch.no_nograd():
+            feats, iden = training_data[key]
+            feats = feats.squeeze(dim=0)
+            output = model_wav2vec2(feats)
+            wav2vec2_outputs.append((output, iden))
+        if i != 0 and i % 128 * 5 == 0:
+            break
 
     pdb.set_trace()
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
