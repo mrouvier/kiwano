@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys, os, time
+import copy
 from pathlib import Path
 from typing import Optional, Union, List
 
@@ -10,15 +11,13 @@ import time
 from torch import nn
 
 from kiwano.utils import Pathlike
-from kiwano.features import Fbank, FbankV2
-from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
+from kiwano.features import Fbank
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, OneOf, Compose, CMVN, Crop
 from kiwano.dataset import Segment, SegmentSet
-from kiwano.model import ResNet, ResNetV2, ResNetV3, ResNetV4, ResNetV5
+from kiwano.model import ResNet, ResNetV2, ResNetV3, ResNetV4
 from kiwano.embedding import EmbeddingSet, write_pkl
 
 from torch.utils.data.distributed import DistributedSampler
-
-import soundfile as sf
 
 from torch.utils.data import Dataset, DataLoader, Sampler
 
@@ -61,6 +60,13 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--chunk",
+        default=10,
+        type=int,
+    )
+
+
+    parser.add_argument(
         "--rank",
         default=0,
         type=int,
@@ -101,10 +107,6 @@ if __name__ == '__main__':
 
     extracting_data = SpeakerExtractingSegmentSet(
                                     feature_extractor=Fbank(),
-                                    feature_transforms=Linear( [
-                                        CMVN(),
-                                        Crop(1400, random=False),
-                                    ] ),
                                 )
 
     extracting_data.from_dict(Path(args.data_dir))
@@ -115,8 +117,7 @@ if __name__ == '__main__':
     iterator = iter(extracting_dataloader)
 
     #resnet_model = ResNet(num_classes=18000)
-    resnet_model = ResNetV2(num_classes=18000)
-    #resnet_model = ResNetV5()
+    resnet_model = ResNetV2()
     #resnet_model = ResNetV3(k=3)
     #resnet_model = ResNetV4()
     resnet_model.load_state_dict(torch.load(args.model)["model"])
@@ -127,16 +128,23 @@ if __name__ == '__main__':
 
     emb = EmbeddingSet()
 
+    chunk = Compose( [ Crop(400),  CMVN() ] )
+
     for feat, key in extracting_dataloader:
-        feat = feat.unsqueeze(1)
 
-        feat = feat.float().to(device)
+        for i in range(0, 10):
+            new_feat = copy.copy( chunk(feat[0])  )
+            new_feat = new_feat.unsqueeze(0).unsqueeze(1)
 
-        pred = resnet_model(feat)
+            new_key = copy.copy([ key[0]+"#"+str(i) ])
 
-        emb[key[0]] = torch.Tensor( pred.cpu().detach()[0] )
+            new_feat = new_feat.float().to(device)
 
-        print("Processed x-vector for key : "+key[0])
+            pred = resnet_model(new_feat)
+
+            emb[new_key[0]] = torch.Tensor( pred.cpu().detach()[0] )
+
+            print("Processed x-vector for key : "+new_key[0])
 
     write_pkl(args.output_dir, emb)
 

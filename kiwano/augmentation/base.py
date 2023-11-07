@@ -233,6 +233,41 @@ class Filtering(Augmentation):
         return speech[0], sample_rate
 
 
+class VAD(Augmentation):
+    def __init__(self, vad_energy_threshold=5.5, vad_energy_mean_scale=0.5, vad_frames_context=2, vad_proportion_threshold=0.12):
+        self.vad_energy_threshold = vad_energy_threshold
+        self.vad_energy_mean_scale = vad_energy_mean_scale
+        self.vad_frames_context = vad_frames_context
+        self.vad_proportion_threshold = vad_proportion_threshold
+
+
+    def __call__(self, tensor: torch.Tensor):
+        T = tensor.size(0)
+        output_voiced = torch.zeros(T)
+
+        log_energy = tensor[:, 0]
+
+        energy_threshold = self.vad_energy_threshold
+        if self.vad_energy_mean_scale != 0.0:
+            energy_threshold += self.vad_energy_mean_scale * log_energy.sum() / T
+
+        for t in range(T):
+            num_count = 0
+            den_count = 0
+
+            for t2 in range(max(0, t - self.vad_frames_context), min(T, t + self.vad_frames_context + 1)):
+                den_count += 1
+                if log_energy[t2].item() > energy_threshold:
+                    num_count += 1
+
+            if num_count >= den_count * self.vad_proportion_threshold:
+                output_voiced[t] = 0.0
+            else:
+                output_voiced[t] = 1.0
+
+        return tensor[output_voiced.bool()]
+
+
 class Crop(Augmentation):
     def __init__(self, duration: int, random = True):
         self.duration = duration
@@ -240,6 +275,9 @@ class Crop(Augmentation):
 
     def __call__(self, tensor: torch.Tensor):
         if self.random == True:
+            if tensor.shape[0] < self.duration:
+                return tensor
+
             max_start_time = tensor.shape[0] - self.duration
             start_time = random.randint(0, max_start_time)
             result = tensor[start_time:start_time + self.duration, :]

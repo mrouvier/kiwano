@@ -532,6 +532,44 @@ class FeatureExtractor(metaclass=ABCMeta):
         pass
 
 
+
+class FbankV2(FeatureExtractor):
+    name = "kaldi-fbank"
+    config_type = FbankConfig
+
+    def __init__(self, config: Optional[FbankConfig] = None):
+        super().__init__(config=config)
+        self.config.num_filters = 95
+        self.extractor = Wav2LogFilterBank(**self.config.to_dict()).eval()
+
+    def frame_shift(self) -> float:
+        return self.config.frame_shift
+
+    def feature_dim(self, sampling_rate: int) -> int:
+        return self.config.num_filters
+
+    def extract(self, samples: Union[np.ndarray, torch.Tensor], sampling_rate: int) -> Union[np.ndarray, torch.Tensor]:
+        assert sampling_rate == self.config.sampling_rate, (
+            f"Fbank was instantiated for sampling_rate "
+            f"{self.config.sampling_rate}, but "
+            f"sampling_rate={sampling_rate} was passed to extract()."
+        )
+
+        is_numpy = False
+        if not isinstance(samples, torch.Tensor):
+            samples = torch.from_numpy(samples)
+            is_numpy = True
+
+        if samples.ndim == 1:
+            samples = samples.unsqueeze(0)
+
+        feats = self.extractor(samples)[0]
+
+        if is_numpy:
+            return feats.cpu().numpy()
+        else:
+            return feats
+
 class Fbank(FeatureExtractor):
     name = "kaldi-fbank"
     config_type = FbankConfig
