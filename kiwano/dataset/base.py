@@ -1,3 +1,4 @@
+import pdb
 from typing import Union, TypeVar, List
 
 from kiwano.utils import Pathlike
@@ -79,6 +80,7 @@ class SegmentSet():
         for key in self.segments:
             spkid_dict[self.segments[key].spkid] = 0
 
+        pdb.set_trace()
         for index, token in enumerate(spkid_dict.keys()):
             self.labels[token] = index
 
