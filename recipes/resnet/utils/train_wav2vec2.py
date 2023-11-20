@@ -7,6 +7,10 @@ from kiwano.dataset import SegmentSet
 from kiwano.model import ECAPAModel
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
+import pdb
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, \
+    SpecAugment, Reverb
+import torch
 
 
 class Wav2Vec2Dataset(Dataset):
@@ -29,35 +33,40 @@ if __name__ == '__main__':
     musan_noise = musan.get_speaker("noise")
 
     model_name = "facebook/wav2vec2-base-960h"
-    model = CustomWav2Vec2Model(model_name)
+    model_wav2vec2 = CustomWav2Vec2Model(model_name)
     training_data = SpeakerTrainingSegmentSet(
-        feature_extractor=model
+        audio_transforms=Sometimes([
+            Noise(musan_music, snr_range=[5, 15]),
+            Noise(musan_speech, snr_range=[13, 20]),
+            Noise(musan_noise, snr_range=[0, 15]),
+            Codec(),
+            Filtering(),
+            Normal()
+        ]),
+        feature_extractor=model_wav2vec2
     )
 
     training_data.from_dict(Path("data/voxceleb1/"))
 
     wav2vec2_outputs = []
-    i = 0
     segments = training_data.segments
     nb_segments = len(segments)
 
     pdb.set_trace()
     # The wav2vec2 output
-    for v in training_data:
-        feats, iden = v
-        feats = feats.squeeze(dim=0)
-        output = model(feats)
-        wav2vec2_outputs.append((output, iden))
-        if i % 128 == 0:
-            print(f"{i}/{nb_segments}")
-            if i != 0 and i % 128 * 5 == 0:
-                break
-
+    for i, key in enumerate(training_data):
+        with torch.no_grad():
+            feats, iden = training_data[key]
+            feats = feats.squeeze(dim=0)
+            output = model_wav2vec2(feats)
+            wav2vec2_outputs.append((output, iden))
+        if i != 0 and i % 128 * 5 == 0:
+            break
     pdb.set_trace()
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
     train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
 
-    num_iterations = 1
+    num_iterations = 5
 
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,
