@@ -25,6 +25,7 @@ class Wav2Vec2Dataset(Dataset):
 
 
 if __name__ == '__main__':
+    print("START Loading data")
     musan = SegmentSet()
     musan.from_dict(Path("data/musan/"))
 
@@ -46,20 +47,26 @@ if __name__ == '__main__':
         feature_extractor=model_wav2vec2
     )
     training_data.from_dict(Path("data/voxceleb1/"))
+    print("END Loading data")
 
     wav2vec2_outputs = []
     segments = training_data.segments
     nb_segments = len(segments)
 
     # The wav2vec2 output
+    print(f"START Wav2vec2  {nb_segments} segments")
+    n_display = 10
+    display_at = nb_segments // n_display
     for i, key in enumerate(training_data):
         with torch.no_grad():
             feats, iden = training_data[key]
             feats = feats.squeeze(dim=0)
             output = model_wav2vec2(feats)
             wav2vec2_outputs.append((output, iden))
+            if i == 0 or (i+1) % display_at == 0 or i == nb_segments - 1:
+                print(f"\t[{i+1}/{nb_segments}]")
 
-    print(f"Wav2vec2 done {nb_segments} segments")
+    print(f"END Wav2vec2")
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
     train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
 
@@ -75,6 +82,9 @@ if __name__ == '__main__':
         loss_scale=30,
         test_step=1
     )
-    print(f"Starting ECAPA-TDNN {nb_segments} iterations")
+    print(f"START ECAPA-TDNN {nb_segments} iterations")
     for epoch in range(1, num_iterations + 1):
+        print(f"\t [{epoch} / {num_iterations}]")
         loss, lr, acc = ecapa_tdnn_model.train_network(epoch=epoch, loader=train_dataloader)
+
+    print(f"END ECAPA-TDNN")
