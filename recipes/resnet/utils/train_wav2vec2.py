@@ -45,7 +45,7 @@ if __name__ == '__main__':
         ]),
         feature_extractor=model_wav2vec2
     )
-
+    pdb.set_trace()
     training_data.from_dict(Path("data/voxceleb1/"))
 
     wav2vec2_outputs = []
