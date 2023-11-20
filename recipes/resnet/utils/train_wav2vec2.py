@@ -59,7 +59,6 @@ if __name__ == '__main__':
             output = model_wav2vec2(feats)
             wav2vec2_outputs.append((output, iden))
 
-    pdb.set_trace()
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
     train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
 
