@@ -41,11 +41,10 @@ if __name__ == '__main__':
     segments = training_data.segments
     nb_segments = len(segments)
 
-    iterator = iter(training_data)
     pdb.set_trace()
     # The wav2vec2 output
-    for i in range(0, nb_segments):
-        feats, iden = next(iterator)
+    for v in training_data:
+        feats, iden = v
         feats = feats.squeeze(dim=0)
         output = model(feats)
         wav2vec2_outputs.append((output, iden))
