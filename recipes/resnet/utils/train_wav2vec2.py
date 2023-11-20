@@ -45,14 +45,12 @@ if __name__ == '__main__':
         ]),
         feature_extractor=model_wav2vec2
     )
-    pdb.set_trace()
     training_data.from_dict(Path("data/voxceleb1/"))
 
     wav2vec2_outputs = []
     segments = training_data.segments
     nb_segments = len(segments)
 
-    pdb.set_trace()
     # The wav2vec2 output
     for i, key in enumerate(training_data):
         with torch.no_grad():
@@ -60,8 +58,7 @@ if __name__ == '__main__':
             feats = feats.squeeze(dim=0)
             output = model_wav2vec2(feats)
             wav2vec2_outputs.append((output, iden))
-        if i != 0 and i % 128 * 5 == 0:
-            break
+
     pdb.set_trace()
     wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
     train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
