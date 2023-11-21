@@ -35,9 +35,10 @@ class CustomWav2Vec2Model(nn.Module):
         n_layers = len(hidden_states)  # Number of layers
         n_frames = hidden_states[0].shape[-1]
         learnable_weights = [torch.randn(size=(input_size,)) for _ in range(n_layers)]
-        output = get_output_rep(hidden_states, learnable_weights, n_layers, n_frames)
 
-        return output,  labels
+        output = [(get_output_rep(hs, learnable_weights.copy(), n_layers, n_frames), labels[i]) for i, hs in enumerate(hidden_states)]
+
+        return output
 
     def extract(self, samples: Union[np.ndarray, torch.Tensor], sampling_rate: int) -> Union[np.ndarray, torch.Tensor]:
         is_numpy = False
