@@ -53,23 +53,15 @@ if __name__ == '__main__':
     sys.stdout.flush()
 
     wav2vec2_outputs = []
-    segments = training_data.segments
-    nb_segments = len(segments)
 
+    train_dataloader = DataLoader(training_data, batch_size=48, drop_last=True, shuffle=True, num_workers=10)
+    iterator = iter(train_dataloader)
     # The wav2vec2 output
-    print(f"START Wav2vec2  {nb_segments} segments")
+    print(f"START Wav2vec2 ")
     sys.stdout.flush()
-    n_display = 10
-    display_at = nb_segments // n_display
-    for i, key in enumerate(training_data):
-        with torch.no_grad():
-            feats, iden = training_data[key]
-            feats = feats.squeeze(dim=0)
-            output = model_wav2vec2(feats)
-            wav2vec2_outputs.append((output, iden))
-            if i == 0 or (i+1) % display_at == 0 or i == nb_segments - 1:
-                print(f"\t[{i+1}/{nb_segments}]")
-                sys.stdout.flush()
+    for feats, iden in train_dataloader:
+        with torch.cuda.amp.autocast(enabled=True):
+            preds = model_wav2vec2(feats)
 
     print(f"END Wav2vec2")
     sys.stdout.flush()
