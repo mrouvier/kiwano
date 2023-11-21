@@ -60,7 +60,6 @@ if __name__ == '__main__':
     print(f"START Wav2vec2 ")
     sys.stdout.flush()
     for feats, iden in train_dataloader:
-        pdb.set_trace()
         with torch.cuda.amp.autocast(enabled=True):
             preds = model_wav2vec2(feats)
 
