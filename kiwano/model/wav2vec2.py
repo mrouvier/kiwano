@@ -22,10 +22,9 @@ class CustomWav2Vec2Model(nn.Module):
 
     def forward(self, input_values, attention_mask, labels):
         pdb.set_trace()
-        x = self.processor(input_values, return_tensor='pt', sampling_rate=16_000)
+        x = self.processor(input_values, return_tensor='pt', sampling_rate=16_000, attention_mask=attention_mask)
         x = x.input_values[0]
         x = torch.tensor(x)
-        x = x.unsqueeze(0)
         with torch.no_grad():
             output = self.model(x, attention_mask=attention_mask)
 
