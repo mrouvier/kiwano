@@ -28,6 +28,7 @@ class Wav2Vec2Dataset(Dataset):
 
 
 def custom_collate_fn(batch):
+    pdb.set_trace()
     inputs_batch, labels_batch = zip(*batch)
 
     # Pad sequences to the length of the longest sequence in the batch
