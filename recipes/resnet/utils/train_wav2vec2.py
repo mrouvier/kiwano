@@ -1,7 +1,9 @@
 import pdb
 from pathlib import Path
 
+from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset, DataLoader
+from transformers import Wav2Vec2Tokenizer
 
 from kiwano.dataset import SegmentSet
 from kiwano.model import ECAPAModel
@@ -25,6 +27,22 @@ class Wav2Vec2Dataset(Dataset):
         return self.data[idx]
 
 
+def custom_collate_fn(batch):
+    inputs_batch, labels_batch = zip(*batch)
+
+    # Pad sequences to the length of the longest sequence in the batch
+    inputs_batch = torch.nn.utils.rnn.pad_sequence(inputs_batch, batch_first=True)
+
+    # Create attention mask
+    attention_mask = (inputs_batch != tokenizer.pad_token_id).float()
+
+    return {
+        'input_values': inputs_batch,
+        'attention_mask': attention_mask,
+        'labels': torch.tensor(labels_batch)
+    }
+
+
 if __name__ == '__main__':
     print("START Loading data")
     sys.stdout.flush()
@@ -37,6 +55,7 @@ if __name__ == '__main__':
 
     model_name = "facebook/wav2vec2-base-960h"
     model_wav2vec2 = CustomWav2Vec2Model(model_name)
+    tokenizer = Wav2Vec2Tokenizer.from_pretrained(model_name)
     training_data = SpeakerTrainingSegmentSet(
         audio_transforms=Sometimes([
             Noise(musan_music, snr_range=[5, 15]),
@@ -54,7 +73,8 @@ if __name__ == '__main__':
 
     wav2vec2_outputs = []
 
-    train_dataloader = DataLoader(training_data, batch_size=48, drop_last=True, shuffle=True, num_workers=10)
+    train_dataloader = DataLoader(training_data, batch_size=48, drop_last=True, shuffle=True, num_workers=10,
+                                  collate_fn=custom_collate_fn)
     iterator = iter(train_dataloader)
     # The wav2vec2 output
     print(f"START Wav2vec2 ")
@@ -80,7 +100,7 @@ if __name__ == '__main__':
         loss_scale=30,
         test_step=1
     )
-    print(f"START ECAPA-TDNN {nb_segments} iterations")
+    print(f"START ECAPA-TDNN {num_iterations} iterations")
     sys.stdout.flush()
     for epoch in range(1, num_iterations + 1):
         print(f"\t [{epoch} / {num_iterations}]")
