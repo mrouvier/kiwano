@@ -21,13 +21,13 @@ class CustomWav2Vec2Model(nn.Module):
         self.processor = Wav2Vec2Processor.from_pretrained(model_name)
 
     def forward(self, input_values, attention_mask, labels):
-        pdb.set_trace()
-        x = self.processor(input_values, return_tensor='pt', sampling_rate=16_000, attention_mask=attention_mask)
-        x = x.input_values[0]
-        x = torch.tensor(x)
         with torch.no_grad():
+            x = self.processor(input_values, return_tensor='pt', sampling_rate=16_000, attention_mask=attention_mask)
+            x = x.input_values[0]
+            x = torch.tensor(x)
             output = self.model(x, attention_mask=attention_mask)
 
+        pdb.set_trace()
         hidden_states = list(output.hidden_states)
         # hidden_states = [h.squeeze(dim=0) for h in hidden_states]
         state_dict = self.model.state_dict()
