@@ -79,7 +79,7 @@ if __name__ == '__main__':
     #                              collate_fn=custom_collate_fn)
 
     train_dataloader = DataLoader(training_data, batch_size=20, drop_last=True, shuffle=True,
-                                  collate_fn=custom_collate_fn)
+                                  collate_fn=custom_collate_fn, num_workers=10)
     iterator = iter(train_dataloader)
     # The wav2vec2 output
     print(f"START Wav2vec2 ")

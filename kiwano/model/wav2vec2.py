@@ -27,7 +27,6 @@ class CustomWav2Vec2Model(nn.Module):
             x = torch.tensor(x)
             output = self.model(x, attention_mask=attention_mask)
 
-        pdb.set_trace()
         hidden_states = list(output.hidden_states)
         # hidden_states = [h.squeeze(dim=0) for h in hidden_states]
         state_dict = self.model.state_dict()
