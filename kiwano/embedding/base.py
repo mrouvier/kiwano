@@ -56,8 +56,22 @@ def read_pkl(arg: str):
 
     if arg[0:4] == "pkl:":
         if arg[4] == "-":
-            arr = pickle.load(  sys.stdin.buffer )
-            return arr
+            delimiter = b'usb.'
+            output = sys.stdin.buffer.read()
+            my_list = [x+delimiter for x in output.split(delimiter) if x]
+            if len(my_list) == 1:
+                arr = pickle.loads( output )
+                return arr
+            else:
+                emb = EmbeddingSet()
+                for x in my_list:
+                    tmp = pickle.loads( x )
+                    for k in tmp:
+                        emb[ k ] = tmp[k]
+                return emb
+
+            #arr = pickle.load(  sys.stdin.buffer )
+            #return arr
 
         elif arg[-1] == "|":
             cmd = arg[4:-1]

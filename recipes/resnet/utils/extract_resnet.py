@@ -115,7 +115,8 @@ if __name__ == '__main__':
     iterator = iter(extracting_dataloader)
 
     #resnet_model = ResNet(num_classes=18000)
-    resnet_model = ResNetV2(num_classes=18000)
+    #resnet_model = ResNetV2(num_classes=18000)
+    resnet_model = ResNetV2()
     #resnet_model = ResNetV5()
     #resnet_model = ResNetV3(k=3)
     #resnet_model = ResNetV4()
