@@ -31,6 +31,8 @@ def custom_collate_fn(batch):
     pdb.set_trace()
     inputs_batch, labels_batch = zip(*batch)
 
+    # Transform 2d to 1d
+    inputs_batch = [item.squeeze(dim=0) for item in inputs_batch]
     # Pad sequences to the length of the longest sequence in the batch
     inputs_batch = torch.nn.utils.rnn.pad_sequence(inputs_batch, batch_first=True)
 
