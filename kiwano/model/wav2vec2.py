@@ -1,3 +1,4 @@
+import pdb
 from typing import Union
 
 import numpy as np
@@ -19,13 +20,14 @@ class CustomWav2Vec2Model(nn.Module):
         self.model = Wav2Vec2ForCTC.from_pretrained(model_name, output_hidden_states=True)
         self.processor = Wav2Vec2Processor.from_pretrained(model_name)
 
-    def forward(self, x):
-        x = self.processor(x, return_tensor='pt', sampling_rate=16_000)
+    def forward(self, input_values, attention_mask, labels):
+        pdb.set_trace()
+        x = self.processor(input_values, return_tensor='pt', sampling_rate=16_000)
         x = x.input_values[0]
         x = torch.tensor(x)
         x = x.unsqueeze(0)
         with torch.no_grad():
-            output = self.model(x)
+            output = self.model(x, attention_mask=attention_mask)
 
         hidden_states = list(output.hidden_states)
         # hidden_states = [h.squeeze(dim=0) for h in hidden_states]
@@ -36,7 +38,7 @@ class CustomWav2Vec2Model(nn.Module):
         learnable_weights = [torch.randn(size=(input_size,)) for _ in range(n_layers)]
         output = get_output_rep(hidden_states, learnable_weights, n_layers, n_frames)
 
-        return output
+        return output,  labels
 
     def extract(self, samples: Union[np.ndarray, torch.Tensor], sampling_rate: int) -> Union[np.ndarray, torch.Tensor]:
         is_numpy = False

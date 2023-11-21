@@ -87,7 +87,8 @@ if __name__ == '__main__':
     sys.stdout.flush()
     for data in train_dataloader:
         pdb.set_trace()
-        print(data)
+        with torch.cuda.amp.autocast(enabled=True):
+            preds = model_wav2vec2(**data)
 
     print(f"END Wav2vec2")
     sys.stdout.flush()
