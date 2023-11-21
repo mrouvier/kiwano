@@ -28,7 +28,6 @@ class Wav2Vec2Dataset(Dataset):
 
 
 def custom_collate_fn(batch):
-    pdb.set_trace()
     inputs_batch, labels_batch = zip(*batch)
 
     # Transform 2d to 1d
@@ -86,7 +85,6 @@ if __name__ == '__main__':
     print(f"START Wav2vec2 ")
     sys.stdout.flush()
     for data in train_dataloader:
-        pdb.set_trace()
         with torch.cuda.amp.autocast(enabled=True):
             preds = model_wav2vec2(**data)
 
