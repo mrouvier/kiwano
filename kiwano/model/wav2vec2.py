@@ -45,9 +45,6 @@ class CustomWav2Vec2Model(nn.Module):
             samples = torch.from_numpy(samples)
             is_numpy = True
 
-        if samples.ndim == 1:
-            samples = samples.unsqueeze(0)
-
         if is_numpy:
             return samples.cpu().numpy()
         else:
