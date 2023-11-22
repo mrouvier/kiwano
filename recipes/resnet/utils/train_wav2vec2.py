@@ -67,7 +67,10 @@ if __name__ == '__main__':
             Filtering(),
             Normal()
         ]),
-        feature_extractor=model_wav2vec2
+        feature_extractor=model_wav2vec2,
+        feature_transforms=Linear([
+            Crop(350)
+        ]),
     )
     training_data.from_dict(Path("data/voxceleb1/"))
     print("END Loading data")
@@ -84,7 +87,9 @@ if __name__ == '__main__':
     # The wav2vec2 output
     print(f"START Wav2vec2 ")
     sys.stdout.flush()
-    for data in train_dataloader:
+    for i, data in enumerate(train_dataloader, start=1):
+        print(f"Batch: {i}")
+        sys.stdout.flush()
         with torch.cuda.amp.autocast(enabled=True):
             preds = model_wav2vec2(**data)
             wav2vec2_outputs.extend(preds)

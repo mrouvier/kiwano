@@ -13,7 +13,6 @@ from scipy import signal
 from torch.fft import irfft, rfft
 
 
-
 class Augmentation:
     pass
 
@@ -21,7 +20,6 @@ class Augmentation:
 class Pipeline:
     def __init__(self, transforms: List[Augmentation]):
         self.transforms = transforms
-
 
 
 class OneOf(Pipeline):
@@ -77,13 +75,16 @@ class Linear(Pipeline):
                 tensor, sample_rate = transform(tensor, sample_rate)
             return tensor, sample_rate
 
+
 class SpeedPerturb(Augmentation):
     def __init__(self, factor: float):
         self.factor = factor
 
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
-        wav, _ = torchaudio.sox_effects.apply_effects_tensor(tensor.unsqueeze(0), sample_rate, [['speed', str(self.factor)], ["rate", str(sample_rate)]])
+        wav, _ = torchaudio.sox_effects.apply_effects_tensor(tensor.unsqueeze(0), sample_rate,
+                                                             [['speed', str(self.factor)], ["rate", str(sample_rate)]])
         return wav[0], sample_rate
+
 
 class SpeedPerturbV2(Augmentation):
     def __init__(self, factor: float):
@@ -94,7 +95,8 @@ class SpeedPerturbV2(Augmentation):
         new_length = int(old_length / self.factor)
         old_indices = torch.arange(old_length)
         new_indices = torch.linspace(0, old_length, new_length)
-        a = nn.functional.interpolate(tensor.flatten()[None,None,:], size=new_length, mode='linear', align_corners=True).flatten()
+        a = nn.functional.interpolate(tensor.flatten()[None, None, :], size=new_length, mode='linear',
+                                      align_corners=True).flatten()
         return a, sample_rate
 
 
@@ -154,6 +156,7 @@ class Codec(Augmentation):
 
 _NEXT_FAST_LEN = {}
 
+
 def next_fast_len(size):
     try:
         return _NEXT_FAST_LEN[size]
@@ -173,11 +176,10 @@ def next_fast_len(size):
         next_size += 1
 
 
-
 def convolve1d(signal: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
     assert (
             signal.ndim == 1 and kernel.ndim == 1
-            ), "signal and kernel must be 1-dimensional"
+    ), "signal and kernel must be 1-dimensional"
     m = signal.size(-1)
     n = kernel.size(-1)
 
@@ -193,12 +195,10 @@ def convolve1d(signal: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
     return result[:padded_size]
 
 
-
-
 class Reverb(Augmentation):
     def __init__(self, segs: SegmentSet):
         self.segs = segs
-        self.rir_scaling_factor = 0.5**15
+        self.rir_scaling_factor = 0.5 ** 15
 
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
         reverb_tensor, reverb_sample_rate = self.segs.get_random().load_audio()
@@ -206,8 +206,8 @@ class Reverb(Augmentation):
 
         power_before = torch.dot(tensor, tensor) / len(tensor)
 
-        #tensor = convolve1d(tensor, reverb_tensor)
-        #tensor = torch.Tensor(signal.convolve(tensor, reverb_tensor, mode='full')[:len(tensor)])
+        # tensor = convolve1d(tensor, reverb_tensor)
+        # tensor = torch.Tensor(signal.convolve(tensor, reverb_tensor, mode='full')[:len(tensor)])
 
         tensor = torch.Tensor(signal.convolve(tensor, reverb_tensor, mode='full')[:size])
         power_after = torch.dot(tensor, tensor) / size
@@ -234,29 +234,37 @@ class Filtering(Augmentation):
 
 
 class Crop(Augmentation):
-    def __init__(self, duration: int, random = True):
+    def __init__(self, duration: int, random=True):
         self.duration = duration
         self.random = random
 
     def __call__(self, tensor: torch.Tensor):
+        dim = tensor.dim()
         if self.random == True:
             max_start_time = tensor.shape[0] - self.duration
             start_time = random.randint(0, max_start_time)
-            result = tensor[start_time:start_time + self.duration, :]
+            if dim == 2:
+                result = tensor[start_time:start_time + self.duration, :]
+            else:
+                result = tensor[start_time:start_time + self.duration]
             return result
         else:
             max_start_time = self.duration
+            if dim == 2:
+                if tensor.shape[0] < self.duration:
+                    max_start_time = tensor.shape[0]
 
-            if tensor.shape[0] < self.duration:
-                max_start_time = tensor.shape[0]
-     
-            result = tensor[0:max_start_time, :]
+                result = tensor[0:max_start_time, :]
+            else:
+                if tensor.shape < self.duration:
+                    max_start_time = tensor.shape
+
+                result = tensor[0:max_start_time]
             return result
 
 
-
 class SpecAugment(Augmentation):
-    def __init__(self,  num_t_mask=1, num_f_mask=1, max_t=10, max_f=8, prob=0.6):
+    def __init__(self, num_t_mask=1, num_f_mask=1, max_t=10, max_f=8, prob=0.6):
         self.num_t_mask = num_t_mask
         self.num_f_mask = num_f_mask
         self.max_t = max_t
@@ -265,21 +273,21 @@ class SpecAugment(Augmentation):
 
     def __call__(self, tensor: torch.Tensor):
         if random.random() < self.prob:
-                max_frames, max_freq = tensor.shape
+            max_frames, max_freq = tensor.shape
 
-                # time mask
-                for i in range(self.num_t_mask):
-                    start = random.randint(0, max_frames - 1)
-                    length = random.randint(1, self.max_t)
-                    end = min(max_frames, start + length)
-                    tensor[start:end, :] = 0
+            # time mask
+            for i in range(self.num_t_mask):
+                start = random.randint(0, max_frames - 1)
+                length = random.randint(1, self.max_t)
+                end = min(max_frames, start + length)
+                tensor[start:end, :] = 0
 
-                # freq mask
-                for i in range(self.num_f_mask):
-                    start = random.randint(0, max_freq - 1)
-                    length = random.randint(1, self.max_f)
-                    end = min(max_freq, start + length)
-                    tensor[:, start:end] = 0
+            # freq mask
+            for i in range(self.num_f_mask):
+                start = random.randint(0, max_freq - 1)
+                length = random.randint(1, self.max_f)
+                end = min(max_freq, start + length)
+                tensor[:, start:end] = 0
 
         return tensor
 
