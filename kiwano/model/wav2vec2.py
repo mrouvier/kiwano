@@ -21,7 +21,6 @@ class CustomWav2Vec2Model(nn.Module):
         self.processor = Wav2Vec2Processor.from_pretrained(model_name)
 
     def forward(self, feats, iden):
-        pdb.set_trace()
         with torch.no_grad():
             x = self.processor(feats, return_tensor='pt', sampling_rate=16_000)
             x = x.input_values[0]
