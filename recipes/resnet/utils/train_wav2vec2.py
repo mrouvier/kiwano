@@ -89,7 +89,6 @@ if __name__ == '__main__':
     for i, (feats, iden) in enumerate(train_dataloader, start=1):
         print(f"Batch: {i}")
         sys.stdout.flush()
-        pdb.set_trace()
         with torch.cuda.amp.autocast(enabled=True):
             preds = model_wav2vec2(feats, iden)
             wav2vec2_outputs.extend(preds)
