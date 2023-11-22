@@ -242,7 +242,6 @@ class Crop(Augmentation):
 
     def __call__(self, tensor: torch.Tensor):
         dim = tensor.dim()
-        pdb.set_trace()
         if self.random == True:
             max_start_time = tensor.shape[0] - self.duration
             start_time = random.randint(0, max_start_time)
