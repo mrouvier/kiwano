@@ -11,7 +11,7 @@ from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 import pdb
 from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, \
-    SpecAugment, Reverb
+    SpecAugment, Reverb, CropWaveForm
 import torch
 import sys
 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         ]),
         feature_extractor=model_wav2vec2,
         feature_transforms=Linear([
-            Crop(350)
+            CropWaveForm(3)
         ]),
     )
     training_data.from_dict(Path("data/voxceleb1/"))

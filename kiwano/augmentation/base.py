@@ -241,28 +241,42 @@ class Crop(Augmentation):
         self.random = random
 
     def __call__(self, tensor: torch.Tensor):
-        dim = tensor.dim()
-        if self.random == True:
+        if self.random:
             max_start_time = tensor.shape[0] - self.duration
             start_time = random.randint(0, max_start_time)
-            if dim == 2:
-                result = tensor[start_time:start_time + self.duration, :]
-            else:
-                result = tensor[start_time:start_time + self.duration]
+            result = tensor[start_time:start_time + self.duration, :]
             return result
         else:
             max_start_time = self.duration
-            if dim == 2:
-                if tensor.shape[0] < self.duration:
-                    max_start_time = tensor.shape[0]
+            if tensor.shape[0] < self.duration:
+                max_start_time = tensor.shape[0]
 
-                result = tensor[0:max_start_time, :]
-            else:
-                if tensor.shape < self.duration:
-                    max_start_time = tensor.shape
-
-                result = tensor[0:max_start_time]
+            result = tensor[0:max_start_time, :]
             return result
+
+
+class CropWaveForm(Augmentation):
+    def __init__(self, duration: int, random=True, sample_rate=16_000):
+        self.duration = duration
+        self.random = random
+        self.sample_rate = sample_rate
+
+    def __call__(self, tensor: torch.Tensor):
+        audio_duration = tensor.shape[0] / self.sample_rate
+        if audio_duration < self.duration:
+            return tensor
+
+        if self.random:
+            max_start_time = audio_duration - self.duration
+            start_time = np.random.uniform(0, max_start_time)
+        else:
+            start_time = 0
+
+        end_time = start_time + self.duration
+        start_sample = int(start_time * self.sample_rate)
+        end_sample = int(end_time * self.sample_rate)
+        result = tensor[start_sample:end_sample]
+        return result
 
 
 class SpecAugment(Augmentation):
