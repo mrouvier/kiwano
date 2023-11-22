@@ -20,9 +20,9 @@ class CustomWav2Vec2Model(nn.Module):
         self.model = Wav2Vec2ForCTC.from_pretrained(model_name, output_hidden_states=True)
         self.processor = Wav2Vec2Processor.from_pretrained(model_name)
 
-    def forward(self, input_values, labels):
+    def forward(self, feats, iden):
         with torch.no_grad():
-            x = self.processor(input_values, return_tensor='pt', sampling_rate=16_000)
+            x = self.processor(feats, return_tensor='pt', sampling_rate=16_000)
             x = x.input_values[0]
             x = torch.tensor(x)
             output = self.model(x)
@@ -35,7 +35,7 @@ class CustomWav2Vec2Model(nn.Module):
         n_frames = hidden_states[0].shape[-1]
         learnable_weights = [torch.randn(size=(input_size,)) for _ in range(n_layers)]
 
-        output = [(get_output_rep(hs, learnable_weights.copy(), n_layers, n_frames), labels[i]) for i, hs in enumerate(hidden_states)]
+        output = [(get_output_rep(hs, learnable_weights.copy(), n_layers, n_frames), iden[i]) for i, hs in enumerate(hidden_states)]
 
         return output
 

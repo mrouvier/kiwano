@@ -86,12 +86,12 @@ if __name__ == '__main__':
     # The wav2vec2 output
     print(f"START Wav2vec2 ")
     sys.stdout.flush()
-    for i, data in enumerate(train_dataloader, start=1):
+    for i, (feats, iden) in enumerate(train_dataloader, start=1):
         print(f"Batch: {i}")
         sys.stdout.flush()
         pdb.set_trace()
         with torch.cuda.amp.autocast(enabled=True):
-            preds = model_wav2vec2(data)
+            preds = model_wav2vec2(feats, iden)
             wav2vec2_outputs.extend(preds)
 
     print(f"END Wav2vec2")
