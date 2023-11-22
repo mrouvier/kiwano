@@ -20,12 +20,12 @@ class CustomWav2Vec2Model(nn.Module):
         self.model = Wav2Vec2ForCTC.from_pretrained(model_name, output_hidden_states=True)
         self.processor = Wav2Vec2Processor.from_pretrained(model_name)
 
-    def forward(self, input_values, attention_mask, labels):
+    def forward(self, input_values, labels):
         with torch.no_grad():
-            x = self.processor(input_values, return_tensor='pt', sampling_rate=16_000, attention_mask=attention_mask)
+            x = self.processor(input_values, return_tensor='pt', sampling_rate=16_000)
             x = x.input_values[0]
             x = torch.tensor(x)
-            output = self.model(x, attention_mask=attention_mask)
+            output = self.model(x)
 
         hidden_states = list(output.hidden_states)
         # hidden_states = [h.squeeze(dim=0) for h in hidden_states]

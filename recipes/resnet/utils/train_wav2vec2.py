@@ -81,7 +81,7 @@ if __name__ == '__main__':
     # train_dataloader = DataLoader(training_data, batch_size=48, drop_last=True, shuffle=True, num_workers=10,
     #                              collate_fn=custom_collate_fn)
 
-    train_dataloader = DataLoader(training_data, batch_size=20, drop_last=True, shuffle=True, num_workers=10)
+    train_dataloader = DataLoader(training_data, batch_size=20, drop_last=True, shuffle=True)
     iterator = iter(train_dataloader)
     # The wav2vec2 output
     print(f"START Wav2vec2 ")
@@ -89,8 +89,9 @@ if __name__ == '__main__':
     for i, data in enumerate(train_dataloader, start=1):
         print(f"Batch: {i}")
         sys.stdout.flush()
+        pdb.set_trace()
         with torch.cuda.amp.autocast(enabled=True):
-            preds = model_wav2vec2(**data)
+            preds = model_wav2vec2(data)
             wav2vec2_outputs.extend(preds)
 
     print(f"END Wav2vec2")
