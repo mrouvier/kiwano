@@ -244,13 +244,11 @@ class Crop(Augmentation):
         dim = tensor.dim()
         pdb.set_trace()
         if self.random == True:
+            max_start_time = tensor.shape[0] - self.duration
+            start_time = random.randint(0, max_start_time)
             if dim == 2:
-                max_start_time = tensor.shape[0] - self.duration
-                start_time = random.randint(0, max_start_time)
                 result = tensor[start_time:start_time + self.duration, :]
             else:
-                max_start_time = tensor.shape - self.duration
-                start_time = random.randint(0, max_start_time)
                 result = tensor[start_time:start_time + self.duration]
             return result
         else:
