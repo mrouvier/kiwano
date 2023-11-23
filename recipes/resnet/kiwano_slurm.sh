@@ -19,9 +19,6 @@ export CUDA_LAUNCH_BLOCKING=1
 export NCCL_ASYNC_ERROR_HANDLING=1
 
 
-
-module load pytorch-gpu/py3/1.7.1+nccl-2.8.3-1
-
 python3 utils/train_wav2vec2.py
 # python3 -m pdb utils/train_wav2vec2.py
 
