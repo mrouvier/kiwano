@@ -2,10 +2,10 @@
 #SBATCH --job-name=kiwano
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
+#SBATCH --ntasks-per-node=2
 #SBATCH --gres=gpu:2
 #SBATCH --time=7-00:00:00
-#SBATCH --mem=30GB
+#SBATCH --mem=16GB
 #SBATCH --cpus-per-task=15
 #SBATCH --output=kiwano_output.log
 #SBATCH --error=kiwano_error.log
