@@ -50,6 +50,9 @@ def custom_collate_fn(batch):
 
 
 if __name__ == '__main__':
+    print("START")
+    sys.stdout.flush()
+
     hostnames = hostlist.expand_hostlist(os.environ['SLURM_JOB_NODELIST'])
     os.environ["MASTER_ADDR"] = hostnames[0]
     os.environ["MASTER_PORT"] = "29501"
@@ -96,7 +99,7 @@ if __name__ == '__main__':
     train_sampler = DistributedSampler(training_data, num_replicas=dist.get_world_size(), rank=dist.get_rank(),
                                        shuffle=True)
 
-    train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=15,
+    train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=30,
                                   sampler=train_sampler, pin_memory=True)
     iterator = iter(train_dataloader)
     print("END Loading data")
