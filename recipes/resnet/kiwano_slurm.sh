@@ -1,5 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=kiwano
+#SBATCH --partition=gpu
 #SBATCH --nodes=16
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1
