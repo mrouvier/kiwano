@@ -1,8 +1,11 @@
+import argparse
+import os
 import pdb
 from pathlib import Path
-
+import torch.distributed as dist
+import hostlist
 from torch.nn.utils.rnn import pad_sequence
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, DistributedSampler
 from transformers import Wav2Vec2Tokenizer
 
 from kiwano.dataset import SegmentSet
@@ -46,6 +49,19 @@ def custom_collate_fn(batch):
 
 
 if __name__ == '__main__':
+
+    hostnames = hostlist.expand_hostlist(os.environ['SLURM_JOB_NODELIST'])
+    os.environ["MASTER_ADDR"] = hostnames[0]
+    os.environ["MASTER_PORT"] = "29500"
+    rank = int(os.environ["SLURM_NODEID"])
+    world = int(os.environ["SLURM_JOB_NUM_NODES"])
+    master_addr = hostnames[0]
+    port = int(os.environ["MASTER_PORT"])
+
+    device = torch.device("cuda")
+
+    torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=rank, world_size=world)
+
     print("START Loading data")
     sys.stdout.flush()
     musan = SegmentSet()
@@ -57,6 +73,10 @@ if __name__ == '__main__':
 
     model_name = "facebook/wav2vec2-base-960h"
     model_wav2vec2 = CustomWav2Vec2Model(model_name)
+    model_wav2vec2 = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model_wav2vec2)
+    model_wav2vec2.to(device)
+    model_wav2vec2 = torch.nn.parallel.DistributedDataParallel(model_wav2vec2)
+
     tokenizer = Wav2Vec2Tokenizer.from_pretrained(model_name)
     training_data = SpeakerTrainingSegmentSet(
         audio_transforms=Sometimes([
@@ -73,6 +93,12 @@ if __name__ == '__main__':
         ]),
     )
     training_data.from_dict(Path("data/voxceleb1/"))
+    train_sampler = DistributedSampler(training_data, num_replicas=dist.get_world_size(), rank=dist.get_rank(),
+                                       shuffle=True)
+
+    train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=15,
+                                  sampler=train_sampler, pin_memory=True)
+    iterator = iter(train_dataloader)
     print("END Loading data")
     sys.stdout.flush()
 
@@ -81,14 +107,14 @@ if __name__ == '__main__':
     # train_dataloader = DataLoader(training_data, batch_size=48, drop_last=True, shuffle=True, num_workers=10,
     #                              collate_fn=custom_collate_fn)
 
-    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
-    iterator = iter(train_dataloader)
     # The wav2vec2 output
     print(f"START Wav2vec2 ")
     sys.stdout.flush()
     for i, (feats, iden) in enumerate(train_dataloader, start=1):
         print(f"Batch: {i}")
         sys.stdout.flush()
+        feats = feats.float().to(device)
+        iden = iden.to(device)
         with torch.cuda.amp.autocast(enabled=True):
             preds = model_wav2vec2(feats, iden)
             wav2vec2_outputs.extend(preds)
