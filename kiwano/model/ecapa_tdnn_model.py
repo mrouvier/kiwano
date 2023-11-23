@@ -36,7 +36,6 @@ class ECAPAModel(nn.Module):
         index, top1, loss = 0, 0, 0
         lr = self.optim.param_groups[0]['lr']
         for num, (data, labels) in enumerate(loader, start=1):
-            pdb.set_trace()
             self.zero_grad()
             labels = torch.LongTensor(labels)
             speaker_embedding = self.speaker_encoder.forward(data, aug=True)
