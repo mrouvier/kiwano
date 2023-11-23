@@ -52,7 +52,7 @@ def custom_collate_fn(batch):
 if __name__ == '__main__':
     hostnames = hostlist.expand_hostlist(os.environ['SLURM_JOB_NODELIST'])
     os.environ["MASTER_ADDR"] = hostnames[0]
-    os.environ["MASTER_PORT"] = "29500"
+    os.environ["MASTER_PORT"] = "29501"
     rank = int(os.environ["SLURM_NODEID"])
     world = int(os.environ["SLURM_JOB_NUM_NODES"])
     master_addr = hostnames[0]
