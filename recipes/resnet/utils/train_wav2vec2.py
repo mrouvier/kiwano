@@ -76,7 +76,7 @@ if __name__ == '__main__':
     )
     training_data.from_dict(Path("data/voxceleb1/"))
 
-    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=False, num_workers=15)
+    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=False, num_workers=30)
     # iterator = iter(train_dataloader)
     print("END Loading data")
     sys.stdout.flush()
