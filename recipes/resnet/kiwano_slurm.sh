@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=30GB
-#SBATCH --cpus-per-task=50
+#SBATCH --cpus-per-task=30
 #SBATCH --output=kiwano_output.log
 #SBATCH --error=kiwano_error.log
 
