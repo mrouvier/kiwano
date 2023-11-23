@@ -2,8 +2,9 @@ import argparse
 import os
 import pdb
 from pathlib import Path
-import torch.distributed as dist
+
 import hostlist
+import torch.distributed as dist
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
 from transformers import Wav2Vec2Tokenizer
@@ -49,7 +50,6 @@ def custom_collate_fn(batch):
 
 
 if __name__ == '__main__':
-
     hostnames = hostlist.expand_hostlist(os.environ['SLURM_JOB_NODELIST'])
     os.environ["MASTER_ADDR"] = hostnames[0]
     os.environ["MASTER_PORT"] = "29500"

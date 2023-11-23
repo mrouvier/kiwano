@@ -67,7 +67,6 @@ class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
 
 
 if __name__ == '__main__':
-
     hostnames = hostlist.expand_hostlist(os.environ['SLURM_JOB_NODELIST'])
     os.environ["MASTER_ADDR"] = hostnames[0]
     os.environ["MASTER_PORT"] = "29500"
