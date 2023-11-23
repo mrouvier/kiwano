@@ -76,11 +76,8 @@ if __name__ == '__main__':
 
     model_name = "facebook/wav2vec2-base-960h"
     model_wav2vec2 = CustomWav2Vec2Model(model_name)
-    model_wav2vec2 = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model_wav2vec2)
-    model_wav2vec2.to(device)
-    model_wav2vec2 = torch.nn.parallel.DistributedDataParallel(model_wav2vec2)
-
     tokenizer = Wav2Vec2Tokenizer.from_pretrained(model_name)
+
     training_data = SpeakerTrainingSegmentSet(
         audio_transforms=Sometimes([
             Noise(musan_music, snr_range=[5, 15]),
