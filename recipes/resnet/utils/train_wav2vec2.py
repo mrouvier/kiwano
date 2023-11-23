@@ -76,11 +76,7 @@ if __name__ == '__main__':
     )
     training_data.from_dict(Path("data/voxceleb1/"))
 
-    train_sampler = DistributedSampler(training_data, num_replicas=dist.get_world_size(), rank=dist.get_rank(),
-                                       shuffle=True)
-
-    train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=30,
-                                  sampler=train_sampler, pin_memory=True)
+    train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=50)
     # iterator = iter(train_dataloader)
     print("END Loading data")
     sys.stdout.flush()
