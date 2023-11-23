@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=kiwano
 #SBATCH --partition=gpu
-#SBATCH --nodes=5
+#SBATCH --nodes=7
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
