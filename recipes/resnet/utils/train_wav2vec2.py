@@ -31,24 +31,6 @@ class Wav2Vec2Dataset(Dataset):
         return self.data[idx]
 
 
-def custom_collate_fn(batch):
-    inputs_batch, labels_batch = zip(*batch)
-
-    # Transform 2d to 1d
-    inputs_batch = [item.squeeze(dim=0) for item in inputs_batch]
-    # Pad sequences to the length of the longest sequence in the batch
-    inputs_batch = torch.nn.utils.rnn.pad_sequence(inputs_batch, batch_first=True)
-
-    # Create attention mask
-    attention_mask = (inputs_batch != tokenizer.pad_token_id).float()
-
-    return {
-        'input_values': inputs_batch,
-        'attention_mask': attention_mask,
-        'labels': torch.tensor(labels_batch)
-    }
-
-
 if __name__ == '__main__':
     print("START Loading data")
     sys.stdout.flush()
@@ -77,31 +59,10 @@ if __name__ == '__main__':
     training_data.from_dict(Path("data/voxceleb1/"))
 
     train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=30)
-    # iterator = iter(train_dataloader)
     print("END Loading data")
     sys.stdout.flush()
 
     wav2vec2_outputs = []
-
-    # train_dataloader = DataLoader(training_data, batch_size=48, drop_last=True, shuffle=True, num_workers=10,
-    #                              collate_fn=custom_collate_fn)
-
-    # The wav2vec2 output
-    # print(f"START Wav2vec2 ")
-    # sys.stdout.flush()
-    # for i, (feats, iden) in enumerate(train_dataloader, start=1):
-    #     print(f"Batch: {i}")
-    #     sys.stdout.flush()
-    #     feats = feats.float().to(device)
-    #     iden = iden.to(device)
-    #     with torch.cuda.amp.autocast(enabled=True):
-    #         preds = model_wav2vec2(feats, iden)
-    #         wav2vec2_outputs.extend(preds)
-
-    print(f"END Wav2vec2")
-    sys.stdout.flush()
-    # wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
-    # train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
 
     num_iterations = 5
 

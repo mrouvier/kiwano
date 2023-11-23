@@ -48,6 +48,7 @@ class ECAPAModel(nn.Module):
             print(time.strftime("%m-%d %H:%M:%S") + \
                   " [%2d] Lr: %5f, Training: %.2f%%, " % (epoch, lr, 100 * (num / loader.__len__())) + \
                   " Loss: %.5f, ACC: %2.2f%%" % (loss / num, top1 / index * len(labels)))
+            sys.stdout.flush()
         return loss / num, lr, top1 / index * len(labels)
 
     def eval_network(self, eval_list, eval_path):
