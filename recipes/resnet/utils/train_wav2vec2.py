@@ -50,21 +50,6 @@ def custom_collate_fn(batch):
 
 
 if __name__ == '__main__':
-    print("START")
-    sys.stdout.flush()
-
-    hostnames = hostlist.expand_hostlist(os.environ['SLURM_JOB_NODELIST'])
-    os.environ["MASTER_ADDR"] = hostnames[0]
-    os.environ["MASTER_PORT"] = "29501"
-    rank = int(os.environ["SLURM_NODEID"])
-    world = int(os.environ["SLURM_JOB_NUM_NODES"])
-    master_addr = hostnames[0]
-    port = int(os.environ["MASTER_PORT"])
-
-    device = torch.device("cuda")
-
-    torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=rank, world_size=world)
-
     print("START Loading data")
     sys.stdout.flush()
     musan = SegmentSet()
@@ -90,11 +75,8 @@ if __name__ == '__main__':
         feature_extractor=model_wav2vec2
     )
     training_data.from_dict(Path("data/voxceleb1/"))
-    train_sampler = DistributedSampler(training_data, num_replicas=dist.get_world_size(), rank=dist.get_rank(),
-                                       shuffle=True)
 
-    train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=15,
-                                  sampler=train_sampler, pin_memory=True)
+    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=False)
     # iterator = iter(train_dataloader)
     print("END Loading data")
     sys.stdout.flush()

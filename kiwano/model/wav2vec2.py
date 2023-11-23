@@ -43,5 +43,6 @@ class CustomWav2Vec2Model(nn.Module):
         return output
 
     def extract(self, samples: Union[np.ndarray, torch.Tensor], sampling_rate: int) -> Union[np.ndarray, torch.Tensor]:
+        pdb.set_trace()
         x = self.crop(samples)
         return self.forward(x)
