@@ -75,7 +75,7 @@ if __name__ == '__main__':
     musan_noise = musan.get_speaker("noise")
 
     model_name = "facebook/wav2vec2-base-960h"
-    model_wav2vec2 = CustomWav2Vec2Model(model_name)
+    model_wav2vec2 = CustomWav2Vec2Model(model_name, 3)
     tokenizer = Wav2Vec2Tokenizer.from_pretrained(model_name)
 
     training_data = SpeakerTrainingSegmentSet(
@@ -87,10 +87,7 @@ if __name__ == '__main__':
             Filtering(),
             Normal()
         ]),
-        feature_extractor=model_wav2vec2,
-        feature_transforms=Linear([
-            CropWaveForm(3)
-        ]),
+        feature_extractor=model_wav2vec2
     )
     training_data.from_dict(Path("data/voxceleb1/"))
     train_sampler = DistributedSampler(training_data, num_replicas=dist.get_world_size(), rank=dist.get_rank(),
@@ -98,7 +95,7 @@ if __name__ == '__main__':
 
     train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=15,
                                   sampler=train_sampler, pin_memory=True)
-    iterator = iter(train_dataloader)
+    # iterator = iter(train_dataloader)
     print("END Loading data")
     sys.stdout.flush()
 
@@ -108,21 +105,21 @@ if __name__ == '__main__':
     #                              collate_fn=custom_collate_fn)
 
     # The wav2vec2 output
-    print(f"START Wav2vec2 ")
-    sys.stdout.flush()
-    for i, (feats, iden) in enumerate(train_dataloader, start=1):
-        print(f"Batch: {i}")
-        sys.stdout.flush()
-        feats = feats.float().to(device)
-        iden = iden.to(device)
-        with torch.cuda.amp.autocast(enabled=True):
-            preds = model_wav2vec2(feats, iden)
-            wav2vec2_outputs.extend(preds)
+    # print(f"START Wav2vec2 ")
+    # sys.stdout.flush()
+    # for i, (feats, iden) in enumerate(train_dataloader, start=1):
+    #     print(f"Batch: {i}")
+    #     sys.stdout.flush()
+    #     feats = feats.float().to(device)
+    #     iden = iden.to(device)
+    #     with torch.cuda.amp.autocast(enabled=True):
+    #         preds = model_wav2vec2(feats, iden)
+    #         wav2vec2_outputs.extend(preds)
 
     print(f"END Wav2vec2")
     sys.stdout.flush()
-    wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
-    train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
+    # wav2vec2_dataset = Wav2Vec2Dataset(wav2vec2_outputs)
+    # train_dataloader = DataLoader(wav2vec2_dataset, batch_size=128, drop_last=True, shuffle=True, num_workers=10)
 
     num_iterations = 5
 

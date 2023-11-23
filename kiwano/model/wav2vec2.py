@@ -6,6 +6,8 @@ import torch
 import torch.nn as nn
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor, AutoModelForCTC, AutoTokenizer, AutoFeatureExtractor
 
+from kiwano.augmentation import CropWaveForm
+
 
 def get_output_rep(hidden_states, learnable_weigths, n_layers, n_frames):
     sum_hiddens = torch.zeros(size=(1, n_frames))
@@ -15,14 +17,15 @@ def get_output_rep(hidden_states, learnable_weigths, n_layers, n_frames):
 
 
 class CustomWav2Vec2Model(nn.Module):
-    def __init__(self, model_name="facebook/wav2vec2-base-960h"):
+    def __init__(self, model_name="facebook/wav2vec2-base-960h", duration=3):
         super().__init__()
         self.model = Wav2Vec2ForCTC.from_pretrained(model_name, output_hidden_states=True)
         self.processor = Wav2Vec2Processor.from_pretrained(model_name)
+        self.crop = CropWaveForm(duration)
 
-    def forward(self, feats, iden):
+    def forward(self, x):
         with torch.no_grad():
-            x = self.processor(feats, return_tensor='pt', sampling_rate=16_000)
+            x = self.processor(x, return_tensor='pt', sampling_rate=16_000)
             x = x.input_values[0]
             x = torch.tensor(x)
             output = self.model(x)
@@ -35,17 +38,10 @@ class CustomWav2Vec2Model(nn.Module):
         n_frames = hidden_states[0].shape[-1]
         learnable_weights = [torch.randn(size=(input_size,)) for _ in range(n_layers)]
 
-        output = [(get_output_rep(hs, learnable_weights.copy(), n_layers, n_frames), iden[i]) for i, hs in enumerate(hidden_states)]
+        output = get_output_rep(hidden_states, learnable_weights, n_layers, n_frames)
 
         return output
 
     def extract(self, samples: Union[np.ndarray, torch.Tensor], sampling_rate: int) -> Union[np.ndarray, torch.Tensor]:
-        is_numpy = False
-        if not isinstance(samples, torch.Tensor):
-            samples = torch.from_numpy(samples)
-            is_numpy = True
-
-        if is_numpy:
-            return samples.cpu().numpy()
-        else:
-            return samples
+        x = self.crop(samples)
+        return self.forward(x)
