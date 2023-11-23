@@ -7,8 +7,6 @@
 #SBATCH --time=7-00:00:00
 #SBATCH --cpus-per-task=15
 #SBATCH --qos=qos_gpu-t3
-#SBATCH -A jca@v100
-#SBATCH -C v100-32g
 #SBATCH --output=kiwano_output.log
 #SBATCH --error=kiwano_error.log
 
