@@ -1,5 +1,6 @@
 import pdb
 
+import numpy
 import torchaudio
 import torch
 import torch.nn as nn
@@ -296,27 +297,19 @@ class Crop(Augmentation):
 
 
 class CropWaveForm(Augmentation):
-    def __init__(self, duration: int, random=True, sample_rate=16_000):
+    def __init__(self, duration: int):
         self.duration = duration
-        self.random = random
-        self.sample_rate = sample_rate
 
-    def __call__(self, tensor: torch.Tensor):
-        audio_duration = tensor.shape[0] / self.sample_rate
-        if audio_duration < self.duration:
-            return tensor
+    def __call__(self, audio: torch.Tensor):
+        length = self.duration * 100 * 160 + 240
+        if audio.shape[0] <= length:
+            shortage = length - audio.shape[0]
+            audio = numpy.pad(audio, (0, shortage), 'wrap')
+        start_frame = numpy.int64(random.random() * (audio.shape[0] - length))
+        audio = audio[start_frame:start_frame + length]
+        audio = numpy.stack([audio], axis=0)
 
-        if self.random:
-            max_start_time = audio_duration - self.duration
-            start_time = np.random.uniform(0, max_start_time)
-        else:
-            start_time = 0
-
-        end_time = start_time + self.duration
-        start_sample = int(start_time * self.sample_rate)
-        end_sample = int(end_time * self.sample_rate)
-        result = tensor[start_sample:end_sample]
-        return result
+        return torch.FloatTensor(audio[0])
 
 
 class SpecAugment(Augmentation):

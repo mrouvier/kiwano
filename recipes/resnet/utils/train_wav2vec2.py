@@ -1,6 +1,7 @@
 import argparse
 import os
 import pdb
+import time
 from pathlib import Path
 
 import hostlist
@@ -78,10 +79,24 @@ if __name__ == '__main__':
     )
     print(f"START ECAPA-TDNN {num_iterations} iterations")
     sys.stdout.flush()
+    EERs = []
+    save_path = "exps"
+    eval_list = "db/voxceleb1/voxceleb1_test_v2.txt"
+    eval_path = "db/voxceleb1/wav"
+    score_file = open(f"{save_path}/score.txt", "a+")
     for epoch in range(1, num_iterations + 1):
         print(f"\t [{epoch} / {num_iterations}]")
         sys.stdout.flush()
         loss, lr, acc = ecapa_tdnn_model.train_network(epoch=epoch, loader=train_dataloader)
+        ecapa_tdnn_model.save_parameters(save_path + "/model_%04d.model" % epoch)
+        EERs.append(
+            ecapa_tdnn_model.eval_network(eval_list=eval_list, eval_path=eval_path, feature_extractor=model_wav2vec2)[
+                0])
+        print(time.strftime("%Y-%m-%d %H:%M:%S"),
+              "%d epoch, ACC %2.2f%%, EER %2.2f%%, bestEER %2.2f%%" % (epoch, acc, EERs[-1], min(EERs)))
+        score_file.write("%d epoch, LR %f, LOSS %f, ACC %2.2f%%, EER %2.2f%%, bestEER %2.2f%%\n" % (
+            epoch, lr, loss, acc, EERs[-1], min(EERs)))
+        score_file.flush()
 
     print(f"END ECAPA-TDNN")
     sys.stdout.flush()

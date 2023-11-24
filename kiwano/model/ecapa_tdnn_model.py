@@ -51,7 +51,7 @@ class ECAPAModel(nn.Module):
             sys.stdout.flush()
         return loss / num, lr, top1 / index * len(labels)
 
-    def eval_network(self, eval_list, eval_path):
+    def eval_network(self, eval_list, eval_path, feature_extractor):
         self.eval()
         files = []
         embeddings = {}
@@ -80,6 +80,8 @@ class ECAPAModel(nn.Module):
             data_2 = torch.FloatTensor(feats)
             # Speaker embeddings
             with torch.no_grad():
+                data_1 = feature_extractor(data_1)
+                data_2 = feature_extractor(data_2)
                 embedding_1 = self.speaker_encoder.forward(data_1)
                 embedding_1 = F.normalize(embedding_1, p=2, dim=1)
                 embedding_2 = self.speaker_encoder.forward(data_2)
