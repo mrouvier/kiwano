@@ -88,7 +88,6 @@ class ECAPAModel(nn.Module):
             data_2 = torch.FloatTensor(feats)
             # Speaker embeddings
             with torch.no_grad():
-                pdb.set_trace()
                 embedding_1 = self.speaker_encoder.forward(data_1)
                 embedding_1 = F.normalize(embedding_1, p=2, dim=1)
                 embedding_2 = self.speaker_encoder.forward(data_2)
