@@ -301,7 +301,6 @@ class CropWaveForm(Augmentation):
         self.duration = duration
 
     def __call__(self, audio: torch.Tensor):
-        pdb.set_trace()
         length = self.duration * 100 * 160 + 240
         if audio.shape[0] <= length:
             shortage = length - audio.shape[0]

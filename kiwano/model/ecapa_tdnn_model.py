@@ -83,8 +83,8 @@ class ECAPAModel(nn.Module):
             # Speaker embeddings
             with torch.no_grad():
                 pdb.set_trace()
-                data_1 = feature_extractor(data_1)
-                data_2 = feature_extractor(data_2)
+                # data_1 = feature_extractor(data_1)
+                # data_2 = feature_extractor(data_2)
                 embedding_1 = self.speaker_encoder.forward(data_1)
                 embedding_1 = F.normalize(embedding_1, p=2, dim=1)
                 embedding_2 = self.speaker_encoder.forward(data_2)
