@@ -59,13 +59,13 @@ if __name__ == '__main__':
     )
     training_data.from_dict(Path("data/voxceleb1/"))
 
-    train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=30)
+    train_dataloader = DataLoader(training_data, batch_size=128, drop_last=True, shuffle=False, num_workers=30)
     print("END Loading data")
     sys.stdout.flush()
 
     wav2vec2_outputs = []
 
-    num_iterations = 5
+    num_iterations = 3
 
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,
