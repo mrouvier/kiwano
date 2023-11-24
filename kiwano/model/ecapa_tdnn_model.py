@@ -67,7 +67,10 @@ class ECAPAModel(nn.Module):
         for idx, file in tqdm.tqdm(enumerate(setfiles), total=len(setfiles)):
             audio, _ = soundfile.read(os.path.join(eval_path, file))
             # Full utterance
-            data_1 = torch.FloatTensor(numpy.stack([audio], axis=0))
+            data_1 = numpy.stack([audio], axis=0)
+            data_1 = torch.FloatTensor(data_1[0])
+            data_1 = feature_extractor(data_1)
+            data_1 = data_1.unsqueeze(dim=0)
 
             # Spliited utterance matrix
             max_audio = 300 * 160 + 240
@@ -77,14 +80,15 @@ class ECAPAModel(nn.Module):
             feats = []
             startframe = numpy.linspace(0, audio.shape[0] - max_audio, num=5)
             for asf in startframe:
-                feats.append(audio[int(asf):int(asf) + max_audio])
+                audio_ = audio[int(asf):int(asf) + max_audio]
+                audio_ = torch.FloatTensor(audio_)
+                audio_ = feature_extractor(audio_)
+                feats.append(audio_)
             feats = numpy.stack(feats, axis=0).astype(numpy.float32)
             data_2 = torch.FloatTensor(feats)
             # Speaker embeddings
             with torch.no_grad():
                 pdb.set_trace()
-                # data_1 = feature_extractor(data_1)
-                # data_2 = feature_extractor(data_2)
                 embedding_1 = self.speaker_encoder.forward(data_1)
                 embedding_1 = F.normalize(embedding_1, p=2, dim=1)
                 embedding_2 = self.speaker_encoder.forward(data_2)
