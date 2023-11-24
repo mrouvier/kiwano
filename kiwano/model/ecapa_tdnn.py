@@ -168,7 +168,7 @@ class ECAPA_TDNN(nn.Module):
         self.fc6 = nn.Linear(3072, 192)
         self.bn6 = nn.BatchNorm1d(192)
 
-    def forward(self, x, aug):
+    def forward(self, x, aug=False):
         with torch.no_grad():
             x = self.torchfbank(x) + 1e-6
             x = x.log()

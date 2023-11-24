@@ -76,7 +76,7 @@ class ECAPAModel(nn.Module):
             startframe = numpy.linspace(0, audio.shape[0] - max_audio, num=5)
             for asf in startframe:
                 feats.append(audio[int(asf):int(asf) + max_audio])
-            feats = numpy.stack(feats, axis=0).astype(numpy.float)
+            feats = numpy.stack(feats, axis=0).astype(numpy.float32)
             data_2 = torch.FloatTensor(feats)
             # Speaker embeddings
             with torch.no_grad():
