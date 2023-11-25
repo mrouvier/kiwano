@@ -103,7 +103,7 @@ class ECAPAModel(nn.Module):
         setfiles.sort()
 
         eval_dataset = ECAPAValidateDataset(setfiles, eval_path, feature_extractor, self.speaker_encoder)
-        eval_dataloader = DataLoader(eval_dataset, batch_size=400, drop_last=True, shuffle=False, num_workers=50)
+        eval_dataloader = DataLoader(eval_dataset, batch_size=10, drop_last=True, shuffle=False, num_workers=50)
         for idx, (keys, values) in tqdm.tqdm(enumerate(eval_dataloader), total=len(eval_dataloader)):
             embeddings_1 = values[0]
             embeddings_2 = values[1]
@@ -112,16 +112,20 @@ class ECAPAModel(nn.Module):
 
         scores, labels = [], []
 
+        keys = embeddings.keys()
         for line in lines:
-            embedding_11, embedding_12 = embeddings[line.split()[1]]
-            embedding_21, embedding_22 = embeddings[line.split()[2]]
-            # Compute the scores
-            score_1 = torch.mean(torch.matmul(embedding_11, embedding_21.T))  # higher is positive
-            score_2 = torch.mean(torch.matmul(embedding_12, embedding_22.T))
-            score = (score_1 + score_2) / 2
-            score = score.detach().cpu().numpy()
-            scores.append(score)
-            labels.append(int(line.split()[0]))
+            key_1 = line.split()[1]
+            key_2 = line.split()[2]
+            if key_1 in keys and key_2 in keys:
+                embedding_11, embedding_12 = embeddings[line.split()[1]]
+                embedding_21, embedding_22 = embeddings[line.split()[2]]
+                # Compute the scores
+                score_1 = torch.mean(torch.matmul(embedding_11, embedding_21.T))  # higher is positive
+                score_2 = torch.mean(torch.matmul(embedding_12, embedding_22.T))
+                score = (score_1 + score_2) / 2
+                score = score.detach().cpu().numpy()
+                scores.append(score)
+                labels.append(int(line.split()[0]))
 
         # Coumpute EER and minDCF
         EER = tuneThresholdfromScore(scores, labels, [1, 0.1])[1]
