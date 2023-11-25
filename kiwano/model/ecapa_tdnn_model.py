@@ -15,6 +15,44 @@ from kiwano.model.ecapa_tdnn import ECAPA_TDNN
 from kiwano.model.loss import AAMsoftmax
 from kiwano.model.tools import tuneThresholdfromScore, ComputeMinDcf, ComputeErrorRates
 
+class ECAPAValidateDataset(Dataset):
+    def __init__(self, file_list, eval_path, feature_extractor):
+        self.file_list = file_list
+        self.eval_path = eval_path
+        self.feature_extractor =feature_extractor
+
+    def __len__(self):
+        return len(self.file_list)
+
+    def __getitem__(self, idx):
+        audio, _ = soundfile.read(os.path.join(self.eval_path, self.file_list[idx]))
+        # Full utterance
+        data_1 = numpy.stack([audio], axis=0)
+        data_1 = torch.FloatTensor(data_1[0])
+        data_1 = self.feature_extractor(data_1)
+        data_1 = data_1.unsqueeze(dim=0)
+
+        # Spliited utterance matrix
+        max_audio = 300 * 160 + 240
+        if audio.shape[0] <= max_audio:
+            shortage = max_audio - audio.shape[0]
+            audio = numpy.pad(audio, (0, shortage), 'wrap')
+        feats = []
+        startframe = numpy.linspace(0, audio.shape[0] - max_audio, num=5)
+        for asf in startframe:
+            audio_ = audio[int(asf):int(asf) + max_audio]
+            audio_ = torch.FloatTensor(audio_)
+            audio_ = self.feature_extractor(audio_)
+            feats.append(audio_)
+        feats = numpy.stack(feats, axis=0).astype(numpy.float32)
+        data_2 = torch.FloatTensor(feats)
+        # Speaker embeddings
+        with torch.no_grad():
+            embedding_1 = self.speaker_encoder.forward(data_1)
+            embedding_1 = F.normalize(embedding_1, p=2, dim=1)
+            embedding_2 = self.speaker_encoder.forward(data_2)
+            embedding_2 = F.normalize(embedding_2, p=2, dim=1)
+        return self.file_list[idx], [embedding_1, embedding_2]
 
 class ECAPAModel(nn.Module):
     def __init__(self, lr, lr_decay, channel_in, channel_size, n_class, loss_margin, loss_scale, test_step, **kwargs):
@@ -64,35 +102,13 @@ class ECAPAModel(nn.Module):
         setfiles = list(set(files))
         setfiles.sort()
 
-        for idx, file in tqdm.tqdm(enumerate(setfiles), total=len(setfiles)):
-            audio, _ = soundfile.read(os.path.join(eval_path, file))
-            # Full utterance
-            data_1 = numpy.stack([audio], axis=0)
-            data_1 = torch.FloatTensor(data_1[0])
-            data_1 = feature_extractor(data_1)
-            data_1 = data_1.unsqueeze(dim=0)
+        eval_dataset = ECAPAValidateDataset(setfiles, eval_path, feature_extractor)
+        train_dataloader = DataLoader(eval_dataset, batch_size=50, drop_last=True, shuffle=False)
+        pdb.set_trace()
+        for idx, (keys, values) in tqdm.tqdm(enumerate(train_dataloader), total=len(train_dataloader)):
+            for i, key in enumerate(keys):
+                embeddings[key] = values[i]
 
-            # Spliited utterance matrix
-            max_audio = 300 * 160 + 240
-            if audio.shape[0] <= max_audio:
-                shortage = max_audio - audio.shape[0]
-                audio = numpy.pad(audio, (0, shortage), 'wrap')
-            feats = []
-            startframe = numpy.linspace(0, audio.shape[0] - max_audio, num=5)
-            for asf in startframe:
-                audio_ = audio[int(asf):int(asf) + max_audio]
-                audio_ = torch.FloatTensor(audio_)
-                audio_ = feature_extractor(audio_)
-                feats.append(audio_)
-            feats = numpy.stack(feats, axis=0).astype(numpy.float32)
-            data_2 = torch.FloatTensor(feats)
-            # Speaker embeddings
-            with torch.no_grad():
-                embedding_1 = self.speaker_encoder.forward(data_1)
-                embedding_1 = F.normalize(embedding_1, p=2, dim=1)
-                embedding_2 = self.speaker_encoder.forward(data_2)
-                embedding_2 = F.normalize(embedding_2, p=2, dim=1)
-            embeddings[file] = [embedding_1, embedding_2]
         scores, labels = [], []
 
         for line in lines:

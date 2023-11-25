@@ -21,17 +21,6 @@ import torch
 import sys
 
 
-class Wav2Vec2Dataset(Dataset):
-    def __init__(self, data):
-        self.data = data
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        return self.data[idx]
-
-
 if __name__ == '__main__':
     print("START Loading data")
     sys.stdout.flush()
@@ -60,7 +49,7 @@ if __name__ == '__main__':
     training_data.from_dict(Path("data/voxceleb1/"))
 
     # batch_size=400
-    train_dataloader = DataLoader(training_data, batch_size=10, drop_last=True, shuffle=False, num_workers=50)
+    train_dataloader = DataLoader(training_data, batch_size=10, drop_last=True, shuffle=False)
     print("END Loading data")
     sys.stdout.flush()
 
