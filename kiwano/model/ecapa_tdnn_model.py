@@ -16,11 +16,12 @@ from kiwano.model.loss import AAMsoftmax
 from kiwano.model.tools import tuneThresholdfromScore, ComputeMinDcf, ComputeErrorRates
 from torch.utils.data import Dataset, DataLoader
 
+
 class ECAPAValidateDataset(Dataset):
     def __init__(self, file_list, eval_path, feature_extractor, speaker_encoder):
         self.file_list = file_list
         self.eval_path = eval_path
-        self.feature_extractor =feature_extractor
+        self.feature_extractor = feature_extractor
         self.speaker_encoder = speaker_encoder
 
     def __len__(self):
@@ -55,6 +56,7 @@ class ECAPAValidateDataset(Dataset):
             embedding_2 = self.speaker_encoder.forward(data_2)
             embedding_2 = F.normalize(embedding_2, p=2, dim=1)
         return self.file_list[idx], [embedding_1, embedding_2]
+
 
 class ECAPAModel(nn.Module):
     def __init__(self, lr, lr_decay, channel_in, channel_size, n_class, loss_margin, loss_scale, test_step, **kwargs):
@@ -103,7 +105,7 @@ class ECAPAModel(nn.Module):
         setfiles.sort()
 
         eval_dataset = ECAPAValidateDataset(setfiles, eval_path, feature_extractor, self.speaker_encoder)
-        eval_dataloader = DataLoader(eval_dataset, batch_size=10, drop_last=True, shuffle=False, num_workers=50)
+        eval_dataloader = DataLoader(eval_dataset, batch_size=10, drop_last=False, shuffle=False, num_workers=50)
         for idx, (keys, values) in tqdm.tqdm(enumerate(eval_dataloader), total=len(eval_dataloader)):
             embeddings_1 = values[0]
             embeddings_2 = values[1]
@@ -112,20 +114,16 @@ class ECAPAModel(nn.Module):
 
         scores, labels = [], []
 
-        keys = embeddings.keys()
         for line in lines:
-            key_1 = line.split()[1]
-            key_2 = line.split()[2]
-            if key_1 in keys and key_2 in keys:
-                embedding_11, embedding_12 = embeddings[line.split()[1]]
-                embedding_21, embedding_22 = embeddings[line.split()[2]]
-                # Compute the scores
-                score_1 = torch.mean(torch.matmul(embedding_11, embedding_21.T))  # higher is positive
-                score_2 = torch.mean(torch.matmul(embedding_12, embedding_22.T))
-                score = (score_1 + score_2) / 2
-                score = score.detach().cpu().numpy()
-                scores.append(score)
-                labels.append(int(line.split()[0]))
+            embedding_11, embedding_12 = embeddings[line.split()[1]]
+            embedding_21, embedding_22 = embeddings[line.split()[2]]
+            # Compute the scores
+            score_1 = torch.mean(torch.matmul(embedding_11, embedding_21.T))  # higher is positive
+            score_2 = torch.mean(torch.matmul(embedding_12, embedding_22.T))
+            score = (score_1 + score_2) / 2
+            score = score.detach().cpu().numpy()
+            scores.append(score)
+            labels.append(int(line.split()[0]))
 
         # Coumpute EER and minDCF
         EER = tuneThresholdfromScore(scores, labels, [1, 0.1])[1]

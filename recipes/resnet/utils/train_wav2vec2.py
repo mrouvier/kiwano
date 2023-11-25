@@ -49,7 +49,7 @@ if __name__ == '__main__':
     training_data.from_dict(Path("data/voxceleb1/"))
 
     # batch_size=400
-    train_dataloader = DataLoader(training_data, batch_size=400, drop_last=True, shuffle=False, num_workers=50)
+    train_dataloader = DataLoader(training_data, batch_size=400, drop_last=False, shuffle=False, num_workers=50)
     print("END Loading data")
     sys.stdout.flush()
 
