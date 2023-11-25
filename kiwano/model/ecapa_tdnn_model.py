@@ -105,9 +105,11 @@ class ECAPAModel(nn.Module):
         setfiles.sort()
 
         eval_dataset = ECAPAValidateDataset(setfiles, eval_path, feature_extractor, self.speaker_encoder)
-        train_dataloader = DataLoader(eval_dataset, batch_size=50, drop_last=True, shuffle=False)
+        eval_dataloader = DataLoader(eval_dataset, batch_size=10, drop_last=True, shuffle=False)
         pdb.set_trace()
-        for idx, (keys, embeddings_1, embeddings_2) in tqdm.tqdm(enumerate(train_dataloader), total=len(train_dataloader)):
+        for idx, (keys, values) in tqdm.tqdm(enumerate(eval_dataloader), total=len(eval_dataloader)):
+            embeddings_1 = values[0]
+            embeddings_2 = values[1]
             for i, key in enumerate(keys):
                 embeddings[key] = [embeddings_1[i], embeddings_2[i]]
 
