@@ -14,7 +14,7 @@ import torch.nn.functional as F
 from kiwano.model.ecapa_tdnn import ECAPA_TDNN
 from kiwano.model.loss import AAMsoftmax
 from kiwano.model.tools import tuneThresholdfromScore, ComputeMinDcf, ComputeErrorRates
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 class ECAPAValidateDataset(Dataset):
     def __init__(self, file_list, eval_path, feature_extractor):
