@@ -19,6 +19,8 @@ from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, S
     SpecAugment, Reverb, CropWaveForm
 import torch
 import sys
+import torch.multiprocessing
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 
 if __name__ == '__main__':
