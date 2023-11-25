@@ -17,10 +17,11 @@ from kiwano.model.tools import tuneThresholdfromScore, ComputeMinDcf, ComputeErr
 from torch.utils.data import Dataset, DataLoader
 
 class ECAPAValidateDataset(Dataset):
-    def __init__(self, file_list, eval_path, feature_extractor):
+    def __init__(self, file_list, eval_path, feature_extractor, speaker_encoder):
         self.file_list = file_list
         self.eval_path = eval_path
         self.feature_extractor =feature_extractor
+        self.speaker_encoder = speaker_encoder
 
     def __len__(self):
         return len(self.file_list)
