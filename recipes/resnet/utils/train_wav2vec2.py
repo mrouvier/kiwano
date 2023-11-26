@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     wav2vec2_outputs = []
 
-    num_iterations = 3
+    num_iterations = 10
 
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,
