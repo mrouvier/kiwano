@@ -10,20 +10,36 @@ from torch.utils.data import DataLoader
 from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
 from kiwano.dataset import SegmentSet
 from kiwano.features import Fbank
-from kiwano.model import ECAPAModel, ECAPATrainDataset
+from kiwano.model import ECAPAModel, ECAPAFeatureExtractor
 from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
 if __name__ == '__main__':
-    training_data = ECAPATrainDataset(
-        train_list='data/voxceleb1/liste',
-        train_path='db/voxceleb1',
-        musan_path='db/musan/musan',
-        rir_path='db/rirs_noises',
-        num_frames=200
-    )
+    print("START Loading data")
+    sys.stdout.flush()
+    musan = SegmentSet()
+    musan.from_dict(Path("data/musan/"))
 
-    train_dataloader = DataLoader(training_data, batch_size=400, drop_last=True, shuffle=True)
+    musan_music = musan.get_speaker("music")
+    musan_speech = musan.get_speaker("speech")
+    musan_noise = musan.get_speaker("noise")
+
+    feature_extractor = ECAPAFeatureExtractor()
+    training_data = SpeakerTrainingSegmentSet(
+        audio_transforms=Sometimes([
+            Noise(musan_music, snr_range=[5, 15]),
+            Noise(musan_speech, snr_range=[13, 20]),
+            Noise(musan_noise, snr_range=[0, 15]),
+            Codec(),
+            Filtering(),
+            Normal()
+        ]),
+        feature_extractor=feature_extractor
+    )
+    training_data.from_dict(Path("data/voxceleb1/"))
+
+    # batch_size=400
+    train_dataloader = DataLoader(training_data, batch_size=400, drop_last=False, shuffle=False, num_workers=10)
 
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,
@@ -49,7 +65,7 @@ if __name__ == '__main__':
         sys.stdout.flush()
         loss, lr, acc = ecapa_tdnn_model.train_network(epoch=epoch, loader=train_dataloader)
         eer, _ = ecapa_tdnn_model.eval_network(eval_list=eval_list, eval_path=eval_path,
-                                               feature_extractor=None, num_workers=0)
+                                               feature_extractor=feature_extractor, num_workers=5)
         if eer < best_eer:
             best_eer = eer
             ecapa_tdnn_model.save_parameters(f"{save_path}/best.model")
