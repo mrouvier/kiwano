@@ -130,6 +130,7 @@ class ECAPATrainDataset(Dataset):
         rir, sr = soundfile.read(rir_file)
         rir = numpy.expand_dims(rir.astype(numpy.float32), 0)
         rir = rir / numpy.sqrt(numpy.sum(rir ** 2))
+        pdb.set_trace()
         return signal.convolve(audio, rir, mode='full')[:, :self.num_frames * 160 + 240]
 
     def add_noise(self, audio, noisecat):
@@ -188,7 +189,7 @@ class ECAPAModel(nn.Module):
             sys.stdout.flush()
         return loss / num, lr, top1 / index * len(labels)
 
-    def eval_network(self, eval_list, eval_path, feature_extractor):
+    def eval_network(self, eval_list, eval_path, feature_extractor, num_workers=5):
         self.eval()
         files = []
         embeddings = {}
@@ -200,7 +201,8 @@ class ECAPAModel(nn.Module):
         setfiles.sort()
 
         eval_dataset = ECAPAValidateDataset(setfiles, eval_path, feature_extractor, self.speaker_encoder)
-        eval_dataloader = DataLoader(eval_dataset, batch_size=100, drop_last=False, shuffle=False, num_workers=5)
+        eval_dataloader = DataLoader(eval_dataset, batch_size=100, drop_last=False, shuffle=False,
+                                     num_workers=num_workers)
         for idx, (keys, values) in tqdm.tqdm(enumerate(eval_dataloader), total=len(eval_dataloader)):
             embeddings_1 = values[0]
             embeddings_2 = values[1]
