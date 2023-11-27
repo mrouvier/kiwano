@@ -128,7 +128,7 @@ class ECAPATrainDataset(Dataset):
     def add_rev(self, audio):
         rir_file = random.choice(self.rir_files)
         rir, sr = soundfile.read(rir_file)
-        rir = numpy.expand_dims(rir.astype(numpy.float), 0)
+        rir = numpy.expand_dims(rir.astype(numpy.float32), 0)
         rir = rir / numpy.sqrt(numpy.sum(rir ** 2))
         return signal.convolve(audio, rir, mode='full')[:, :self.num_frames * 160 + 240]
 
