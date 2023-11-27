@@ -200,7 +200,7 @@ class ECAPAModel(nn.Module):
         setfiles.sort()
 
         eval_dataset = ECAPAValidateDataset(setfiles, eval_path, feature_extractor, self.speaker_encoder)
-        eval_dataloader = DataLoader(eval_dataset, batch_size=100, drop_last=False, shuffle=False, num_workers=10)
+        eval_dataloader = DataLoader(eval_dataset, batch_size=100, drop_last=False, shuffle=False, num_workers=5)
         for idx, (keys, values) in tqdm.tqdm(enumerate(eval_dataloader), total=len(eval_dataloader)):
             embeddings_1 = values[0]
             embeddings_2 = values[1]

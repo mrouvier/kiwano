@@ -23,7 +23,7 @@ if __name__ == '__main__':
         num_frames=200
     )
 
-    train_dataloader = DataLoader(training_data, batch_size=400, drop_last=True, shuffle=True, num_workers=30)
+    train_dataloader = DataLoader(training_data, batch_size=400, drop_last=True, shuffle=True, num_workers=10)
 
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,
