@@ -24,9 +24,7 @@ def process_file(segment: Pathlike, in_data: Pathlike, sampling_frequency: int )
     emission = str(segment).split("/")[-2]
     n = str(segment).split("/")[-1].split(".")[0]
 
-
-
-    nameDir = "data"
+    nameDir = "wav"
     if sampling_frequency != 16000 :
         nameDir = nameDir+"_"+str(sampling_frequency)
 
@@ -34,13 +32,15 @@ def process_file(segment: Pathlike, in_data: Pathlike, sampling_frequency: int )
     out.mkdir(parents=True, exist_ok=True)
 
     output = str(Path(in_data / nameDir / spkid / emission / n)) + ".wav"
-    print(Path(output))
+
     if not Path(output).exists():
-        print("here")
         _process_file(segment, Path(output), sampling_frequency)
+
     duration = str(round(float(get_duration(output)),2))
 
-    return name, spkid, duration, output
+    toolkitPath = Path("db") / "voxceleb2" / "wav" / spkid / emission / (n + ".wav")
+
+    return name, spkid, duration, toolkitPath
 
 
 
@@ -89,6 +89,7 @@ def _process_file(file_path: Pathlike, output: Pathlike, sampling_frequency: int
     print(cmd)
 
     #audio = np.frombuffer(raw_audio, dtype=np.float32)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
