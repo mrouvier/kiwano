@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=60GB
-#SBATCH --cpus-per-task=20
+#SBATCH --cpus-per-task=50
 #SBATCH --output=kiwano_ecapa_output.log
 #SBATCH --error=kiwano_ecapa_error.log
 

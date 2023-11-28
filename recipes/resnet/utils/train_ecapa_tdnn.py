@@ -39,7 +39,7 @@ if __name__ == '__main__':
     training_data.from_dict(Path("data/voxceleb1/"))
 
     # batch_size=400
-    train_dataloader = DataLoader(training_data, batch_size=400, drop_last=False, shuffle=False, num_workers=10)
+    train_dataloader = DataLoader(training_data, batch_size=400, drop_last=False, shuffle=False, num_workers=30)
 
     ecapa_tdnn_model = ECAPAModel(
         lr=0.001,
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         sys.stdout.flush()
         loss, lr, acc = ecapa_tdnn_model.train_network(epoch=epoch, loader=train_dataloader)
         eer, _ = ecapa_tdnn_model.eval_network(eval_list=eval_list, eval_path=eval_path,
-                                               feature_extractor=feature_extractor, num_workers=5)
+                                               feature_extractor=feature_extractor, num_workers=10)
         if eer < best_eer:
             best_eer = eer
             ecapa_tdnn_model.save_parameters(f"{save_path}/best.model")

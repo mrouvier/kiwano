@@ -67,13 +67,17 @@ class ECAPAValidateDataset(Dataset):
         return self.file_list[idx], [embedding_1, embedding_2]
 
 
-class ECAPAFeatureExtractor:
+class ECAPAFeatureExtractor(nn.Module):
     def __init__(self, duration=3):
+        super().__init__()
         self.crop = CropWaveForm(duration)
+
+    def forward(self, x):
+        return x
 
     def extract(self, samples: Union[np.ndarray, torch.Tensor], sampling_rate: int) -> Union[np.ndarray, torch.Tensor]:
         x = self.crop(samples)
-        return x
+        return self.forward(x)
 
 
 class ECAPAModel(nn.Module):
