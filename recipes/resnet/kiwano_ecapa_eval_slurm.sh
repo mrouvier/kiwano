@@ -11,6 +11,6 @@
 source /etc/profile.d/conda.sh
 conda activate kiwano
 
-python3 utils/train_ecapa_tdnn.py --score_path exps/pretrain/pretrain_score.txt --model_path exps/pretrain/pretrain.model
+python3 utils/train_ecapa_tdnn.py --eval --score_path exps/pretrain/kiwano_score.txt --model_path exps/pretrain/pretrain.model
 
 conda deactivate
