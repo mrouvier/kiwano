@@ -36,9 +36,9 @@ if __name__ == '__main__':
     parser.add_argument('keys', metavar='keys', type=str,
                         help='the path to the file where the keys are stocked')
     parser.add_argument('xvectorEnrollment', metavar='xvectorEnrollment', type=str,
-                        help='the path to the file where the xvector enrollment are stocked')
+                        help='command to gather and normalize xvectors enrollment in pkl format')
     parser.add_argument('xvectorTest', metavar='xvectorTest', type=str,
-                        help='the path to the file where the xvector test are stocked')
+                        help='command to gather and normalize xvectors test in pkl format')
 
     args = parser.parse_args()
     trials = read_keys(args.keys)
