@@ -8,6 +8,8 @@ import cProfile
 import random
 from math import dist
 
+import statistics
+
 class ComputeStrategy:
     def scoring_xvector(self, targetEmbedding, impostor):
         pass
@@ -35,36 +37,28 @@ class SNorm:
         self.impostors = self.prepare_impostors(impostors)
         self.computeStrategy = computeStrategy
         self.v_embeddings = {}
+        self.v_means = {}
+        self.v_std = {}
 
     def prepare_impostors(self, impostors):
         #averages vectors for the same speaker
 
         new_impostors = []
 
+        impostors_by_speaker = {}
+
         #sort impostors by the spkid
-        items_tries = sorted(impostors.h.items(), key=lambda x: (int(x[0][2:7]), x[0]))
-        impostors.h = dict(items_tries)
-
-        xvectors = []
-        target_id = 0
-
-        for key in impostors :
-
+        for key, value in impostors.h.items():
             current_id = key[2:7]
-            if target_id == 0 : #init target_id
-                target_id = current_id
-            if current_id != target_id :
-                target_id = current_id
-                xvectors_concat = torch.stack(xvectors)
-                mean_vector = torch.mean(xvectors_concat, dim=0)
-                xvectors = []
-                new_impostors.append(mean_vector)
+            if impostors_by_speaker.get(current_id) is None:
+                impostors_by_speaker[current_id] = []
+            impostors_by_speaker[current_id].append(value)
 
-            else :
-                xvectors.append(impostors[key])
-        xvectors_concat = torch.stack(xvectors)
-        mean_vector = torch.mean(xvectors_concat, dim=0)
-        new_impostors.append(mean_vector)
+        # Calculate mean vectors
+        for xvectors in impostors_by_speaker.values():
+            xvectors_concat = torch.stack(xvectors)
+            mean_vector = torch.mean(xvectors_concat, dim=0)
+            new_impostors.append(mean_vector)
 
         return tuple(new_impostors)
 
@@ -79,15 +73,20 @@ class SNorm:
             scores.append(self.computeStrategy.scoring_xvector(targetEmbedding, impostor))
         return scores
 
+
     def compute_ve_vt(self, xvectorEnrollment, xvectorTest, enrollmentName, testName):
-        if enrollmentName in self.v_embeddings :
-            ve = self.v_embeddings[enrollmentName]
-        else:
+
+        ve = self.v_embeddings.get(enrollmentName)
+        if ve is None:
             ve = self.compute_scores_among_all_impostors(xvectorEnrollment)
-        if testName in self.v_embeddings:
-            vt = self.v_embeddings[testName]
-        else:
+            self.v_embeddings[enrollmentName] = ve
+
+        vt = self.v_embeddings.get(testName)
+        if vt is None:
             vt = self.compute_scores_among_all_impostors(xvectorTest)
+            self.v_embeddings[testName] = vt
+
+
         return ve, vt
 
     def compute_score(self, xvectorEnrollment, xvectorTest, enrollmentName, testName):
@@ -95,11 +94,25 @@ class SNorm:
 
         score = self.computeStrategy.scoring_xvector(xvectorEnrollment, xvectorTest)
 
-        mean_enrollment = np.mean(ve)
-        mean_test = np.mean(vt)
+        mean_enrollment = self.v_means.get(enrollmentName)
+        if mean_enrollment is None:
+            mean_enrollment = np.mean(ve)
+            self.v_means[enrollmentName] = mean_enrollment
 
-        standard_deviation_enrollment = np.std(ve)
-        standard_deviation_test = np.std(vt)
+        mean_test = self.v_means.get(testName)
+        if mean_test is None:
+            mean_test = np.mean(vt)
+            self.v_means[testName] = mean_test
+
+        standard_deviation_enrollment = self.v_std.get(enrollmentName)
+        if standard_deviation_enrollment is None:
+            standard_deviation_enrollment = np.std(ve)
+            self.v_std[enrollmentName] = standard_deviation_enrollment
+
+        standard_deviation_test = self.v_std.get(testName)
+        if standard_deviation_test is None:
+            standard_deviation_test = np.std(vt)
+            self.v_std[testName] = standard_deviation_test
 
         snorm = (score - mean_enrollment) / (2 * standard_deviation_enrollment) + (score - mean_test) / (2 * standard_deviation_test)
         return snorm
@@ -140,7 +153,10 @@ if __name__ == '__main__':
     test = read_pkl(args.xvectorTest)
     impostors = read_pkl(args.impostors)
 
-    computeStrategy = DotProductStrategy()
+    #computeStrategy = DotProductStrategy()
+    computeStrategy = CosineStrategy()
 
     snorm = SNorm(trials, enrollment, test, impostors, computeStrategy)
     snorm.compute_norm()
+
+

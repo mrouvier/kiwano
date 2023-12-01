@@ -15,16 +15,42 @@ class ASNorm(SNorm):
         super().__init__(trials, enrollment, test, impostors, computeStrategy)
         self.vi = self.compute_all_vi()
         self.k = k
+        self.cohorts = {}
+
 
     def compute_ve_vt(self, xvectorEnrollment, xvectorTest, enrollmentName, testName):
 
-        impostors_enrollment, ve = self.select_impostors(xvectorEnrollment, self.vi, enrollmentName)
-        impostors_test, vt = self.select_impostors(xvectorTest, self.vi, testName)
+        cohort_e = self.cohorts.get(enrollmentName)
+        ve = self.v_embeddings.get(enrollmentName)
+        if cohort_e is None:
+            cohort_e, ve = self.select_impostors(xvectorEnrollment, self.vi, enrollmentName)
+            self.cohorts[enrollmentName] = cohort_e
 
-        vt_e = [vt[i] for i in impostors_enrollment]
-        ve_t = [ve[i] for i in impostors_test]
+        cohort_t = self.cohorts.get(testName)
+        vt = self.v_embeddings.get(testName)
+        if cohort_t is None:
+            cohort_t, vt = self.select_impostors(xvectorTest, self.vi, testName)
+            self.cohorts[testName] = cohort_t
+
+        vt_e = [vt[i] for i in cohort_e]
+        ve_t = [ve[i] for i in cohort_t]
 
         return ve_t, vt_e
+
+    def select_impostors(self, targetEmbedding, vi, targetName):
+        # select the first K impostors which are closest to the vector with all the scores between the targetEmbedding and each impostor
+
+        scores_target = self.v_embeddings.get(targetName)
+        if scores_target is None:
+            scores_target = self.compute_scores_among_all_impostors(targetEmbedding)
+            self.v_embeddings[targetName] = scores_target
+
+        vi_array = np.array(vi)
+        distance_squared = np.sum((np.array(scores_target) - vi_array) ** 2, axis=1)
+        cohort = np.argsort(distance_squared)[::-1][:self.k]
+
+        return cohort.tolist(), scores_target
+
 
     def compute_all_vi(self):
         #vi list with a list for each impostor with all the scores between that impostor and each impostor of the set
@@ -40,20 +66,6 @@ class ASNorm(SNorm):
 
         return vi
 
-
-    def select_impostors(self, targetEmbedding, vi, targetName):
-        #select the first K impostors which are closest to the vector with all the scores between the targetEmbedding and each impostor
-
-        if targetName in self.v_embeddings :
-            scores_target = self.v_embeddings[targetName]
-        else:
-            scores_target = self.compute_scores_among_all_impostors(targetEmbedding)
-
-        vi_array = np.array(vi)
-        distance_squared = np.sum((np.array(scores_target) - vi_array) ** 2, axis=1)
-        cohort = np.argsort(distance_squared)[::-1][:self.k]
-
-        return cohort.tolist(), scores_target
 
 
 if __name__ == '__main__':
@@ -81,3 +93,4 @@ if __name__ == '__main__':
 
     asnorm = ASNorm(trials, enrollment, test, impostors, computeStrategy, args.k)
     asnorm.compute_norm()
+

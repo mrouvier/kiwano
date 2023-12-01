@@ -1,4 +1,6 @@
 import argparse
+import cProfile
+
 from kiwano.embedding import EmbeddingSet, read_pkl
 from recipes.resnet.utils.compute_asnorm import ASNorm
 from recipes.resnet.utils.compute_snorm import DotProductStrategy, CosineStrategy
@@ -14,17 +16,22 @@ class ADNorm(ASNorm):
 
     def compute_score(self, xvectorEnrollment, xvectorTest, enrollmentName, testName):
 
-        impostors_enrollment, _ = self.select_impostors(xvectorEnrollment, self.vi, enrollmentName)
-        impostors_test, _ = self.select_impostors(xvectorTest, self.vi, testName)
+        enrollment = self.v_embeddings.get(enrollmentName)
+        if enrollment is None:
+            cohort_e, _ = self.select_impostors(xvectorEnrollment, self.vi, enrollmentName)
+            cohort_e = [self.impostors[i] for i in cohort_e]
+            impostors_enrollment_mean_vector = torch.mean(torch.stack(cohort_e), dim=0)
+            enrollment = xvectorEnrollment - impostors_enrollment_mean_vector
+            self.v_embeddings[enrollmentName] = enrollment
 
-        cohort_e = [self.impostors[i] for i in impostors_enrollment]
-        cohort_t = [self.impostors[i] for i in impostors_test]
+        test = self.v_embeddings.get(testName)
+        if test is None:
+            cohort_t, _ = self.select_impostors(xvectorTest, self.vi, testName)
+            cohort_t = [self.impostors[i] for i in cohort_t]
+            impostors_test_mean_vector = torch.mean(torch.stack(cohort_t), dim=0)
+            test = xvectorTest - impostors_test_mean_vector
+            self.v_embeddings[testName] = test
 
-        impostors_enrollment_mean_vector = torch.mean(torch.stack(cohort_e), dim=0)
-        impostors_test_mean_vector = torch.mean(torch.stack(cohort_t), dim=0)
-
-        xvectorEnrollment = xvectorEnrollment - impostors_enrollment_mean_vector
-        xvectorTest = xvectorTest - impostors_test_mean_vector
 
         adnorm = self.computeStrategy.scoring_xvector(xvectorEnrollment, xvectorTest)
         return adnorm
@@ -54,3 +61,5 @@ if __name__ == '__main__':
 
     adnorm = ADNorm(trials, enrollment, test, impostors, computeStrategy, args.k)
     adnorm.compute_norm()
+
+
