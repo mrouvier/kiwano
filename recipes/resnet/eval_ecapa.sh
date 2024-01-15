@@ -10,7 +10,7 @@
 
 
 source /etc/profile.d/conda.sh
-conda activate ecapa_tdnn
+conda activate kiwano
 
 # python3  utils/train_ecapa_tdnn.py --eval --initial_model exps/exp4/model/model_0004.model  --feat_type wav2vec2 --feat_dim 768 --n_cpu 5
 python3 utils/train_ecapa_tdnn.py --eval --initial_model exps/exp3/model_0013.model --feat_type fbank --feat_dim 80 --n_cpu 5

@@ -12,7 +12,7 @@
 
 
 source /etc/profile.d/conda.sh
-conda activate ecapa_tdnn
+conda activate kiwano
 
 python3 utils/train_ecapa_tdnn.py --save_path exps/exp3 --feat_type fbank --feat_dim 80 --n_cpu 20
 

@@ -10,7 +10,7 @@
 
 
 source /etc/profile.d/conda.sh
-conda activate ecapa_tdnn
+conda activate kiwano
 
 python3 utils/train_ecapa_tdnn.py --save_path exps/exp4 --feat_type wav2vec2 --feat_dim 768
 
