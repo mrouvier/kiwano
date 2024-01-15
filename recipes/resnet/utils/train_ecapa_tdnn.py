@@ -20,6 +20,7 @@ from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
 if __name__ == '__main__':
+    base_data_folder = './../../../dataset/db'
     parser = argparse.ArgumentParser(description="ECAPA_trainer")
     # Training Settings
     parser.add_argument('--num_frames', type=int, default=200,
@@ -32,19 +33,19 @@ if __name__ == '__main__':
     parser.add_argument("--lr_decay", type=float, default=0.97, help='Learning rate decay every [test_step] epochs')
 
     # Training and evaluation path/lists, save path
-    parser.add_argument('--train_list', type=str, default="./../dataset/db/voxceleb2/train_list.txt",
+    parser.add_argument('--train_list', type=str, default=f"{base_data_folder}/voxceleb2/train_list.txt",
                         help='The path of the training list, '
                              'https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/train_list.txt')
-    parser.add_argument('--train_path', type=str, default="./../dataset/db/voxceleb2",
+    parser.add_argument('--train_path', type=str, default=f"{base_data_folder}/voxceleb2",
                         help='The path of the training data, eg:"data/voxceleb2" in my case')
-    parser.add_argument('--eval_list', type=str, default="data/voxceleb1/veri_test2.txt",
+    parser.add_argument('--eval_list', type=str, default=f"{base_data_folder}/voxceleb1/veri_test2.txt",
                         help='The path of the evaluation list: veri_test2.txt, list_test_all2.txt, list_test_hard2.txt'
                              'veri_test2.txt comes from https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test2.txt')
-    parser.add_argument('--eval_path', type=str, default="./../dataset/db/voxceleb1/",
+    parser.add_argument('--eval_path', type=str, default=f"{base_data_folder}/voxceleb1/",
                         help='The path of the evaluation data, eg:"data/voxceleb1/" in my case')
-    parser.add_argument('--musan_path', type=str, default="./../dataset/db/musan_split",
+    parser.add_argument('--musan_path', type=str, default=f"{base_data_folder}/musan_split",
                         help='The path to the MUSAN set, eg:"data/musan_split" in my case')
-    parser.add_argument('--rir_path', type=str, default="./../dataset/db/RIRS_NOISES/simulated_rirs",
+    parser.add_argument('--rir_path', type=str, default=f"{base_data_folder}/RIRS_NOISES/simulated_rirs",
                         help='The path to the RIR set, eg:"data/RIRS_NOISES/simulated_rirs" in my case')
     parser.add_argument('--save_path', type=str, default="exps/exp1", help='Path to save the score.txt and models')
     parser.add_argument('--initial_model', type=str, default="", help='Path of the initial_model')
