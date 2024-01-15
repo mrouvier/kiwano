@@ -13,7 +13,7 @@ import pdb
 import torch.nn as nn
 import torch.nn.functional as F
 
-from wav2vec2 import CustomWav2Vec2Model
+from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 
 
 class SEModule(nn.Module):
