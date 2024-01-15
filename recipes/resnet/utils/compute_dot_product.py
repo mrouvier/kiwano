@@ -3,6 +3,8 @@ from recipes.resnet.utils.scoring import read_keys
 import torch
 from kiwano.embedding import read_pkl
 
+
+
 def scoring_xvector(keys, xvectors_enrollment, xvectors_test):
     """
     arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value labels (0 : not the same speaker, 1 : same speaker)
@@ -11,7 +13,6 @@ def scoring_xvector(keys, xvectors_enrollment, xvectors_test):
     This function print the names of each pairs of audio files and their cosine similarity
     """
 
-    cos = torch.nn.CosineSimilarity(dim=0)
 
     for names in keys :
         enrollmentName = names[0]
@@ -19,9 +20,11 @@ def scoring_xvector(keys, xvectors_enrollment, xvectors_test):
 
         xvectorEnrollment = xvectors_enrollment[enrollmentName]
         xvectorTest = xvectors_test[testName]
-        score = cos(xvectorEnrollment, xvectorTest)
+        score = torch.dot(xvectorEnrollment, xvectorTest)
 
         print(enrollmentName + " " + testName + " " + str(score.item()))
+
+
 
 
 
@@ -33,9 +36,9 @@ if __name__ == '__main__':
     parser.add_argument('keys', metavar='keys', type=str,
                         help='the path to the file where the keys are stocked')
     parser.add_argument('xvectorEnrollment', metavar='xvectorEnrollment', type=str,
-                        help='command to gather xvectors enrollment in pkl format')
+                        help='command to gather and normalize xvectors enrollment in pkl format')
     parser.add_argument('xvectorTest', metavar='xvectorTest', type=str,
-                        help='command to gather xvectors test in pkl format')
+                        help='command to gather and normalize xvectors test in pkl format')
 
     args = parser.parse_args()
     trials = read_keys(args.keys)
