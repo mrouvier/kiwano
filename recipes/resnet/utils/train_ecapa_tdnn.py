@@ -16,7 +16,7 @@ from kiwano.dataset import SegmentSet
 from kiwano.features import Fbank
 from kiwano.model import ECAPAModel, train_loader
 from kiwano.model.tools import init_args
-from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
+from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet, musan_music, musan_speech, musan_noise
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
 if __name__ == '__main__':
@@ -69,8 +69,20 @@ if __name__ == '__main__':
     args = init_args(args)
 
     # Define the data loader
-    trainloader = train_loader(**vars(args))
-    trainLoader = DataLoader(trainloader, batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu,
+    # trainloader = train_loader(**vars(args))
+    training_data = SpeakerTrainingSegmentSet(
+        audio_transforms=Sometimes([
+            Noise(musan_music, snr_range=[5, 15]),
+            Noise(musan_speech, snr_range=[13, 20]),
+            Noise(musan_noise, snr_range=[0, 15]),
+            Codec(),
+            Filtering(),
+            CropWaveForm(),
+            Normal()
+        ])
+    )
+    training_data.from_dict(Path(f"{base_data_folder}/voxceleb2/"))
+    trainLoader = DataLoader(training_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu,
                              drop_last=True)
     # trainLoader = DataLoader(trainloader, batch_size=args.batch_size, shuffle=True, num_workers=1, drop_last=True)
 
