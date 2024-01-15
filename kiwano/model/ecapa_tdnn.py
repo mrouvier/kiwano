@@ -7,12 +7,13 @@ This model is modified and combined based on the following three projects:
 
 '''
 
-import math
+import math, torch, torchaudio
+import pdb
 
-import torch
-from torch import nn
-import torchaudio
+import torch.nn as nn
 import torch.nn.functional as F
+
+from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 
 
 class SEModule(nn.Module):
@@ -138,24 +139,30 @@ class FbankAug(nn.Module):
 
 class ECAPA_TDNN(nn.Module):
 
-    def __init__(self, in_channels=80, out_channels=1024):
+    def __init__(self, C, feat_dim=80, feat_type='fbank'):
         super(ECAPA_TDNN, self).__init__()
-        self.torchfbank = torch.nn.Sequential(
-            PreEmphasis(),
-            torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_fft=512, win_length=400, hop_length=160, \
-                                                 f_min=20, f_max=7600, window_fn=torch.hamming_window,
-                                                 n_mels=in_channels),
-        )
+        self.feat_dim = feat_dim
+        self.feat_type = feat_type
 
-        self.specaug = FbankAug()  # Spec augmentation
-        self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size=5, stride=1, padding=2)
+        if self.feat_type == 'fbank':
+            self.torchfbank = torch.nn.Sequential(
+                PreEmphasis(),
+                torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_fft=512, win_length=400, hop_length=160,
+                                                     f_min=20, f_max=7600, window_fn=torch.hamming_window,
+                                                     n_mels=self.feat_dim),
+            )
+            self.specaug = FbankAug()  # Spec augmentation
+        else:
+            self.wav2vec2 = CustomWav2Vec2Model()
+
+        self.conv1 = nn.Conv1d(self.feat_dim, C, kernel_size=5, stride=1, padding=2)
         self.relu = nn.ReLU()
-        self.bn1 = nn.BatchNorm1d(out_channels)
-        self.layer1 = Bottle2neck(out_channels, out_channels, kernel_size=3, dilation=2, scale=8)
-        self.layer2 = Bottle2neck(out_channels, out_channels, kernel_size=3, dilation=3, scale=8)
-        self.layer3 = Bottle2neck(out_channels, out_channels, kernel_size=3, dilation=4, scale=8)
+        self.bn1 = nn.BatchNorm1d(C)
+        self.layer1 = Bottle2neck(C, C, kernel_size=3, dilation=2, scale=8)
+        self.layer2 = Bottle2neck(C, C, kernel_size=3, dilation=3, scale=8)
+        self.layer3 = Bottle2neck(C, C, kernel_size=3, dilation=4, scale=8)
         # I fixed the shape of the output from MFA layer, that is close to the setting from ECAPA paper.
-        self.layer4 = nn.Conv1d(3 * out_channels, 1536, kernel_size=1)
+        self.layer4 = nn.Conv1d(3 * C, 1536, kernel_size=1)
         self.attention = nn.Sequential(
             nn.Conv1d(4608, 256, kernel_size=1),
             nn.ReLU(),
@@ -168,43 +175,43 @@ class ECAPA_TDNN(nn.Module):
         self.fc6 = nn.Linear(3072, 192)
         self.bn6 = nn.BatchNorm1d(192)
 
-    def forward(self, x, aug=False):
+    def forward(self, x, aug, learnable_weights=None):
         with torch.no_grad():
-            x = self.torchfbank(x) + 1e-6
-            x = x.log()
-            x = x - torch.mean(x, dim=-1, keepdim=True)
-            if aug:
-                x = self.specaug(x)
+            if learnable_weights is None:
+                x = self.torchfbank(x) + 1e-6
+                x = x.log()
+                x = x - torch.mean(x, dim=-1, keepdim=True)
+                if aug:
+                    x = self.specaug(x)
+            else:
+                x = self.wav2vec2(x, learnable_weights) + 1e-6
+                # x = x.log()
+                # x = x - torch.mean(x, dim=-1, keepdim=True)
 
-            x = self.conv1(x)
+        x = self.conv1(x)
+        x = self.relu(x)
+        x = self.bn1(x)
 
-            x = self.relu(x)
-            x = self.bn1(x)
+        x1 = self.layer1(x)
+        x2 = self.layer2(x + x1)
+        x3 = self.layer3(x + x1 + x2)
 
-            x1 = self.layer1(x)
-            x2 = self.layer2(x + x1)
-            x3 = self.layer3(x + x1 + x2)
+        x = self.layer4(torch.cat((x1, x2, x3), dim=1))
+        x = self.relu(x)
 
-            x = self.layer4(torch.cat((x1, x2, x3), dim=1))
-            x = self.relu(x)
+        t = x.size()[-1]
 
-            t = x.size()[-1]
+        global_x = torch.cat((x, torch.mean(x, dim=2, keepdim=True).repeat(1, 1, t),
+                              torch.sqrt(torch.var(x, dim=2, keepdim=True).clamp(min=1e-4)).repeat(1, 1, t)), dim=1)
 
-            global_x = torch.cat((x, torch.mean(x, dim=2, keepdim=True).repeat(1, 1, t),
-                                  torch.sqrt(torch.var(x, dim=2, keepdim=True).clamp(min=1e-4)).repeat(1, 1, t)), dim=1)
+        w = self.attention(global_x)
 
-            w = self.attention(global_x)
+        mu = torch.sum(x * w, dim=2)
+        sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-4))
 
-            mu = torch.sum(x * w, dim=2)
-
-            sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-4))
-
-            x = torch.cat((mu, sg), 1)
-
-            x = self.bn5(x)
-
-            x = self.fc6(x)
-
-            x = self.bn6(x)
+        x = torch.cat((mu, sg), 1)
+        x = self.bn5(x)
+        x = self.fc6(x)
+        x = self.bn6(x)
 
         return x

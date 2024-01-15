@@ -297,7 +297,7 @@ class Crop(Augmentation):
 
 
 class CropWaveForm(Augmentation):
-    def __init__(self, duration: int):
+    def __init__(self, duration: int = 2):
         self.duration = duration
 
     def __call__(self, audio: torch.Tensor):

@@ -10,6 +10,7 @@
 source /etc/profile.d/conda.sh
 conda activate kiwano
 
-python3 train_wav2vec2.py
+# python3 train_wav2vec2.py
+# python3 train_wav2vec2.py
 
 conda deactivate
