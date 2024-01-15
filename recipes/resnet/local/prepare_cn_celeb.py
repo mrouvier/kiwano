@@ -9,6 +9,8 @@ from concurrent.futures.process import ProcessPoolExecutor
 import argparse
 from subprocess import PIPE, run
 
+import os
+
 def get_duration(file_path: str):
    info = torchaudio.info(file_path)
    return info.num_frames/info.sample_rate
@@ -29,10 +31,13 @@ def process_file_test(segment: Pathlike, in_data: Pathlike):
 
     output = str(Path(in_data/ "CN-Celeb_flac" / "eval" / "wav"/ n)) + ".wav"
 
-    _process_file(segment, Path(output))
+    if not Path(output).exists():
+        _process_file(segment, Path(output))
     duration = str(round(float(get_duration(output)), 2))
 
-    return name, spkid, duration, segment
+    toolkitPath = Path("db") / "cnceleb1" / "wav" / (n + ".wav")
+
+    return name, spkid, duration, toolkitPath
 
 def process_file_train(segment: Pathlike, in_data: Pathlike):
     name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
@@ -44,14 +49,38 @@ def process_file_train(segment: Pathlike, in_data: Pathlike):
 
     output = str(Path(in_data / "CN-Celeb2_flac" / "wav" /spkid / n)) + ".wav"
 
-    _process_file(segment, Path(output))
+    if not Path(output).exists():
+        _process_file(segment, Path(output))
     duration = str(round(float(get_duration(output)), 2))
 
 
     return name, spkid, duration, segment
 
 
-def prepare_cn_celeb(in_data: Pathlike, out_data: Pathlike):
+def prepare_trials(in_data: Pathlike):
+    # change trials.lst to have the correct format
+
+    dictEnroll = {}
+
+    with open(in_data / "CN-Celeb_flac" / "eval" / "lists" / "enroll.lst", 'r') as enroll:
+        for line in enroll:
+            col1, col2 = line.strip().split(' ')
+            dictEnroll[col1] = col2
+
+    with open(in_data / "CN-Celeb_flac" / "eval" / "lists" / "trials.lst", 'r') as trials:
+        with open(in_data / "CN-Celeb_flac" / "eval" / "lists" / "new_trials.txt", 'w') as new_trials:
+            for line in trials:
+                col1, col2, col3 = line.strip().split(' ')
+                if col3 == "0":
+                    col3 = "nontarget"
+                else:
+                    col3 = "target"
+                col1 = dictEnroll[col1]
+                col1 = "eval_enroll_" + col1[7:-4]
+                col2 = "eval_test_" + col2[5:-4]
+                new_trials.write(col1 + " " + col2 + " " + col3 + "\n")
+
+def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike):
     in_data = Path(in_data)
 
     out_data = Path(out_data)
@@ -82,6 +111,16 @@ def prepare_cn_celeb(in_data: Pathlike, out_data: Pathlike):
     listeTrain.close()
     listeTest.close()
 
+    prepare_trials(in_data)
+
+    if canDeleteZIP :
+        for file in sorted(in_data.glob("cn-celeb2_v2.tar*")):
+
+            os.remove(file)
+
+        os.remove(in_data / "cn-celeb2.tar.gz")
+        os.remove(in_data / "cn-celeb_v2.tar.gz")
+
 
 if __name__ == '__main__':
 
@@ -90,8 +129,10 @@ if __name__ == '__main__':
                         help='the path to the directory where CN-Celeb2_flac and CN-Celeb_flac are stored')
     parser.add_argument('out_data', metavar="out_data", type=str,
                         help='the path to the target directory where the liste will be stored')
+    parser.add_argument('--deleteZIP', action="store_true", default=False,
+                        help='to delete the ZIP files already extracted (default: False)')
 
     args = parser.parse_args()
 
-    prepare_cn_celeb(args.in_data, args.out_data)
+    prepare_cn_celeb(args.deleteZIP, args.in_data, args.out_data)
 
