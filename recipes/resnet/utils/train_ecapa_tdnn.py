@@ -11,7 +11,8 @@ import sys
 import torch
 from torch.utils.data import DataLoader
 
-from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, CropWaveForm
+from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, CropWaveForm, Reverb, \
+    SpecAugment
 from kiwano.dataset import SegmentSet
 from kiwano.features import Fbank
 from kiwano.model import ECAPAModel, train_loader
@@ -20,7 +21,8 @@ from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
 if __name__ == '__main__':
-    base_data_folder = './../../../dataset/db'
+    # base_data_folder = './../../../dataset/db'
+    base_data_folder = 'db'
     parser = argparse.ArgumentParser(description="ECAPA_trainer")
     # Training Settings
     parser.add_argument('--num_frames', type=int, default=200,
@@ -77,6 +79,9 @@ if __name__ == '__main__':
     musan_speech = musan.get_speaker("speech")
     musan_noise = musan.get_speaker("noise")
 
+    reverb = SegmentSet()
+    reverb.from_dict(Path("data/rirs_noises/"))
+
     training_data = SpeakerTrainingSegmentSet(
         audio_transforms=Sometimes([
             Noise(musan_music, snr_range=[5, 15]),
@@ -84,9 +89,13 @@ if __name__ == '__main__':
             Noise(musan_noise, snr_range=[0, 15]),
             Codec(),
             Filtering(),
-            CropWaveForm(),
-            Normal()
-        ])
+            Normal(),
+            Reverb(reverb)
+        ]),
+        feature_transforms=Linear([
+            CMVN(),
+            CropWaveForm()
+        ]),
     )
     training_data.from_dict(Path(f"{base_data_folder}/voxceleb2/"))
     trainLoader = DataLoader(training_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu,
