@@ -15,14 +15,12 @@ from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Line
     SpecAugment
 from kiwano.dataset import SegmentSet
 from kiwano.features import Fbank
-from kiwano.model import ECAPAModel, train_loader
+from kiwano.model import ECAPAModel
 from kiwano.model.tools import init_args
 from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
 if __name__ == '__main__':
-    # base_data_folder = './../../../dataset/db'
-    base_data_folder = 'db'
     parser = argparse.ArgumentParser(description="ECAPA_trainer")
     # Training Settings
     parser.add_argument('--num_frames', type=int, default=200,
@@ -35,20 +33,11 @@ if __name__ == '__main__':
     parser.add_argument("--lr_decay", type=float, default=0.97, help='Learning rate decay every [test_step] epochs')
 
     # Training and evaluation path/lists, save path
-    parser.add_argument('--train_list', type=str, default=f"{base_data_folder}/voxceleb2/train_list.txt",
-                        help='The path of the training list, '
-                             'https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/train_list.txt')
-    parser.add_argument('--train_path', type=str, default=f"{base_data_folder}/voxceleb2",
-                        help='The path of the training data, eg:"data/voxceleb2" in my case')
-    parser.add_argument('--eval_list', type=str, default=f"{base_data_folder}/voxceleb1/veri_test2.txt",
+    parser.add_argument('--eval_list', type=str, default=f"db/voxceleb1/veri_test2.txt",
                         help='The path of the evaluation list: veri_test2.txt, list_test_all2.txt, list_test_hard2.txt'
                              'veri_test2.txt comes from https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test2.txt')
-    parser.add_argument('--eval_path', type=str, default=f"{base_data_folder}/voxceleb1/",
+    parser.add_argument('--eval_path', type=str, default=f"db/voxceleb1/wav/",
                         help='The path of the evaluation data, eg:"data/voxceleb1/" in my case')
-    parser.add_argument('--musan_path', type=str, default=f"{base_data_folder}/musan_split",
-                        help='The path to the MUSAN set, eg:"data/musan_split" in my case')
-    parser.add_argument('--rir_path', type=str, default=f"{base_data_folder}/RIRS_NOISES/simulated_rirs",
-                        help='The path to the RIR set, eg:"data/RIRS_NOISES/simulated_rirs" in my case')
     parser.add_argument('--save_path', type=str, default="exps/exp1", help='Path to save the score.txt and models')
     parser.add_argument('--initial_model', type=str, default="", help='Path of the initial_model')
 
@@ -65,15 +54,13 @@ if __name__ == '__main__':
 
     # Initialization
     warnings.simplefilter("ignore")
-    # torch.multiprocessing.set_start_method('spawn', force=True)
     torch.multiprocessing.set_sharing_strategy('file_system')
     args = parser.parse_args()
     args = init_args(args)
 
     # Define the data loader
-    # trainloader = train_loader(**vars(args))
     musan = SegmentSet()
-    musan.from_dict(Path(f"{base_data_folder}/musan/"))
+    musan.from_dict(Path(f"data/musan/"))
 
     musan_music = musan.get_speaker("music")
     musan_speech = musan.get_speaker("speech")
@@ -97,10 +84,9 @@ if __name__ == '__main__':
             CropWaveForm()
         ]),
     )
-    training_data.from_dict(Path(f"{base_data_folder}/voxceleb2/"))
+    training_data.from_dict(Path(f"data/voxceleb2/"))
     trainLoader = DataLoader(training_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu,
                              drop_last=True)
-    # trainLoader = DataLoader(trainloader, batch_size=args.batch_size, shuffle=True, num_workers=1, drop_last=True)
 
     # Search for the exist models
     modelfiles = glob.glob('%s/model_0*.model' % args.model_save_path)

@@ -3,10 +3,10 @@
 #SBATCH --partition=gpu
 # #SBATCH --gres=gpu:nvidia_a100-sxm4-80gb:1
 # #SBATCH --gres=gpu:tesla_v100-sxm2-32gb:1
-# #SBATCH --gres=gpu:rtx_3090:1
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:rtx_3090:1
+# #SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
-# #SBATCH --mem=128GB
+#SBATCH --mem=32GB
 #SBATCH --cpus-per-task=5
 #SBATCH --output=eval_ecapa_kiwano_output.log
 #SBATCH --error=eval_ecapa_kiwano_error.log
