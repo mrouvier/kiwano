@@ -16,6 +16,8 @@ source /etc/profile.d/conda.sh
 conda activate kiwano
 
 # python3  utils/train_ecapa_tdnn.py --eval --initial_model exps/exp2/model/model_0017.model  --feat_type wav2vec2 --feat_dim 768 --n_cpu 2
-python3 utils/train_ecapa_tdnn.py --eval --initial_model exps/exp1/model/model_0027.model --feat_type fbank --feat_dim 80 --n_cpu 4
+# python3 utils/train_ecapa_tdnn.py --eval --initial_model exps/exp1/model/model_0027.model --feat_type fbank --feat_dim 80 --n_cpu 4
+python3 utils/train_ecapa_tdnn.py --eval --initial_model exps/pretrain.model --feat_type fbank --feat_dim 80 --n_cpu 4
+
 
 conda deactivate
