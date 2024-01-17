@@ -10,18 +10,19 @@ from kiwano.model.tools import accuracy
 AAMsoftmax loss function copied from voxceleb_trainer: https://github.com/clovaai/voxceleb_trainer/blob/master/loss/aamsoftmax.py
 '''
 
+
 class AAMsoftmax(nn.Module):
-    def __init__(self, n_class, loss_margin, loss_scale):
+    def __init__(self, n_class, m, s):
         super(AAMsoftmax, self).__init__()
-        self.loss_margin = loss_margin
-        self.loss_scale = loss_scale
+        self.m = m
+        self.s = s
         self.weight = torch.nn.Parameter(torch.FloatTensor(n_class, 192), requires_grad=True)
         self.ce = nn.CrossEntropyLoss()
         nn.init.xavier_normal_(self.weight, gain=1)
-        self.cos_m = math.cos(self.loss_margin)
-        self.sin_m = math.sin(self.loss_margin)
-        self.th = math.cos(math.pi - self.loss_margin)
-        self.mm = math.sin(math.pi - self.loss_margin) * self.loss_margin
+        self.cos_m = math.cos(self.m)
+        self.sin_m = math.sin(self.m)
+        self.th = math.cos(math.pi - self.m)
+        self.mm = math.sin(math.pi - self.m) * self.m
 
     def forward(self, x, label=None):
         cosine = F.linear(F.normalize(x), F.normalize(self.weight))
@@ -31,7 +32,7 @@ class AAMsoftmax(nn.Module):
         one_hot = torch.zeros_like(cosine)
         one_hot.scatter_(1, label.view(-1, 1), 1)
         output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
-        output = output * self.loss_scale
+        output = output * self.s
 
         loss = self.ce(output, label)
         prec1 = accuracy(output.detach(), label.detach(), topk=(1,))[0]
