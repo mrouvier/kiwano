@@ -6,8 +6,8 @@
 # #SBATCH --gres=gpu:rtx_3090:1
 #SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
-#SBATCH --mem=32GB
-#SBATCH --cpus-per-task=2
+# #SBATCH --mem=32GB
+#SBATCH --cpus-per-task=4
 #SBATCH --output=eval_ecapa_kiwano_output.log
 #SBATCH --error=eval_ecapa_kiwano_error.log
 
