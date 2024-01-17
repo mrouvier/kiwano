@@ -6,8 +6,8 @@
 # #SBATCH --gres=gpu:rtx_3090:1
 #SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
-#SBATCH --mem=64GB
-#SBATCH --cpus-per-task=8
+#SBATCH --mem=40GB
+#SBATCH --cpus-per-task=5
 #SBATCH --output=eval_ecapa_kiwano_output.log
 #SBATCH --error=eval_ecapa_kiwano_error.log
 
@@ -17,7 +17,7 @@ conda activate kiwano
 
 # python3  utils/train_ecapa_tdnn.py --eval --initial_model exps/exp2/model/model_0017.model  --feat_type wav2vec2 --feat_dim 768 --n_cpu 2
 # python3 utils/train_ecapa_tdnn.py --eval --initial_model exps/exp1/model/model_0027.model --feat_type fbank --feat_dim 80 --n_cpu 4
-python3 utils/train_ecapa_tdnn.py --eval --initial_model exps/pretrain.model --feat_type fbank --feat_dim 80 --n_cpu 8
+python3 utils/train_ecapa_tdnn.py --eval --initial_model exps/pretrain.model --feat_type fbank --feat_dim 80 --n_cpu 5
 
 
 conda deactivate
