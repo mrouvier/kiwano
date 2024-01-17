@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=process_kiwano
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+##SBATCH --partition=gpu
+##SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
-#SBATCH --mem=128GB
+#SBATCH --mem=16GB
 #SBATCH --output=process_kiwano_output.log
 #SBATCH --error=process_kiwano_error.log
 
@@ -30,6 +30,11 @@ conda activate kiwano
 #python3 local/download_rirs_noises.py db/rirs_noises/
 #python3 local/prepare_rirs_noises.py db/rirs_noises/ data/rirs_noises
 
-cp -rf data/voxceleb2/wav db/voxceleb2/
+
+# cp -rf data/voxceleb2/wav db/voxceleb2/
+
+du -h --max-depth=1 /local_disk/helios/mmlamah/
+rm -rf data/voxceleb2/wav
+
 
 conda deactivate
