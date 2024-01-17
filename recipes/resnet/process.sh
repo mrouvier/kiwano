@@ -3,7 +3,7 @@
 ##SBATCH --partition=gpu
 ##SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
-#SBATCH --mem=16GB
+##SBATCH --mem=16GB
 #SBATCH --output=process_kiwano_output.log
 #SBATCH --error=process_kiwano_error.log
 
@@ -33,6 +33,12 @@ conda activate kiwano
 
 # cp -rf data/voxceleb2/wav db/voxceleb2/
 
-rm -rf data/voxceleb2/wav
+# rm -rf data/voxceleb2/wav
+
+rm -rf db/voxceleb2/wav/*
+rm -rf db/voxceleb2/dev
+cp -rf ./../../../dataset/db/voxceleb2/*  db/voxceleb2/wav/
+rm -rf db/voxceleb2/wav/vox2_meta.csv
+mv db/voxceleb2/wav/train_list.txt db/voxceleb2/
 
 conda deactivate
