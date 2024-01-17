@@ -33,8 +33,6 @@ conda activate kiwano
 
 # cp -rf data/voxceleb2/wav db/voxceleb2/
 
-du -h --max-depth=1 /local_disk/helios/mmlamah/
 rm -rf data/voxceleb2/wav
-
 
 conda deactivate
