@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=process_kiwano
+#SBATCH --job-name=pk
 ##SBATCH --partition=gpu
 ##SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
 ##SBATCH --mem=16GB
-#SBATCH --output=process_kiwano_output.log
-#SBATCH --error=process_kiwano_error.log
+#SBATCH --output=pk_output.log
+#SBATCH --error=pk_error.log
 
 
 source /etc/profile.d/conda.sh
