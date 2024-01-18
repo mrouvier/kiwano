@@ -35,10 +35,10 @@ conda activate kiwano
 
 # rm -rf data/voxceleb2/wav
 
-rm -rf db/voxceleb2/wav/*
-rm -rf db/voxceleb2/dev
-cp -rf ./../../../dataset/db/voxceleb2/*  db/voxceleb2/wav/
-rm -rf db/voxceleb2/wav/vox2_meta.csv
-mv db/voxceleb2/wav/train_list.txt db/voxceleb2/
+#rm -rf db/voxceleb2/wav/*
+#rm -rf db/voxceleb2/dev
+#cp -rf ./../../../dataset/db/voxceleb2/*  db/voxceleb2/wav/
+#rm -rf db/voxceleb2/wav/vox2_meta.csv
+#mv db/voxceleb2/wav/train_list.txt db/voxceleb2/
 
 conda deactivate
