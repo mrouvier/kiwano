@@ -13,6 +13,7 @@ import pdb
 import torch.nn as nn
 import torch.nn.functional as F
 
+from kiwano.features import Fbank
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 
 
@@ -145,12 +146,13 @@ class ECAPA_TDNN(nn.Module):
         self.feat_type = feat_type
 
         if self.feat_type == 'fbank':
-            self.torchfbank = torch.nn.Sequential(
-                PreEmphasis(),
-                torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_fft=512, win_length=400, hop_length=160,
-                                                     f_min=20, f_max=7600, window_fn=torch.hamming_window,
-                                                     n_mels=self.feat_dim),
-            )
+            # self.torchfbank = torch.nn.Sequential(
+            #     PreEmphasis(),
+            #     torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_fft=512, win_length=400, hop_length=160,
+            #                                          f_min=20, f_max=7600, window_fn=torch.hamming_window,
+            #                                          n_mels=self.feat_dim),
+            # )
+            self.torchfbank = Fbank()
             self.specaug = FbankAug()  # Spec augmentation
         else:
             self.wav2vec2 = CustomWav2Vec2Model()
@@ -175,7 +177,7 @@ class ECAPA_TDNN(nn.Module):
         self.fc6 = nn.Linear(3072, 192)
         self.bn6 = nn.BatchNorm1d(192)
 
-    def forward(self, x, aug, learnable_weights=None):
+    def forward(self, x, aug, learnable_weights=None, is_2d=False):
         with torch.no_grad():
             if learnable_weights is None:
                 x = self.torchfbank(x) + 1e-6
@@ -184,7 +186,7 @@ class ECAPA_TDNN(nn.Module):
                 if aug:
                     x = self.specaug(x)
             else:
-                x = self.wav2vec2(x, learnable_weights) + 1e-6
+                x = self.wav2vec2(x, learnable_weights, is_2d) + 1e-6
                 # x = x.log()
                 # x = x - torch.mean(x, dim=-1, keepdim=True)
 

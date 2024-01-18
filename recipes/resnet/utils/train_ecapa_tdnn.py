@@ -80,6 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_class', type=int, default=5994, help='Number of speakers')
     parser.add_argument('--feat_type', type=str, default='fbank', help='Type of features: fbank, wav2vec2')
     parser.add_argument('--feat_dim', type=int, default=80, help='Dim of features: fbank(80), wav2vec2(768)')
+    parser.add_argument('--is_2d', dest='is_2d', action='store_true', help='2d learneable weight')
 
     # Command
     parser.add_argument('--eval', dest='eval', action='store_true', help='Only do evaluation')
