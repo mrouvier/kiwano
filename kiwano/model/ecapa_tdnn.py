@@ -146,13 +146,12 @@ class ECAPA_TDNN(nn.Module):
         self.feat_type = feat_type
 
         if self.feat_type == 'fbank':
-            # self.torchfbank = torch.nn.Sequential(
-            #     PreEmphasis(),
-            #     torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_fft=512, win_length=400, hop_length=160,
-            #                                          f_min=20, f_max=7600, window_fn=torch.hamming_window,
-            #                                          n_mels=self.feat_dim),
-            # )
-            self.torchfbank = Fbank()
+            self.torchfbank = torch.nn.Sequential(
+                PreEmphasis(),
+                torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_fft=512, win_length=400, hop_length=160,
+                                                     f_min=20, f_max=7600, window_fn=torch.hamming_window,
+                                                     n_mels=self.feat_dim),
+            )
             self.specaug = FbankAug()  # Spec augmentation
         else:
             self.wav2vec2 = CustomWav2Vec2Model()
