@@ -35,7 +35,8 @@ if __name__ == '__main__':
     # Training and evaluation path/lists, save path
     parser.add_argument('--eval_list', type=str, default=f"db/voxceleb1/veri_test2.txt",
                         help='The path of the evaluation list: veri_test2.txt, list_test_all2.txt, list_test_hard2.txt'
-                             'veri_test2.txt comes from https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test2.txt')
+                             'veri_test2.txt comes from '
+                             'https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test2.txt')
     parser.add_argument('--eval_path', type=str, default=f"db/voxceleb1/wav/",
                         help='The path of the evaluation data, eg:"data/voxceleb1/" in my case')
     parser.add_argument('--save_path', type=str, default="exps/exp1", help='Path to save the score.txt and models')

@@ -32,7 +32,6 @@ def collate_fn(batch):
     return filenames, data_1_padded, original_lengths_1, data_2
 
 
-
 class EmbeddingsDataset(Dataset):
     def __init__(self, files, eval_path):
         self.files = files
@@ -226,6 +225,27 @@ class ECAPAModel(nn.Module):
         sys.stdout.flush()
 
         return EER, minDCF
+
+    def extract_xvectors(self, loader):
+        self.eval()
+        embeddings = {}
+        for num, (data_batch, key_batch) in tqdm.tqdm(enumerate(loader, start=1), total=len(loader)):
+            for i, key in enumerate(key_batch):
+                data = data_batch[i]
+                data = data.cuda()
+                with torch.no_grad():
+                    if self.learnable_weights is None:
+                        embedding = self.speaker_encoder.forward(data, aug=False)
+                    else:
+                        embedding = self.speaker_encoder.forward(data, aug=False,
+                                                                 learnable_weights=self.learnable_weights)
+
+                    embedding = F.normalize(embedding, p=2, dim=1)
+
+                embedding = torch.Tensor(embedding.detach().cpu().numpy())
+                embeddings[key] = embedding
+
+        return embeddings
 
     def save_parameters(self, path):
         folder = os.path.dirname(path)
