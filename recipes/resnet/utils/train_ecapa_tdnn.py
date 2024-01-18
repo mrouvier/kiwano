@@ -9,16 +9,47 @@ from pathlib import Path
 import sys
 
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
+from typing import List, Union
 
 from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, CropWaveForm, Reverb, \
-    SpecAugment
+    SpecAugment, Augmentation
 from kiwano.dataset import SegmentSet
 from kiwano.features import Fbank
 from kiwano.model import ECAPAModel
 from kiwano.model.tools import init_args
-from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
+
+
+class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
+    def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor=None,
+                 feature_transforms: List[Augmentation] = None):
+        super().__init__()
+        self.audio_transforms = audio_transforms
+        self.feature_transforms = feature_transforms
+        self.feature_extractor = feature_extractor
+
+    def __len__(self):
+        return len(self.segments)
+
+    def __getitem__(self, segment_id_or_index: Union[int, str]):
+        if isinstance(segment_id_or_index, str):
+            segment = self.segments[segment_id_or_index]
+        else:
+            segment = next(val for idx, val in enumerate(self.segments.values()) if idx == segment_id_or_index)
+
+        feature, sample_rate = segment.load_audio()
+        if self.audio_transforms is not None:
+            feature, sample_rate = self.audio_transforms(feature, sample_rate)
+
+        if self.feature_extractor is not None:
+            feature = self.feature_extractor.extract(feature, sampling_rate=sample_rate)
+
+        if self.feature_transforms is not None:
+            feature = self.feature_transforms(feature)
+
+        return feature, self.labels[segment.spkid]
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="ECAPA_trainer")
