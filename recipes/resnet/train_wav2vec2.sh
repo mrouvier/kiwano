@@ -2,9 +2,9 @@
 #SBATCH --job-name=kw
 #SBATCH --partition=gpu
 # #SBATCH --gres=gpu:nvidia_a100-sxm4-80gb:1
-# #SBATCH --gres=gpu:tesla_v100-sxm2-32gb:1
+#SBATCH --gres=gpu:tesla_v100-sxm2-32gb:1
 # #SBATCH --gres=gpu:rtx_3090:1
-#SBATCH --gres=gpu:1
+# #SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=20GB
 #SBATCH --cpus-per-task=5
