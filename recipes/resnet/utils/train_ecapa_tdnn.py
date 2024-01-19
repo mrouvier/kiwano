@@ -165,13 +165,13 @@ if __name__ == '__main__':
 
         # Evaluation every [test_step] epochs
         if epoch % args.test_step == 0:
-            s.save_parameters(args.model_save_path + "/model_%04d.model" % epoch)
             EERs.append(s.eval_network(eval_list=args.eval_list, eval_path=args.eval_path, n_cpu=args.n_cpu)[0])
             print(time.strftime("%Y-%m-%d %H:%M:%S"),
                   "%d epoch, ACC %2.2f%%, EER %2.2f%%, bestEER %2.2f%%" % (epoch, acc, EERs[-1], min(EERs)))
             score_file.write("%d epoch, LR %f, LOSS %f, ACC %2.2f%%, EER %2.2f%%, bestEER %2.2f%%\n" % (
                 epoch, lr, loss, acc, EERs[-1], min(EERs)))
             score_file.flush()
+            s.save_parameters(args.model_save_path + "/model_%04d.model" % epoch)
 
         if epoch >= args.max_epoch:
             quit()
