@@ -2,69 +2,57 @@ import argparse
 from kiwano.embedding import EmbeddingSet, read_pkl
 from recipes.resnet.utils.compute_snorm import SNorm, DotProductStrategy, CosineStrategy
 from recipes.resnet.utils.scoring import read_keys
-import torch
 import numpy as np
 
 import cProfile
-import random
-from math import dist
+
+import math
+
 
 class ASNorm(SNorm):
 
     def __init__(self, trials, enrollment, test, impostors, computeStrategy, k):
+        # cohorts : dictionary with keys : the name of the embedding and value : indices of the closest impostors
         super().__init__(trials, enrollment, test, impostors, computeStrategy)
         self.vi = self.compute_all_vi()
         self.k = k
         self.cohorts = {}
 
-
-    def compute_ve_vt(self, xvectorEnrollment, xvectorTest, enrollmentName, testName):
-
-        cohort_e = self.cohorts.get(enrollmentName)
-        ve = self.v_embeddings.get(enrollmentName)
-        if cohort_e is None:
-            cohort_e, ve = self.select_impostors(xvectorEnrollment, self.vi, enrollmentName)
-            self.cohorts[enrollmentName] = cohort_e
-
-        cohort_t = self.cohorts.get(testName)
-        vt = self.v_embeddings.get(testName)
-        if cohort_t is None:
-            cohort_t, vt = self.select_impostors(xvectorTest, self.vi, testName)
-            self.cohorts[testName] = cohort_t
-
-        vt_e = [vt[i] for i in cohort_e]
-        ve_t = [ve[i] for i in cohort_t]
-
-        return ve_t, vt_e
-
-    def select_impostors(self, targetEmbedding, vi, targetName):
+    def select_impostors(self, v):
         # select the first K impostors which are closest to the vector with all the scores between the targetEmbedding and each impostor
 
-        scores_target = self.v_embeddings.get(targetName)
-        if scores_target is None:
-            scores_target = self.compute_scores_among_all_impostors(targetEmbedding)
-            self.v_embeddings[targetName] = scores_target
-
-        vi_array = np.array(vi)
-        distance_squared = np.sum((np.array(scores_target) - vi_array) ** 2, axis=1)
-        cohort = np.argsort(distance_squared)[::-1][:self.k]
-
-        return cohort.tolist(), scores_target
-
+        distance_squared = [np.linalg.norm(vi - v) ** 2 for vi in self.vi]
+        return np.argsort(distance_squared)[:self.k]
 
     def compute_all_vi(self):
         #vi list with a list for each impostor with all the scores between that impostor and each impostor of the set
 
-        vi = []
-        for i in range(len(self.impostors)):
-            scores = []
-            for k in range(0, i):
-                scores.append(vi[k][i])
-            for j in range(i, len(self.impostors)):
-                scores.append(self.computeStrategy.scoring_xvector(self.impostors[i], self.impostors[j]))
-            vi.append(scores)
+        vi = np.zeros((len(self.impostors), len(self.impostors)))
 
-        return vi
+        for i in range(len(self.impostors)):
+            for j in range(i, len(self.impostors)):
+                score = self.computeStrategy.scoring_xvector(self.impostors[i], self.impostors[j])
+                vi[i, j] = score
+
+        return vi + vi.T - np.diag(vi.diagonal())
+
+    def compute_score(self, xvectorEnrollment, xvectorTest, enrollmentName, testName):
+
+        ve = self.compute_v(xvectorEnrollment)
+        if self.cohorts.get(enrollmentName) is None :
+            self.cohorts[enrollmentName] = self.select_impostors(ve)
+
+        vt = self.compute_v(xvectorTest)
+        if self.cohorts.get(testName) is None :
+            self.cohorts[testName] = self.select_impostors(vt)
+
+        score = self.computeStrategy.scoring_xvector(xvectorEnrollment, xvectorTest)
+
+        ve_t = ve[self.cohorts[testName]]
+        vt_e = vt[self.cohorts[enrollmentName]]
+
+        return 0.5*((score - np.mean(ve_t)) / (np.std(ve_t)) + (score - np.mean(vt_e)) / (np.std(vt_e)))
+
 
 
 
@@ -92,5 +80,8 @@ if __name__ == '__main__':
     computeStrategy = DotProductStrategy()
 
     asnorm = ASNorm(trials, enrollment, test, impostors, computeStrategy, args.k)
+
     asnorm.compute_norm()
+    #cProfile.run('asnorm.compute_norm()')
+
 

@@ -13,28 +13,30 @@ class ADNorm(ASNorm):
 
     def __init__(self, trials, enrollment, test, impostors, computeStrategy, k):
         super().__init__(trials, enrollment, test, impostors, computeStrategy, k)
+        #cohorts is here a dictionary which contains keys : the name of the embedding and value : the normalized vector
+
 
     def compute_score(self, xvectorEnrollment, xvectorTest, enrollmentName, testName):
 
-        enrollment = self.v_embeddings.get(enrollmentName)
-        if enrollment is None:
-            cohort_e, _ = self.select_impostors(xvectorEnrollment, self.vi, enrollmentName)
-            cohort_e = [self.impostors[i] for i in cohort_e]
-            impostors_enrollment_mean_vector = torch.mean(torch.stack(cohort_e), dim=0)
-            enrollment = xvectorEnrollment - impostors_enrollment_mean_vector
-            self.v_embeddings[enrollmentName] = enrollment
+        normalized_ve = self.cohorts.get(enrollmentName)
+        if normalized_ve is None:
+            ve = self.compute_v(xvectorEnrollment)
+            cohort_ve = self.select_impostors(ve)
+            cohort_ve = [self.impostors[i] for i in cohort_ve]
+            normalized_ve = xvectorEnrollment - torch.mean(torch.stack(cohort_ve), dim=0)
+            self.cohorts[enrollmentName] = normalized_ve
 
-        test = self.v_embeddings.get(testName)
-        if test is None:
-            cohort_t, _ = self.select_impostors(xvectorTest, self.vi, testName)
-            cohort_t = [self.impostors[i] for i in cohort_t]
-            impostors_test_mean_vector = torch.mean(torch.stack(cohort_t), dim=0)
-            test = xvectorTest - impostors_test_mean_vector
-            self.v_embeddings[testName] = test
+        normalized_vt = self.cohorts.get(testName)
+        if normalized_vt is None:
+            vt = self.compute_v(xvectorTest)
+            cohort_vt = self.select_impostors(vt)
+            cohort_vt = [self.impostors[i] for i in cohort_vt]
+            normalized_vt = xvectorTest - torch.mean(torch.stack(cohort_vt), dim=0)
+            self.cohorts[testName] = normalized_vt
+
+        return self.computeStrategy.scoring_xvector(normalized_ve, normalized_vt)
 
 
-        adnorm = self.computeStrategy.scoring_xvector(xvectorEnrollment, xvectorTest)
-        return adnorm
 
 
 if __name__ == '__main__':
@@ -61,5 +63,6 @@ if __name__ == '__main__':
 
     adnorm = ADNorm(trials, enrollment, test, impostors, computeStrategy, args.k)
     adnorm.compute_norm()
+    #cProfile.run('adnorm.compute_norm()')
 
 
