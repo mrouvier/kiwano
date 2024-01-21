@@ -33,8 +33,7 @@ class CustomWav2Vec2Model(nn.Module):
             if is_2d:
                 weights = weights.unsqueeze(0).unsqueeze(-1)
                 weights = weights.cuda()
-                result += hidden * weights
-            else:
-                result += weights * hidden
+
+            result += weights * hidden
 
         return result

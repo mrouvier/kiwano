@@ -118,7 +118,7 @@ class ECAPAModel(nn.Module):
                                                                  learnable_weights=self.learnable_weights,
                                                                  is_2d=self.is_2d)
             else:
-                speaker_embedding = self.speaker_encoder.forward(data.cuda(), aug=True, is_2d=self.is_2d)
+                speaker_embedding = self.speaker_encoder.forward(data.cuda(), aug=True)
 
             # speaker_embedding = self.speaker_encoder.forward(data, aug=True)
             nloss, prec = self.speaker_loss.forward(speaker_embedding, labels)
@@ -183,9 +183,11 @@ class ECAPAModel(nn.Module):
                         embedding_2 = self.speaker_encoder.forward(data_2, aug=False)
                     else:
                         embedding_1 = self.speaker_encoder.forward(data_1, aug=False,
-                                                                   learnable_weights=self.learnable_weights)
+                                                                   learnable_weights=self.learnable_weights,
+                                                                   is_2d=self.is_2d)
                         embedding_2 = self.speaker_encoder.forward(data_2, aug=False,
-                                                                   learnable_weights=self.learnable_weights)
+                                                                   learnable_weights=self.learnable_weights,
+                                                                   is_2d=self.is_2d)
                     embedding_1 = F.normalize(embedding_1, p=2, dim=1)
                     embedding_2 = F.normalize(embedding_2, p=2, dim=1)
                 embeddings[file] = [embedding_1, embedding_2]
@@ -242,7 +244,8 @@ class ECAPAModel(nn.Module):
                         embedding = self.speaker_encoder.forward(data, aug=False)
                     else:
                         embedding = self.speaker_encoder.forward(data, aug=False,
-                                                                 learnable_weights=self.learnable_weights)
+                                                                 learnable_weights=self.learnable_weights,
+                                                                 is_2d=self.is_2d)
 
                     embedding = F.normalize(embedding, p=2, dim=1)
 
