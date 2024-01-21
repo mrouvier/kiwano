@@ -7,7 +7,7 @@
 # #SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=20GB
-#SBATCH --cpus-per-task=5
+#SBATCH --cpus-per-task=8
 #SBATCH --output=kw2d_output.log
 #SBATCH --error=kw2d_error.log
 
@@ -15,6 +15,6 @@
 source /etc/profile.d/conda.sh
 conda activate kiwano
 
-python3 utils/train_ecapa_tdnn.py --save_path exps/exp3 --feat_type wav2vec2 --feat_dim 768 --n_cpu 5 --is_2d
+python3 utils/train_ecapa_tdnn.py --save_path exps/exp3 --feat_type wav2vec2 --feat_dim 768 --n_cpu 8 --is_2d
 
 conda deactivate
