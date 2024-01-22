@@ -31,12 +31,12 @@ class SpeakerExtractingSegmentSet(Dataset, SegmentSet):
         else:
             segment = next(val for idx, val in enumerate(self.segments.values()) if idx == segment_id_or_index)
 
-        audio, sample_rate = segment.load_audio()
+        feature, sample_rate = segment.load_audio()
         if self.audio_transforms is not None:
-            audio, sample_rate = self.audio_transforms(audio, sample_rate)
+            feature, sample_rate = self.audio_transforms(feature, sample_rate)
 
         if self.feature_extractor is not None:
-            feature = self.feature_extractor.extract(audio, sampling_rate=sample_rate)
+            feature = self.feature_extractor.extract(feature, sampling_rate=sample_rate)
 
         if self.feature_transforms is not None:
             feature = self.feature_transforms(feature)
