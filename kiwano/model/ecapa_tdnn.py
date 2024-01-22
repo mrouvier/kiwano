@@ -182,17 +182,17 @@ class ECAPA_TDNN(nn.Module):
         self.feat_dim = feat_dim
         self.feat_type = feat_type
 
-        # if self.feat_type == 'fbank':
-        #     self.torchfbank = torch.nn.Sequential(
-        #         PreEmphasis(),
-        #         torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_fft=512, win_length=400, hop_length=160,
-        #                                              f_min=20, f_max=7600, window_fn=torch.hamming_window,
-        #                                              n_mels=self.feat_dim),
-        #     )
-        #     self.torchfbank = Fbank()
-        #     self.specaug = FbankAug()  # Spec augmentation
+        if self.feat_type == 'fbank':
+            # self.torchfbank = torch.nn.Sequential(
+            #     PreEmphasis(),
+            #     torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_fft=512, win_length=400, hop_length=160,
+            #                                          f_min=20, f_max=7600, window_fn=torch.hamming_window,
+            #                                          n_mels=self.feat_dim),
+            # )
+            # self.torchfbank = Fbank()
+            self.specaug = FbankAug()  # Spec augmentation
 
-        if self.feat_type == 'wav2vec2':
+        else:
             self.wav2vec2 = CustomWav2Vec2Model()
 
         self.conv1 = nn.Conv1d(self.feat_dim, C, kernel_size=5, stride=1, padding=2)
@@ -217,13 +217,13 @@ class ECAPA_TDNN(nn.Module):
 
     def forward(self, x, aug, learnable_weights=None, is_2d=False):
         with torch.no_grad():
-            # if learnable_weights is None:
-            #     # x = self.torchfbank(x) + 1e-6
-            #     x = self.torchfbank.extract(x) + 1e-6
-            #     x = x.log()
-            #     x = x - torch.mean(x, dim=-1, keepdim=True)
-            #     if aug:
-            #         x = self.specaug(x)
+            if learnable_weights is None:
+                # x = self.torchfbank(x) + 1e-6
+                # x = x.log()
+                # x = x - torch.mean(x, dim=-1, keepdim=True)
+                x = x.permute(0, 2, 1)
+                if aug:
+                    x = self.specaug(x)
             if learnable_weights is not None:
                 x = self.wav2vec2(x, learnable_weights, is_2d) + 1e-6
                 # x = x.log()
