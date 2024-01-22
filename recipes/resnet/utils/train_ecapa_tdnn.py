@@ -17,7 +17,6 @@ from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Line
 from kiwano.dataset import SegmentSet
 from kiwano.features import Fbank
 from kiwano.model import ECAPAModel
-from kiwano.model.ecapa_tdnn import FbankAugCustom
 from kiwano.model.tools import init_args
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
