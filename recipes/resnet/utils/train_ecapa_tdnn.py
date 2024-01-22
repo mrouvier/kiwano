@@ -149,7 +149,7 @@ if __name__ == '__main__':
             feature_transforms=Linear([
                 CMVN(),
                 Crop(350),
-                FbankAugCustom()
+                # FbankAugCustom()
             ]),
         )
     training_data.from_dict(Path(f"data/voxceleb2/"))
