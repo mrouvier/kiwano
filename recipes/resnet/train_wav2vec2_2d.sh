@@ -5,7 +5,7 @@
 # #SBATCH --gres=gpu:tesla_v100-sxm2-32gb:1
 # #SBATCH --gres=gpu:rtx_3090:1
 #SBATCH --gres=gpu:1
-#SBATCH —exclude=apollon,eris,helios
+#SBATCH --exclude=apollon,eris,helios
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=16GB
 #SBATCH --cpus-per-task=10
