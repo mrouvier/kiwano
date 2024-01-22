@@ -53,8 +53,9 @@ def process_file_train(segment: Pathlike, in_data: Pathlike):
         _process_file(segment, Path(output))
     duration = str(round(float(get_duration(output)), 2))
 
+    toolkitPath = Path("db") / "cnceleb2" / "wav" / spkid / (n + ".wav")
 
-    return name, spkid, duration, segment
+    return name, spkid, duration, toolkitPath
 
 
 def prepare_trials(in_data: Pathlike):
