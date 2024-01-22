@@ -16,7 +16,6 @@
 source /etc/profile.d/conda.sh
 conda activate kiwano
 
-python3 utils/train_ecapa_tdnn.py --save_path exps/exp1 --feat_type fbank --feat_dim 81 --n_cpu 10 --batch_size 128
-# python3 utils/train_ecapa_tdnn.py --save_path exps/exp1 --feat_type fbank --feat_dim 80 --n_cpu 10 --batch_size 128
+python3 utils/train_ecapa_tdnn.py --save_path exps/exp1 --feat_type fbank --feat_dim 80 --n_cpu 10 --batch_size 128
 
 conda deactivate

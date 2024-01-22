@@ -116,40 +116,21 @@ if __name__ == '__main__':
     reverb = SegmentSet()
     reverb.from_dict(Path("data/rirs_noises/"))
 
-    if args.feat_type == 'wav2vec2':
-        training_data = SpeakerTrainingSegmentSet(
-            audio_transforms=Sometimes([
-                Noise(musan_music, snr_range=[5, 15]),
-                Noise(musan_speech, snr_range=[13, 20]),
-                Noise(musan_noise, snr_range=[0, 15]),
-                Codec(),
-                Filtering(),
-                Normal(),
-                Reverb(reverb)
-            ]),
-            feature_transforms=Linear([
-                CMVN(),
-                Crop(350),
-                # CropWaveForm()
-            ]),
-        )
-    else:
-        training_data = SpeakerTrainingSegmentSet(
-            audio_transforms=Sometimes([
-                Noise(musan_music, snr_range=[5, 15]),
-                Noise(musan_speech, snr_range=[13, 20]),
-                Noise(musan_noise, snr_range=[0, 15]),
-                Codec(),
-                Filtering(),
-                Normal(),
-                Reverb(reverb)
-            ]),
-            feature_extractor=Fbank(),
-            feature_transforms=Linear([
-                CMVN(),
-                Crop(350)
-            ]),
-        )
+    training_data = SpeakerTrainingSegmentSet(
+        audio_transforms=Sometimes([
+            Noise(musan_music, snr_range=[5, 15]),
+            Noise(musan_speech, snr_range=[13, 20]),
+            Noise(musan_noise, snr_range=[0, 15]),
+            Codec(),
+            Filtering(),
+            Normal(),
+            Reverb(reverb)
+        ]),
+        feature_transforms=Linear([
+            CropWaveForm()
+        ]),
+    )
+
     training_data.from_dict(Path(f"data/voxceleb2/"))
     trainLoader = DataLoader(training_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu,
                              drop_last=True)
