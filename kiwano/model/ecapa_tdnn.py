@@ -183,7 +183,7 @@ class ECAPA_TDNN(nn.Module):
         with torch.no_grad():
             if learnable_weights is None:
                 # x = self.torchfbank(x) + 1e-6
-                # x = x.log()
+                x = x.log()
                 # x = x - torch.mean(x, dim=-1, keepdim=True)
                 x = x.permute(0, 2, 1)
                 if aug:
