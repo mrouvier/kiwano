@@ -2,7 +2,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1
-#SBATCH --constraint=GPURAM_Min_12GB
+#SBATCH —exclude=apollon,eris
 #SBATCH --job-name=ke
 #SBATCH --partition=gpu
 #SBATCH --cpus-per-task=5
