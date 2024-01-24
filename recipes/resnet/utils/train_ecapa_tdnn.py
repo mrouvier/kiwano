@@ -187,9 +187,9 @@ if __name__ == '__main__':
             score_file.write("%d epoch, LR %f, LOSS %f, ACC %2.2f%%, EER %2.2f%%, bestEER %2.2f%%\n" % (
                 epoch, lr, loss, acc, EERs[-1], min(EERs)))
             score_file.flush()
-            s.save_parameters(args.model_save_path + "/model_%04d.model" % epoch)
             if EERs[-1] <= min(EERs):
                 s.save_parameters(args.model_save_path + "/best.model")
+            s.save_parameters(args.model_save_path + "/model_%04d.model" % epoch, delete=True)
 
         if epoch >= args.max_epoch:
             quit()

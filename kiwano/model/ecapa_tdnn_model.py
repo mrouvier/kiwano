@@ -255,11 +255,12 @@ class ECAPAModel(nn.Module):
 
         return embeddings
 
-    def save_parameters(self, path):
-        folder = os.path.dirname(path)
-        old_files = glob.glob(f'{folder}/model_0*.model')
-        for file in old_files:
-            os.remove(file)
+    def save_parameters(self, path, delete=False):
+        if delete:
+            folder = os.path.dirname(path)
+            old_files = glob.glob(f'{folder}/model_0*.model')
+            for file in old_files:
+                os.remove(file)
         torch.save(self.state_dict(), path)
 
     def load_parameters(self, path):
