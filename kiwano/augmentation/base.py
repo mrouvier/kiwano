@@ -238,12 +238,12 @@ class Filtering(Augmentation):
 
 
 class VAD(Augmentation):
-    def __init__(self, vad_energy_threshold=-12.0, vad_energy_mean_scale=0.3, vad_frames_context=2, vad_proportion_threshold=0.3):
+    def __init__(self, vad_energy_threshold=-12.0, vad_energy_mean_scale=0.3, vad_frames_context=2,
+                 vad_proportion_threshold=0.3):
         self.vad_energy_threshold = vad_energy_threshold
         self.vad_energy_mean_scale = vad_energy_mean_scale
         self.vad_frames_context = vad_frames_context
         self.vad_proportion_threshold = vad_proportion_threshold
-
 
     def __call__(self, tensor: torch.Tensor):
         T = tensor.size(0)
@@ -254,7 +254,6 @@ class VAD(Augmentation):
         energy_threshold = self.vad_energy_threshold
         if self.vad_energy_mean_scale != 0.0:
             energy_threshold -= self.vad_energy_mean_scale * log_energy.sum() / T
-
 
         for t in range(T):
             num_count = 0
@@ -281,7 +280,7 @@ class Crop(Augmentation):
     def __call__(self, tensor: torch.Tensor):
         if self.random == True:
             if tensor.shape[0] < self.duration:
-                n = math.ceil( self.duration / tensor.shape[0]  )
+                n = math.ceil(self.duration / tensor.shape[0])
                 tensor = tensor.repeat(n, 1)
             max_start_time = tensor.shape[0] - self.duration
             start_time = random.randint(0, max_start_time)
@@ -294,6 +293,14 @@ class Crop(Augmentation):
 
             result = tensor[0:max_start_time, :]
             return result
+
+
+class Permute(Augmentation):
+    def __init__(self):
+        pass
+
+    def __call__(self, audio: torch.Tensor):
+        return audio.permute(1, 0)
 
 
 class CropWaveForm(Augmentation):
