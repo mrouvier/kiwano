@@ -300,7 +300,12 @@ class Permute(Augmentation):
         pass
 
     def __call__(self, audio: torch.Tensor):
-        return audio.permute(1, 0)
+        shape = audio.shape
+        if shape == 2:
+            audio = audio.permute(1, 0)
+        elif shape == 3:
+            audio = audio.permute(0, 2, 1)
+        return audio
 
 
 class CropWaveForm(Augmentation):
