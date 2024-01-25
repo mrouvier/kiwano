@@ -137,7 +137,7 @@ if __name__ == '__main__':
 
     training_data.from_dict(Path(f"data/voxceleb2/"))
     trainLoader = DataLoader(training_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu,
-                             drop_last=True)
+                             drop_last=True, pin_memory=True)
 
     # Search for the exist models
     modelfiles = glob.glob('%s/model_0*.model' % args.model_save_path)
@@ -178,6 +178,11 @@ if __name__ == '__main__':
         EERs = []
 
     score_file = open(args.score_save_path, "a+")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available() and torch.cuda.device_count() > 1:
+        s = torch.nn.DataParallel(s)
+        s.to(device)
 
     while True:
         # Training for one epoch
