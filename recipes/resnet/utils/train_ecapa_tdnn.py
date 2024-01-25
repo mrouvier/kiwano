@@ -179,11 +179,6 @@ if __name__ == '__main__':
 
     score_file = open(args.score_save_path, "a+")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if torch.cuda.is_available() and torch.cuda.device_count() > 1:
-        s = torch.nn.DataParallel(s)
-        s.to(device)
-
     while True:
         # Training for one epoch
         loss, lr, acc = s.train_network(epoch=epoch, loader=trainLoader)
