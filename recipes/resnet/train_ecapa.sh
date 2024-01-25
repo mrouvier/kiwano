@@ -2,7 +2,7 @@
 #SBATCH --job-name=kf
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --constraint=GPURAM_Max_24GB
+#SBATCH --constraint=GPURAM_Max_40GB
 #SBATCH --exclude=alpos
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=16GB
