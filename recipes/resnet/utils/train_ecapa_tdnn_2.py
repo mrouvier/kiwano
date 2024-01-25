@@ -183,6 +183,7 @@ if __name__ == '__main__':
 
         # Evaluation every [test_step] epochs
         if epoch % args.test_step == 0:
+            s.save_parameters(args.model_save_path + "/model_%04d.model" % epoch, delete=True)
             EERs.append(s.eval_network(eval_list=args.eval_list, eval_path=args.eval_path, n_cpu=args.n_cpu)[0])
             print(time.strftime("%Y-%m-%d %H:%M:%S"),
                   "%d epoch, ACC %2.2f%%, EER %2.2f%%, bestEER %2.2f%%" % (epoch, acc, EERs[-1], min(EERs)))
@@ -191,7 +192,6 @@ if __name__ == '__main__':
             score_file.flush()
             if EERs[-1] <= min(EERs):
                 s.save_parameters(args.model_save_path + "/best.model")
-            s.save_parameters(args.model_save_path + "/model_%04d.model" % epoch, delete=True)
 
         if epoch >= args.max_epoch:
             quit()
