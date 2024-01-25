@@ -1,4 +1,5 @@
 import pdb
+import sys
 from typing import Union
 
 import numpy as np
@@ -51,4 +52,6 @@ class CustomWav2Vec2Model(nn.Module):
         n_layers = len(hidden_states)
         feat_dim = hidden_states[0].shape[-1]
 
+        print(f"n_layers: {n_layers}, feat_dim: {feat_dim}")
+        sys.stdout.flush()
         return n_layers, feat_dim
