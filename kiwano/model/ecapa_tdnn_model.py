@@ -23,6 +23,8 @@ from kiwano.model.loss import AAMsoftmax
 from kiwano.model.tools import tuneThresholdfromScore, ComputeMinDcf, ComputeErrorRates
 from torch.utils.data import Dataset, DataLoader
 
+from kiwano.model.wav2vec2 import CustomWav2Vec2Model
+
 
 def collate_fn(batch):
     # Separate filenames, data_1, and data_2
@@ -121,10 +123,12 @@ class ECAPAModel(nn.Module):
         self.learnable_weights = None
         self.is_2d = is_2d
         if feat_type == 'wav2vec2':
+            wav2vec2 = CustomWav2Vec2Model(model_name=model_name)
+            n_layers, feat_dim = wav2vec2.get_output_dim()
             if self.is_2d:
-                self.learnable_weights = nn.Parameter(torch.zeros(13, 768))  # 13 couches: CNN + 12 transformers
+                self.learnable_weights = nn.Parameter(torch.zeros(n_layers, feat_dim))  # 13 couches: CNN + 12 transformers
             else:
-                self.learnable_weights = nn.Parameter(torch.ones(13))
+                self.learnable_weights = nn.Parameter(torch.ones(n_layers))
 
         # ECAPA-TDNN
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

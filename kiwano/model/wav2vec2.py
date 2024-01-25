@@ -13,9 +13,9 @@ import torch.nn.functional as F
 class CustomWav2Vec2Model(nn.Module):
     def __init__(self, model_name="facebook/wav2vec2-base-960h"):
         super().__init__()
-        self.model = Wav2Vec2ForCTC.from_pretrained(model_name, output_hidden_states=True)
-        self.processor = Wav2Vec2Processor.from_pretrained(model_name)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = Wav2Vec2ForCTC.from_pretrained(model_name, output_hidden_states=True).to(self.device)
+        self.processor = Wav2Vec2Processor.from_pretrained(model_name)
 
     def forward(self, x, learnable_weights, is_2d=False):
         with torch.no_grad():
@@ -38,3 +38,17 @@ class CustomWav2Vec2Model(nn.Module):
             result += weights * hidden
 
         return result
+
+    def get_output_dim(self):
+        x = [torch.randn(16_000)]
+        with torch.no_grad():
+            x = self.processor(x, return_tensor='pt', sampling_rate=16_000)
+            x = x.input_values[0]
+            x = torch.tensor(x).to(self.device)
+            output = self.model(x)
+
+        hidden_states = list(output.hidden_states)
+        n_layers = len(hidden_states)
+        feat_dim = hidden_states[0].shape[-1]
+
+        return n_layers, feat_dim
