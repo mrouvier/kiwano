@@ -15,12 +15,13 @@ class CustomWav2Vec2Model(nn.Module):
         super().__init__()
         self.model = Wav2Vec2ForCTC.from_pretrained(model_name, output_hidden_states=True)
         self.processor = Wav2Vec2Processor.from_pretrained(model_name)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def forward(self, x, learnable_weights, is_2d=False):
         with torch.no_grad():
             x = self.processor(x, return_tensor='pt', sampling_rate=16_000)
             x = x.input_values[0]
-            x = torch.tensor(x).cuda()
+            x = torch.tensor(x).to(self.device)
             output = self.model(x)
             learnable_weights = F.softmax(learnable_weights, dim=-1)
 
@@ -32,7 +33,7 @@ class CustomWav2Vec2Model(nn.Module):
             weights = learnable_weights[i]
             if is_2d:
                 weights = weights.unsqueeze(0).unsqueeze(-1)
-                weights = weights.cuda()
+                weights = weights.to(self.device)
 
             result += weights * hidden
 
