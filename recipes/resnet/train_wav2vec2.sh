@@ -2,7 +2,7 @@
 # job names: kw (base), kw_1 (large), kw_2 (robust), kw_3 (self)
 #SBATCH --job-name=kw_1
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:3
+#SBATCH --gres=gpu:2
 #SBATCH --constraint=GPURAM_Max_40GB
 #SBATCH --exclude=alpos
 #SBATCH --time=7-00:00:00
