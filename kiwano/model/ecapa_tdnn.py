@@ -142,7 +142,7 @@ class FbankAug(nn.Module):
 
 class EcapaTdnn(nn.Module):
 
-    def __init__(self, C, feat_dim=80, feat_type='fbank'):
+    def __init__(self, C, feat_dim=80, feat_type='fbank', model_name='facebook/wav2vec2-base-960h'):
         super(EcapaTdnn, self).__init__()
         self.feat_dim = feat_dim
         self.feat_type = feat_type
@@ -157,7 +157,7 @@ class EcapaTdnn(nn.Module):
             self.specaug = FbankAug()  # Spec augmentation
 
         else:
-            self.wav2vec2 = CustomWav2Vec2Model()
+            self.wav2vec2 = CustomWav2Vec2Model(model_name=model_name)
 
         self.conv1 = nn.Conv1d(self.feat_dim, C, kernel_size=5, stride=1, padding=2)
         self.relu = nn.ReLU()

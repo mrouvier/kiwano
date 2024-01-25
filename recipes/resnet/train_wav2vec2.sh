@@ -14,6 +14,12 @@
 source /etc/profile.d/conda.sh
 conda activate kiwano
 
-python3 utils/train_ecapa_tdnn.py --save_path exps/exp2 --feat_type wav2vec2 --feat_dim 768 --n_cpu 10 --batch_size 128
+# python3 utils/train_ecapa_tdnn.py --save_path exps/exp2_3 --feat_type wav2vec2 --feat_dim 768 --n_cpu 10 --batch_size 128 --model_name facebook/wav2vec2-large-960h-lv60-self
+
+# python3 utils/train_ecapa_tdnn.py --save_path exps/exp2_2 --feat_type wav2vec2 --feat_dim 768 --n_cpu 10 --batch_size 128 --model_name facebook/wav2vec2-large-robust-ft-libri-960h
+
+python3 utils/train_ecapa_tdnn.py --save_path exps/exp2_1 --feat_type wav2vec2 --feat_dim 768 --n_cpu 10 --batch_size 128 --model_name facebook/wav2vec2-large-960h
+
+# python3 utils/train_ecapa_tdnn.py --save_path exps/exp2 --feat_type wav2vec2 --feat_dim 768 --n_cpu 10 --batch_size 128
 
 conda deactivate

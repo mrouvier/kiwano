@@ -115,7 +115,7 @@ class ScoresDataset(Dataset):
 
 
 class ECAPAModel(nn.Module):
-    def __init__(self, lr, lr_decay, C, n_class, m, s, test_step, feat_type, feat_dim, is_2d, **kwargs):
+    def __init__(self, lr, lr_decay, C, n_class, m, s, test_step, feat_type, feat_dim, is_2d, model_name, **kwargs):
         super(ECAPAModel, self).__init__()
 
         self.learnable_weights = None
@@ -128,7 +128,7 @@ class ECAPAModel(nn.Module):
 
         # ECAPA-TDNN
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.speaker_encoder = EcapaTdnn(C=C, feat_type=feat_type, feat_dim=feat_dim).to(self.device)
+        self.speaker_encoder = EcapaTdnn(C=C, feat_type=feat_type, feat_dim=feat_dim, model_name=model_name).to(self.device)
         # self.speaker_encoder = ECAPA_TDNN(C=C, feat_type=feat_type, feat_dim=feat_dim)
         # Classifier
         self.speaker_loss = AAMsoftmax(n_class=n_class, m=m, s=s).to(self.device)
