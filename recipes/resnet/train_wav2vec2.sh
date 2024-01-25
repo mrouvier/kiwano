@@ -1,5 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=kw
+# job names: kw (base), kw_1 (large), kw_2 (robust), kw_3 (self)
+#SBATCH --job-name=kw_1
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=GPURAM_Max_24GB
@@ -7,8 +8,8 @@
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=16GB
 #SBATCH --cpus-per-task=10
-#SBATCH --output=kw_output.log
-#SBATCH --error=kw_error.log
+#SBATCH --output=%x_output.log
+#SBATCH --error=%x_error.log
 
 
 source /etc/profile.d/conda.sh
