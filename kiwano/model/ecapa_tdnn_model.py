@@ -126,13 +126,15 @@ class ECAPAModel(nn.Module):
             wav2vec2 = CustomWav2Vec2Model(model_name=model_name)
             n_layers, feat_dim = wav2vec2.get_output_dim()
             if self.is_2d:
-                self.learnable_weights = nn.Parameter(torch.zeros(n_layers, feat_dim))  # 13 couches: CNN + 12 transformers
+                self.learnable_weights = nn.Parameter(
+                    torch.zeros(n_layers, feat_dim))  # 13 couches: CNN + 12 transformers
             else:
                 self.learnable_weights = nn.Parameter(torch.ones(n_layers))
 
         # ECAPA-TDNN
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.speaker_encoder = EcapaTdnn(C=C, feat_type=feat_type, feat_dim=feat_dim, model_name=model_name).to(self.device)
+        self.speaker_encoder = EcapaTdnn(C=C, feat_type=feat_type, feat_dim=feat_dim, model_name=model_name).to(
+            self.device)
         # self.speaker_encoder = ECAPA_TDNN(C=C, feat_type=feat_type, feat_dim=feat_dim)
         # Classifier
         self.speaker_loss = AAMsoftmax(n_class=n_class, m=m, s=s).to(self.device)
