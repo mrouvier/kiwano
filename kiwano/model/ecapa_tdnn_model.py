@@ -134,9 +134,8 @@ class ECAPAModel(nn.Module):
         # ECAPA-TDNN
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.speaker_encoder = EcapaTdnn(C=C, feat_type=feat_type, feat_dim=feat_dim, model_name=model_name)
-        if torch.cuda.is_available() and torch.cuda.device_count() > 1:
-            self.speaker_encoder = torch.nn.DataParallel(self.speaker_encoder)
         self.speaker_encoder = self.speaker_encoder.to(self.device)
+
         # self.speaker_encoder = ECAPA_TDNN(C=C, feat_type=feat_type, feat_dim=feat_dim)
         # Classifier
         self.speaker_loss = AAMsoftmax(n_class=n_class, m=m, s=s).to(self.device)
