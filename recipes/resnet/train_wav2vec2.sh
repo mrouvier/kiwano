@@ -2,10 +2,8 @@
 # job names: kw (base), kw_1 (large), kw_2 (robust), kw_3 (self)
 #SBATCH --job-name=kw_3
 #SBATCH --partition=gpu
-# #SBATCH --gres=gpu:1
-#SBATCH --gres=gpu:nvidia_a100-pcie-40gb:1
-# #SBATCH --constraint=GPURAM_Min_16GB
-# #SBATCH --exclude=alpos
+#SBATCH --gres=gpu:1
+#SBATCH --constraint=GPURAM_Min_16GB
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=16GB
 #SBATCH --cpus-per-task=10
