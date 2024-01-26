@@ -24,6 +24,9 @@ from kiwano.model.tools import tuneThresholdfromScore, ComputeMinDcf, ComputeErr
 from torch.utils.data import Dataset, DataLoader
 
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
+import torch.distributed as dist
+import torch.multiprocessing as mp
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 
 def collate_fn(batch):
