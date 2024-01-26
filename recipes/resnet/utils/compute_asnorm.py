@@ -17,6 +17,7 @@ class ASNorm(SNorm):
         self.vi = self.compute_all_vi()
         self.k = k
         self.cohorts = {}
+        self.v = {}
 
     def select_impostors(self, v):
         # select the first K impostors which are closest to the vector with all the scores between the targetEmbedding and each impostor
@@ -38,12 +39,16 @@ class ASNorm(SNorm):
 
     def compute_score(self, xvectorEnrollment, xvectorTest, enrollmentName, testName):
 
-        ve = self.compute_v(xvectorEnrollment)
-        if self.cohorts.get(enrollmentName) is None :
+        ve = self.v.get(enrollmentName)
+        if self.cohorts.get(enrollmentName) is None:
+            ve = self.compute_v(xvectorEnrollment)
+            self.v[enrollmentName] = ve
             self.cohorts[enrollmentName] = self.select_impostors(ve)
 
-        vt = self.compute_v(xvectorTest)
-        if self.cohorts.get(testName) is None :
+        vt = self.v.get(testName)
+        if self.cohorts.get(testName) is None:
+            vt = self.compute_v(xvectorTest)
+            self.v[testName] = vt
             self.cohorts[testName] = self.select_impostors(vt)
 
         score = self.computeStrategy.scoring_xvector(xvectorEnrollment, xvectorTest)
