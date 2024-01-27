@@ -10,6 +10,7 @@ import numpy
 import numpy as np
 import soundfile
 import torch
+import torchaudio
 import tqdm
 from scipy import signal
 from torch import nn
@@ -94,7 +95,8 @@ class EmbeddingsDataset2(Dataset):
 
     def __getitem__(self, idx):
         file = self.files[idx]
-        audio, sr = soundfile.read(os.path.join(self.eval_path, file))
+        audio, sr = torchaudio.load(os.path.join(self.eval_path, file))
+        # audio, sr = soundfile.read(os.path.join(self.eval_path, file))
         feature = self.feature_extractor.extract(audio, sampling_rate=sr)
         data_1 = self.feature_transforms_1(feature)
         data_2 = self.feature_transforms_2(feature)
