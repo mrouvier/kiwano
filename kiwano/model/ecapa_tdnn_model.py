@@ -379,7 +379,7 @@ class ECAPAModel2(nn.Module):
         print("BEGIN filter")
         sys.stdout.flush()
         filtered_lines = []
-        for line in lines:
+        for line in tqdm.tqdm(lines):
             _, part1, part2 = line.split()
             path1 = os.path.join(eval_path, part1)
             path2 = os.path.join(eval_path, part2)
@@ -415,8 +415,8 @@ class ECAPAModel2(nn.Module):
                 data_1 = data_1.to(self.device)
                 data_2 = all_data_2[i].to(self.device)
                 with torch.no_grad():
-                    embedding_1 = self.speaker_encoder.forward(data_1)
-                    embedding_2 = self.speaker_encoder.forward(data_2)
+                    embedding_1 = self.speaker_encoder(data_1)
+                    embedding_2 = self.speaker_encoder(data_2)
 
                     embedding_1 = F.normalize(embedding_1, p=2, dim=1)
                     embedding_2 = F.normalize(embedding_2, p=2, dim=1)
