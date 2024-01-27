@@ -34,15 +34,7 @@ def collate_fn(batch):
     # Separate filenames, data_1, and data_2
     filenames, data_1, original_lengths_1, data_2 = zip(*batch)
     max_length = np.max(original_lengths_1)
-    data_1_padded = [torch.nn.functional.pad(seq, (0, max_length - seq.size(1))) for seq in data_1]
-    return filenames, data_1_padded, original_lengths_1, data_2
-
-
-def collate_fn_2(batch):
-    # Separate filenames, data_1, and data_2
-    filenames, data_1, original_lengths_1, data_2 = zip(*batch)
-    max_length = np.max(original_lengths_1)
-    data_1_padded = [torch.nn.functional.pad(seq, (0, max_length - seq.size(1))) for seq in data_1]
+    data_1_padded = [torch.nn.functional.pad(seq, (0, max_length - seq.shape[1])) for seq in data_1]
     return filenames, data_1_padded, original_lengths_1, data_2
 
 
@@ -80,13 +72,13 @@ class EmbeddingsDataset2(Dataset):
         self.files = files
         self.eval_path = eval_path
         self.feature_extractor = Fbank()
+        self.feature_transforms_1 = Linear([
+            CMVN(),
+            Permute()
+        ])
         self.feature_transforms_2 = Linear([
             CMVN(),
             Crop(350),
-            Permute()
-        ])
-        self.feature_transforms_1 = Linear([
-            CMVN(),
             Permute()
         ])
 
@@ -405,15 +397,18 @@ class ECAPAModel2(nn.Module):
         sys.stdout.flush()
 
         emb_dataset = EmbeddingsDataset2(setfiles, eval_path)
-        emb_loader = DataLoader(emb_dataset, batch_size=100, num_workers=n_cpu, collate_fn=collate_fn_2)
+        emb_loader = DataLoader(emb_dataset, batch_size=100, num_workers=n_cpu, collate_fn=collate_fn)
         for idx, batch in tqdm.tqdm(enumerate(emb_loader, start=1), total=len(emb_loader)):
             all_file, all_data_1, all_lengths_1, all_data_2 = batch
             for i in range(len(all_file)):
                 file = all_file[i]
                 length_1 = all_lengths_1[i]
                 data_1 = all_data_1[i][:, :length_1]
+                data_1 = data_1.unsqueeze(0)
                 data_1 = data_1.to(self.device)
-                data_2 = all_data_2[i].to(self.device)
+                data_2 = all_data_2[i]
+                data_2 = data_2.unsqueeze(0)
+                data_2 = data_2.to(self.device)
                 with torch.no_grad():
                     embedding_1 = self.speaker_encoder(data_1)
                     embedding_2 = self.speaker_encoder(data_2)
