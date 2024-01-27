@@ -300,7 +300,7 @@ class Permute(Augmentation):
         pass
 
     def __call__(self, audio: torch.Tensor):
-        shape = audio.shape
+        shape = len(audio.shape)
         if shape == 2:
             audio = audio.permute(1, 0)
         elif shape == 3:
