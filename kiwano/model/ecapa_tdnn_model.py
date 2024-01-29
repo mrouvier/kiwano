@@ -161,7 +161,7 @@ class ECAPAModel(nn.Module):
                 speaker_embedding = self.speaker_encoder(data.to(self.device), aug=True)
 
             # speaker_embedding = self.speaker_encoder.forward(data, aug=True)
-            nloss, prec = self.speaker_loss.forward(speaker_embedding, labels)
+            nloss, prec = self.speaker_loss(speaker_embedding, labels)
             nloss.backward()
             self.optim.step()
             index += len(labels)
@@ -380,7 +380,7 @@ class ECAPAModelDDP(nn.Module):
                 speaker_embedding = self.speaker_encoder(data.to(self.gpu_id), aug=True)
 
             # speaker_embedding = self.speaker_encoder.forward(data, aug=True)
-            nloss, prec = self.speaker_loss.forward(speaker_embedding, labels)
+            nloss, prec = self.speaker_loss(speaker_embedding, labels)
             nloss.backward()
             self.optim.step()
             index += len(labels)
@@ -554,10 +554,10 @@ class ECAPAModel2(nn.Module):
             self.zero_grad()
             labels = torch.LongTensor(labels).to(self.device)
             # labels = torch.LongTensor(labels)
-            speaker_embedding = self.speaker_encoder.forward(data.to(self.device))
+            speaker_embedding = self.speaker_encoder(data.to(self.device))
 
             # speaker_embedding = self.speaker_encoder.forward(data, aug=True)
-            nloss, prec = self.speaker_loss.forward(speaker_embedding, labels)
+            nloss, prec = self.speaker_loss(speaker_embedding, labels)
             nloss.backward()
             self.optim.step()
             index += len(labels)
@@ -672,7 +672,7 @@ class ECAPAModel2(nn.Module):
                 data = data_batch[i]
                 data = data.to(self.device)
                 with torch.no_grad():
-                    embedding = self.speaker_encoder.forward(data)
+                    embedding = self.speaker_encoder(data)
 
                     embedding = F.normalize(embedding, p=2, dim=1)
 

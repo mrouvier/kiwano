@@ -64,9 +64,9 @@ def init_eer(score_path):
     return errs
 
 
-def ddp_setup(rank: int, world_size: int):
+def ddp_setup(rank: int, world_size: int, master_port:str):
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "54321"  # select any idle port on your machine
+    os.environ["MASTER_PORT"] = master_port  # select any idle port on your machine
 
     init_process_group(backend="nccl", rank=rank, world_size=world_size)
 
@@ -80,7 +80,7 @@ def main_ddp(
         rank: int,
         world_size: int
 ):
-    ddp_setup(rank, world_size)
+
     parser = argparse.ArgumentParser(description="ECAPA_trainer")
     # Training Settings
     parser.add_argument('--num_frames', type=int, default=200,
@@ -113,7 +113,7 @@ def main_ddp(
                         help='facebook/wav2vec2-base-960h, facebook/wav2vec2-large-960h'
                              'facebook/wav2vec2-large-robust-ft-libri-960h, facebook/wav2vec2-large-960h-lv60-self')
     parser.add_argument('--is_2d', dest='is_2d', action='store_true', help='2d learneable weight')
-
+    parser.add_argument('--master_port', type=str, default="54321", help='Master port')
     # model_name
     # Command
     parser.add_argument('--eval', dest='eval', action='store_true', help='Only do evaluation')
@@ -135,6 +135,8 @@ def main_ddp(
 
     reverb = SegmentSet()
     reverb.from_dict(Path("data/rirs_noises/"))
+
+    ddp_setup(rank, world_size, args.master_port)
 
     training_data = SpeakerTrainingSegmentSet(
         audio_transforms=Sometimes([
