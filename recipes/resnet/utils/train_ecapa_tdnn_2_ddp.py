@@ -116,6 +116,7 @@ def main_ddp(
     torch.multiprocessing.set_sharing_strategy('file_system')
     args = parser.parse_args()
     args = init_args(args)
+    args.gpu_id = rank
     # Define the data loader
     musan = SegmentSet()
     musan.from_dict(Path(f"data/musan/"))
