@@ -39,6 +39,25 @@ def process_file_test(segment: Pathlike, in_data: Pathlike):
 
     return name, spkid, duration, toolkitPath
 
+
+def process_file_dev(segment: Pathlike, in_data: Pathlike):
+    name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
+    spkid = str(segment).split("/")[4]
+    n = str(segment).split("/")[-1].split(".")[0]
+
+    out = Path(in_data/ "CN-Celeb_flac" / "dev" / "wav" / spkid)
+    out.mkdir(parents=True, exist_ok=True)
+
+    output = str(Path(in_data/ "CN-Celeb_flac" / "dev" / "wav"/ spkid / n)) + ".wav"
+
+    if not Path(output).exists():
+        _process_file(segment, Path(output))
+    duration = str(round(float(get_duration(output)), 2))
+
+    toolkitPath = Path("db") / "cnceleb1_dev" / "wav" / spkid / (n + ".wav")
+
+    return name, spkid, duration, toolkitPath
+
 def process_file_train(segment: Pathlike, in_data: Pathlike):
     name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
     spkid = str(segment).split("/")[-2]
@@ -88,28 +107,40 @@ def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike):
     out_data.mkdir(parents=True, exist_ok=True)
 
     listeTrain = open(out_data / "listeTrain", "w")
+    listeDev = open(out_data / "listeDev", "w")
     listeTest = open(out_data / "listeTest", "w")
 
 
 
     with ProcessPoolExecutor(20) as ex:
         futuresTrain = []
+        futuresDev = []
         futuresTest = []
 
         for segment in (in_data / "CN-Celeb2_flac" / "data").rglob("*.flac"):
             futuresTrain.append(ex.submit(process_file_train, segment, out_data))
+        for segment in (in_data / "CN-Celeb_flac" / "data").rglob("*.flac"):
+            if int(segment.parts[4][2:]) < 800 :
+                futuresDev.append(ex.submit(process_file_dev, segment, out_data))
+
         for segment in (in_data / "CN-Celeb_flac" / "eval").rglob("*.flac"):
             futuresTest.append(ex.submit(process_file_test, segment, out_data))
 
         for future in tqdm(futuresTrain, desc="Processing Cn Celeb 2"):
             name, spkid, duration, segment = future.result()
             listeTrain.write(f"{name} {spkid} {duration} {segment}\n")
+
+        for future in tqdm(futuresDev, desc="Processing Cn Celeb"):
+            name, spkid, duration, segment = future.result()
+            listeDev.write(f"{name} {spkid} {duration} {segment}\n")
+
         for future in tqdm(futuresTest, desc="Processing Cn Celeb"):
             name, spkid, duration, segment = future.result()
             listeTest.write(f"{name} {spkid} {duration} {segment}\n")
 
 
     listeTrain.close()
+    listeDev.close()
     listeTest.close()
 
     prepare_trials(in_data)
