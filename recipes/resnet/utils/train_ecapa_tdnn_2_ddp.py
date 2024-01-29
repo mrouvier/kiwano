@@ -9,7 +9,7 @@ from pathlib import Path
 import sys
 
 import torch
-from torch.distributed import init_process_group
+from torch.distributed import init_process_group, destroy_process_group
 from torch.utils.data import DataLoader, Dataset, DistributedSampler
 from typing import List, Union
 
@@ -215,11 +215,10 @@ def main_ddp(
                 s.save_parameters(args.model_save_path + "/best.model")
 
         if rank == 0 and epoch >= args.max_epoch:
+            destroy_process_group()  # clean up
             quit()
 
         epoch += 1
-
-    pass
 
 
 if __name__ == '__main__':
