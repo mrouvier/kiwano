@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader, Dataset, DistributedSampler
 from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CropWaveForm, Reverb, \
     Augmentation
 from kiwano.dataset import SegmentSet
-from kiwano.model import ECAPAModel
+from kiwano.model import ECAPAModel, ECAPAModelDDP
 from kiwano.model.tools import init_args
 
 
@@ -168,7 +168,7 @@ def main_ddp(
 
     # Only do evaluation, the initial_model is necessary
     if args.eval:
-        s = ECAPAModel(**vars(args))
+        s = ECAPAModelDDP(**vars(args))
         print_info(rank, "Model %s loaded from previous state!" % args.initial_model)
         s.load_parameters(args.initial_model)
         EER, minDCF = s.eval_network(eval_list=args.eval_list, eval_path=args.eval_path, n_cpu=args.n_cpu)
@@ -178,7 +178,7 @@ def main_ddp(
     # If initial_model is exist, system will train from the initial_model
     if args.initial_model != "":
         print_info(rank, "Model %s loaded from previous state!" % args.initial_model)
-        s = ECAPAModel(**vars(args))
+        s = ECAPAModelDDP(**vars(args))
         s.load_parameters(args.initial_model)
         epoch = 1
         EERs = []
@@ -187,13 +187,13 @@ def main_ddp(
     elif len(modelfiles) >= 1:
         print_info(rank, "Model %s loaded from previous state!" % modelfiles[-1])
         epoch = int(os.path.splitext(os.path.basename(modelfiles[-1]))[0][6:]) + 1
-        s = ECAPAModel(**vars(args))
+        s = ECAPAModelDDP(**vars(args))
         s.load_parameters(modelfiles[-1])
         EERs = init_eer(args.score_save_path)
     # Otherwise, system will train from scratch
     else:
         epoch = 1
-        s = ECAPAModel(**vars(args))
+        s = ECAPAModelDDP(**vars(args))
         EERs = []
 
     if rank == 0:
@@ -201,7 +201,7 @@ def main_ddp(
 
     while True:
         # Training for one epoch
-        loss, lr, acc = s.train_network(epoch=epoch, loader=trainLoader)
+        loss, lr, acc = s.train_network(epoch=epoch, loader=trainLoader, sampler=training_sampler)
 
         # Evaluation every [test_step] epochs
         if rank == 0 and epoch % args.test_step == 0:

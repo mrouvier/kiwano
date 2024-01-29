@@ -428,8 +428,8 @@ class ECAPAModelDDP(nn.Module):
                 file = all_file[i]
                 length_1 = all_lengths_1[i]
                 data_1 = all_data_1[i][:, :length_1]
-                data_1 = data_1.to(self.device)
-                data_2 = all_data_2[i].to(self.device)
+                data_1 = data_1.to(self.gpu_id)
+                data_2 = all_data_2[i].to(self.gpu_id)
 
                 with torch.no_grad():
                     if self.learnable_weights is None:
@@ -788,7 +788,7 @@ class ECAPAModel2DDP(nn.Module):
 
         self.print_info("BEGIN embeddings")
         emb_dataset = EmbeddingsDataset2(setfiles, eval_path)
-        emb_loader = DataLoader(emb_dataset, batch_size=100, num_workers=n_cpu, collate_fn=collate_fn)
+        emb_loader = DataLoader(emb_dataset, batch_size=32, num_workers=n_cpu, collate_fn=collate_fn)
         for idx, batch in tqdm.tqdm(enumerate(emb_loader, start=1), total=len(emb_loader), disable=self.disable_tqdm):
             all_file, all_data_1, all_lengths_1, all_data_2 = batch
             for i in range(len(all_file)):
