@@ -504,7 +504,8 @@ class ECAPAModelDDP(nn.Module):
         super(ECAPAModelDDP, self).__init__()
         self.gpu_id = gpu_id
         # ECAPA-TDNN
-        self.speaker_encoder = EcapaTdnn2(C=C, feat_dim=feat_dim).to(self.gpu_id)
+        self.speaker_encoder = DDP(EcapaTdnn2(C=C, feat_dim=feat_dim), device_ids=[self.gpu_id])
+        # self.speaker_encoder = EcapaTdnn2(C=C, feat_dim=feat_dim).to(self.gpu_id)
         # self.speaker_encoder = ECAPA_TDNN(C=C, feat_type=feat_type, feat_dim=feat_dim)
         # Classifier
         self.speaker_loss = AAMsoftmax(n_class=n_class, m=m, s=s).to(self.gpu_id)
