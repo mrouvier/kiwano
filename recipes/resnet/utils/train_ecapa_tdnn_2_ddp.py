@@ -74,6 +74,11 @@ def ddp_setup(rank: int, world_size: int):
     init_process_group(backend="nccl", rank=rank, world_size=world_size)
 
 
+def print_info(rank, content):
+    if rank == 0:
+        print(content, flush=True)
+
+
 def main_ddp(
         rank: int,
         world_size: int
@@ -165,18 +170,15 @@ def main_ddp(
     # Only do evaluation, the initial_model is necessary
     if args.eval:
         s = ECAPAModelDDP(**vars(args))
-        print("Model %s loaded from previous state!" % args.initial_model)
-        sys.stdout.flush()
+        print_info(rank, "Model %s loaded from previous state!" % args.initial_model)
         s.load_parameters(args.initial_model)
         EER, minDCF = s.eval_network(eval_list=args.eval_list, eval_path=args.eval_path, n_cpu=args.n_cpu)
-        print("EER %2.2f%%, minDCF %.4f%%" % (EER, minDCF))
-        sys.stdout.flush()
+        print_info(rank, "EER %2.2f%%, minDCF %.4f%%" % (EER, minDCF))
         quit()
 
     # If initial_model is exist, system will train from the initial_model
     if args.initial_model != "":
-        print("Model %s loaded from previous state!" % args.initial_model)
-        sys.stdout.flush()
+        print_info(rank, "Model %s loaded from previous state!" % args.initial_model)
         s = ECAPAModelDDP(**vars(args))
         s.load_parameters(args.initial_model)
         epoch = 1
@@ -184,8 +186,7 @@ def main_ddp(
 
     # Otherwise, system will try to start from the saved model&epoch
     elif len(modelfiles) >= 1:
-        print("Model %s loaded from previous state!" % modelfiles[-1])
-        sys.stdout.flush()
+        print_info(rank, "Model %s loaded from previous state!" % modelfiles[-1])
         epoch = int(os.path.splitext(os.path.basename(modelfiles[-1]))[0][6:]) + 1
         s = ECAPAModelDDP(**vars(args))
         s.load_parameters(modelfiles[-1])
@@ -206,8 +207,8 @@ def main_ddp(
         if rank == 0 and epoch % args.test_step == 0:
             s.save_parameters(args.model_save_path + "/model_%04d.model" % epoch, delete=True)
             EERs.append(s.eval_network(eval_list=args.eval_list, eval_path=args.eval_path, n_cpu=args.n_cpu)[0])
-            print(time.strftime("%Y-%m-%d %H:%M:%S"),
-                  "%d epoch, ACC %2.2f%%, EER %2.2f%%, bestEER %2.2f%%" % (epoch, acc, EERs[-1], min(EERs)))
+            print_info(rank, time.strftime("%Y-%m-%d %H:%M:%S"),
+                       "%d epoch, ACC %2.2f%%, EER %2.2f%%, bestEER %2.2f%%" % (epoch, acc, EERs[-1], min(EERs)))
             score_file.write("%d epoch, LR %f, LOSS %f, ACC %2.2f%%, EER %2.2f%%, bestEER %2.2f%%\n" % (
                 epoch, lr, loss, acc, EERs[-1], min(EERs)))
             score_file.flush()
