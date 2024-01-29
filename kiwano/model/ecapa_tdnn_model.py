@@ -502,7 +502,12 @@ class ECAPAModel2(nn.Module):
 class ECAPAModelDDP(nn.Module):
     def __init__(self, lr, lr_decay, C, n_class, m, s, test_step, feat_dim, gpu_id, **kwargs):
         super(ECAPAModelDDP, self).__init__()
+
+        # CUDA part
         self.gpu_id = gpu_id
+        torch.cuda.set_device(self.gpu_id)
+        torch.cuda.empty_cache()
+
         # ECAPA-TDNN
         self.speaker_encoder = EcapaTdnn2(C=C, feat_dim=feat_dim).to(self.gpu_id)
         self.speaker_encoder = DDP(self.speaker_encoder, device_ids=[self.gpu_id])
