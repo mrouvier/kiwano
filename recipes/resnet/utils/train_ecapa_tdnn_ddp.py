@@ -2,6 +2,7 @@
 import argparse
 import glob
 import os
+import sys
 import time
 import warnings
 from pathlib import Path
@@ -12,11 +13,10 @@ import torch.multiprocessing as mp
 from torch.distributed import init_process_group, destroy_process_group
 from torch.utils.data import DataLoader, Dataset, DistributedSampler
 
-from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, Reverb, \
-    SpecAugment, Augmentation, Permute
+from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CropWaveForm, Reverb, \
+    Augmentation
 from kiwano.dataset import SegmentSet
-from kiwano.features import Fbank
-from kiwano.model import ECAPAModel2DDP
+from kiwano.model import ECAPAModel
 from kiwano.model.tools import init_args
 
 
@@ -81,7 +81,6 @@ def main_ddp(
         world_size: int
 ):
     ddp_setup(rank, world_size)
-
     parser = argparse.ArgumentParser(description="ECAPA_trainer")
     # Training Settings
     parser.add_argument('--num_frames', type=int, default=200,
@@ -108,8 +107,14 @@ def main_ddp(
     parser.add_argument('--m', type=float, default=0.2, help='Loss margin in AAM softmax')
     parser.add_argument('--s', type=float, default=30, help='Loss scale in AAM softmax')
     parser.add_argument('--n_class', type=int, default=5994, help='Number of speakers')
-    parser.add_argument('--feat_dim', type=int, default=81, help='Dim of features')
+    parser.add_argument('--feat_type', type=str, default='fbank', help='Type of features: fbank, wav2vec2')
+    parser.add_argument('--feat_dim', type=int, default=80, help='Dim of features: fbank(80), wav2vec2(768)')
+    parser.add_argument('--model_name', type=str, default='facebook/wav2vec2-base-960h',
+                        help='facebook/wav2vec2-base-960h, facebook/wav2vec2-large-960h'
+                             'facebook/wav2vec2-large-robust-ft-libri-960h, facebook/wav2vec2-large-960h-lv60-self')
+    parser.add_argument('--is_2d', dest='is_2d', action='store_true', help='2d learneable weight')
 
+    # model_name
     # Command
     parser.add_argument('--eval', dest='eval', action='store_true', help='Only do evaluation')
 
@@ -119,6 +124,7 @@ def main_ddp(
     args = parser.parse_args()
     args = init_args(args)
     args.gpu_id = rank
+
     # Define the data loader
     musan = SegmentSet()
     musan.from_dict(Path(f"data/musan/"))
@@ -140,12 +146,8 @@ def main_ddp(
             Normal(),
             Reverb(reverb)
         ]),
-        feature_extractor=Fbank(),
         feature_transforms=Linear([
-            CMVN(),
-            Crop(350),
-            SpecAugment(),
-            Permute()
+            CropWaveForm()
         ]),
     )
 
@@ -166,7 +168,7 @@ def main_ddp(
 
     # Only do evaluation, the initial_model is necessary
     if args.eval:
-        s = ECAPAModel2DDP(**vars(args))
+        s = ECAPAModel(**vars(args))
         print_info(rank, "Model %s loaded from previous state!" % args.initial_model)
         s.load_parameters(args.initial_model)
         EER, minDCF = s.eval_network(eval_list=args.eval_list, eval_path=args.eval_path, n_cpu=args.n_cpu)
@@ -176,7 +178,7 @@ def main_ddp(
     # If initial_model is exist, system will train from the initial_model
     if args.initial_model != "":
         print_info(rank, "Model %s loaded from previous state!" % args.initial_model)
-        s = ECAPAModel2DDP(**vars(args))
+        s = ECAPAModel(**vars(args))
         s.load_parameters(args.initial_model)
         epoch = 1
         EERs = []
@@ -185,13 +187,13 @@ def main_ddp(
     elif len(modelfiles) >= 1:
         print_info(rank, "Model %s loaded from previous state!" % modelfiles[-1])
         epoch = int(os.path.splitext(os.path.basename(modelfiles[-1]))[0][6:]) + 1
-        s = ECAPAModel2DDP(**vars(args))
+        s = ECAPAModel(**vars(args))
         s.load_parameters(modelfiles[-1])
         EERs = init_eer(args.score_save_path)
     # Otherwise, system will train from scratch
     else:
         epoch = 1
-        s = ECAPAModel2DDP(**vars(args))
+        s = ECAPAModel(**vars(args))
         EERs = []
 
     if rank == 0:
@@ -199,7 +201,7 @@ def main_ddp(
 
     while True:
         # Training for one epoch
-        loss, lr, acc = s.train_network(epoch=epoch, loader=trainLoader, sampler=training_sampler)
+        loss, lr, acc = s.train_network(epoch=epoch, loader=trainLoader)
 
         # Evaluation every [test_step] epochs
         if rank == 0 and epoch % args.test_step == 0:
