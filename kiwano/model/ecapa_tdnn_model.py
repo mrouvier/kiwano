@@ -507,6 +507,7 @@ class ECAPAModelDDP(nn.Module):
         self.gpu_id = gpu_id
         torch.cuda.set_device(self.gpu_id)
         torch.cuda.empty_cache()
+        self.disable_tqdm = self.gpu_id != 0
 
         # ECAPA-TDNN
         self.speaker_encoder = EcapaTdnn2(C=C, feat_dim=feat_dim).to(self.gpu_id)
@@ -532,15 +533,15 @@ class ECAPAModelDDP(nn.Module):
         self.scheduler.step(epoch - 1)
         index, top1, loss = 0, 0, 0
         lr = self.optim.param_groups[0]['lr']
-        for num, (data, labels) in tqdm.tqdm(enumerate(loader, start=1), total=len(loader)):
+        for num, (data, labels) in tqdm.tqdm(enumerate(loader, start=1), total=len(loader), disable=self.disable_tqdm):
             self.zero_grad()
             sampler.set_epoch(epoch)
             labels = torch.LongTensor(labels).to(self.gpu_id)
             # labels = torch.LongTensor(labels)
-            speaker_embedding = self.speaker_encoder.forward(data.to(self.gpu_id))
+            speaker_embedding = self.speaker_encoder(data.to(self.gpu_id))
 
             # speaker_embedding = self.speaker_encoder.forward(data, aug=True)
-            nloss, prec = self.speaker_loss.forward(speaker_embedding, labels)
+            nloss, prec = self.speaker_loss(speaker_embedding, labels)
             nloss.backward()
             self.optim.step()
             index += len(labels)
@@ -559,7 +560,7 @@ class ECAPAModelDDP(nn.Module):
         lines = open(eval_list).read().splitlines()
         self.print_info("BEGIN filter")
         filtered_lines = []
-        for line in tqdm.tqdm(lines):
+        for line in tqdm.tqdm(lines, disable=self.disable_tqdm):
             _, part1, part2 = line.split()
             path1 = os.path.join(eval_path, part1)
             path2 = os.path.join(eval_path, part2)
@@ -570,7 +571,7 @@ class ECAPAModelDDP(nn.Module):
         self.print_info("END filter")
 
         self.print_info("BEGIN split")
-        for line in tqdm.tqdm(lines):
+        for line in tqdm.tqdm(lines, disable=self.disable_tqdm):
             _, part1, part2 = line.split()
             files.append(part1)
             files.append(part2)
@@ -581,7 +582,7 @@ class ECAPAModelDDP(nn.Module):
         self.print_info("BEGIN embeddings")
         emb_dataset = EmbeddingsDataset2(setfiles, eval_path)
         emb_loader = DataLoader(emb_dataset, batch_size=100, num_workers=n_cpu, collate_fn=collate_fn)
-        for idx, batch in tqdm.tqdm(enumerate(emb_loader, start=1), total=len(emb_loader)):
+        for idx, batch in tqdm.tqdm(enumerate(emb_loader, start=1), total=len(emb_loader), disable=self.disable_tqdm):
             all_file, all_data_1, all_lengths_1, all_data_2 = batch
             for i in range(len(all_file)):
                 file = all_file[i]
@@ -605,7 +606,7 @@ class ECAPAModelDDP(nn.Module):
         self.print_info("END embeddings")
 
         self.print_info("BEGIN scores")
-        for line in tqdm.tqdm(lines):
+        for line in tqdm.tqdm(lines, disable=self.disable_tqdm):
             part0, part1, part2 = line.split()
             embedding_11, embedding_12 = embeddings[part1]
             embedding_21, embedding_22 = embeddings[part2]
@@ -636,12 +637,13 @@ class ECAPAModelDDP(nn.Module):
     def extract_xvectors(self, loader):
         self.eval()
         embeddings = {}
-        for num, (data_batch, key_batch) in tqdm.tqdm(enumerate(loader, start=1), total=len(loader)):
+        for num, (data_batch, key_batch) in tqdm.tqdm(enumerate(loader, start=1), total=len(loader),
+                                                      disable=self.disable_tqdm):
             for i, key in enumerate(key_batch):
                 data = data_batch[i]
                 data = data.to(self.gpu_id)
                 with torch.no_grad():
-                    embedding = self.speaker_encoder.forward(data)
+                    embedding = self.speaker_encoder(data)
 
                     embedding = F.normalize(embedding, p=2, dim=1)
 
