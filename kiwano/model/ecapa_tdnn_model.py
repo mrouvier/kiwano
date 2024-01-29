@@ -526,6 +526,7 @@ class ECAPAModelDDP(nn.Module):
     def print_info(self, content):
         if self.gpu_id == 0:
             print(content, flush=True)
+            print(f"GPU: {self.gpu_id}", flush=True)
 
     def train_network(self, epoch, loader, sampler):
         self.train()
