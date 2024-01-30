@@ -333,7 +333,9 @@ class ECAPAModelDDP(nn.Module):
 
         self.learnable_weights = None
         self.is_2d = is_2d
+        self.find_unused_parameters = False
         if feat_type == 'wav2vec2':
+            self.find_unused_parameters = True
             wav2vec2 = CustomWav2Vec2Model(model_name=model_name)
             n_layers, feat_dim = wav2vec2.get_output_dim()
             if self.is_2d:
@@ -346,7 +348,11 @@ class ECAPAModelDDP(nn.Module):
         self.device = torch.device(f"cuda:{self.gpu_id}" if torch.cuda.is_available() else "cpu")
         self.speaker_encoder = EcapaTdnn(C=C, feat_type=feat_type, feat_dim=feat_dim, model_name=model_name).to(
             self.gpu_id)
-        self.speaker_encoder = DDP(self.speaker_encoder, device_ids=[self.gpu_id])
+        self.speaker_encoder = DDP(
+            self.speaker_encoder,
+            device_ids=[self.gpu_id],
+            find_unused_parameters=self.find_unused_parameters
+        )
 
         # self.speaker_encoder = ECAPA_TDNN(C=C, feat_type=feat_type, feat_dim=feat_dim)
         # Classifier
