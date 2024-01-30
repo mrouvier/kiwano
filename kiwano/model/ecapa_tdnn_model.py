@@ -513,7 +513,7 @@ class ECAPAModelDDP(nn.Module):
 
     def load_parameters(self, path):
         self_state = self.state_dict()
-        loaded_state = torch.load(path, map_location="cpu")
+        loaded_state = torch.load(path, map_location="gpu")
         for name, param in loaded_state.items():
             origname = name
             if name not in self_state:
@@ -870,7 +870,7 @@ class ECAPAModel2DDP(nn.Module):
 
     def load_parameters(self, path):
         self_state = self.state_dict()
-        loaded_state = torch.load(path, map_location="cpu")
+        loaded_state = torch.load(path, map_location="gpu")
         for name, param in loaded_state.items():
             origname = name
             if name not in self_state:
