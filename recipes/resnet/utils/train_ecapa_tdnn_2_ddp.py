@@ -19,6 +19,9 @@ from kiwano.features import Fbank
 from kiwano.model import ECAPAModel2DDP
 from kiwano.model.tools import init_args
 
+warnings.simplefilter("ignore")
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 
 class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
     def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor=None,
@@ -112,8 +115,6 @@ def main_ddp(
     parser.add_argument('--eval', dest='eval', action='store_true', help='Only do evaluation')
 
     # Initialization
-    warnings.simplefilter("ignore")
-    torch.multiprocessing.set_sharing_strategy('file_system')
     args = parser.parse_args()
     args = init_args(args)
     args.gpu_id = rank

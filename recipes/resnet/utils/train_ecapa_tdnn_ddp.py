@@ -2,7 +2,6 @@
 import argparse
 import glob
 import os
-import sys
 import time
 import warnings
 from pathlib import Path
@@ -16,8 +15,11 @@ from torch.utils.data import DataLoader, Dataset, DistributedSampler
 from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CropWaveForm, Reverb, \
     Augmentation
 from kiwano.dataset import SegmentSet
-from kiwano.model import ECAPAModel, ECAPAModelDDP
+from kiwano.model import ECAPAModelDDP
 from kiwano.model.tools import init_args
+
+warnings.simplefilter("ignore")
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 
 class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
@@ -64,7 +66,7 @@ def init_eer(score_path):
     return errs
 
 
-def ddp_setup(rank: int, world_size: int, master_port:str):
+def ddp_setup(rank: int, world_size: int, master_port: str):
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = master_port  # select any idle port on your machine
 
@@ -80,7 +82,6 @@ def main_ddp(
         rank: int,
         world_size: int
 ):
-
     parser = argparse.ArgumentParser(description="ECAPA_trainer")
     # Training Settings
     parser.add_argument('--num_frames', type=int, default=200,
@@ -119,8 +120,6 @@ def main_ddp(
     parser.add_argument('--eval', dest='eval', action='store_true', help='Only do evaluation')
 
     # Initialization
-    warnings.simplefilter("ignore")
-    torch.multiprocessing.set_sharing_strategy('file_system')
     args = parser.parse_args()
     args = init_args(args)
     args.gpu_id = rank
