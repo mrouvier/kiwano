@@ -343,7 +343,7 @@ class ECAPAModelDDP(nn.Module):
                 self.learnable_weights = nn.Parameter(torch.ones(n_layers))
 
         # ECAPA-TDNN
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(f"cuda:{self.gpu_id}" if torch.cuda.is_available() else "cpu")
         self.speaker_encoder = EcapaTdnn(C=C, feat_type=feat_type, feat_dim=feat_dim, model_name=model_name).to(
             self.gpu_id)
         self.speaker_encoder = DDP(self.speaker_encoder, device_ids=[self.gpu_id])
@@ -513,7 +513,7 @@ class ECAPAModelDDP(nn.Module):
 
     def load_parameters(self, path):
         self_state = self.state_dict()
-        loaded_state = torch.load(path, map_location=self.device)
+        loaded_state = torch.load(path, map_location="cpu")
         for name, param in loaded_state.items():
             origname = name
             if name not in self_state:
@@ -718,7 +718,7 @@ class ECAPAModel2DDP(nn.Module):
         self.disable_tqdm = self.gpu_id != 0
 
         # ECAPA-TDNN
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(f"cuda:{self.gpu_id}" if torch.cuda.is_available() else "cpu")
         self.speaker_encoder = EcapaTdnn2(C=C, feat_dim=feat_dim).to(self.gpu_id)
         self.speaker_encoder = DDP(self.speaker_encoder, device_ids=[self.gpu_id])
         # self.speaker_encoder = EcapaTdnn2(C=C, feat_dim=feat_dim).to(self.gpu_id)
@@ -871,7 +871,7 @@ class ECAPAModel2DDP(nn.Module):
 
     def load_parameters(self, path):
         self_state = self.state_dict()
-        loaded_state = torch.load(path, map_location=self.device)
+        loaded_state = torch.load(path, map_location="cpu")
         for name, param in loaded_state.items():
             origname = name
             if name not in self_state:
