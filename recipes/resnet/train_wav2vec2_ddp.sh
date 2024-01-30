@@ -4,7 +4,7 @@
 # #SBATCH --nodes=2
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:2
-#SBATCH --constraint=GPURAM_16GB
+#SBATCH --constraint=GPURAM_Max_16GB
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=32GB
 #SBATCH --cpus-per-task=10
