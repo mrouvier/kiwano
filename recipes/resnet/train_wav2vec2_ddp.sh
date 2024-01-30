@@ -1,7 +1,6 @@
 #!/bin/bash
 # job names: kw_ddp (base), kw_1_ddp (large), kw_2_ddp (robust), kw_3_ddp (self)
 #SBATCH --job-name=kw_1_ddp
-# #SBATCH --nodes=2
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:2
 #SBATCH --constraint=GPURAM_16GB
