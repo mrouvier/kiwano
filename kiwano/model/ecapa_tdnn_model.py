@@ -22,7 +22,7 @@ from kiwano.features import FeatureExtractor, Fbank
 from kiwano.model.ecapa_tdnn import EcapaTdnn, EcapaTdnn2
 from kiwano.model.loss import AAMsoftmax
 from kiwano.model.tools import tuneThresholdfromScore, ComputeMinDcf, ComputeErrorRates
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, DistributedSampler
 
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 import torch.distributed as dist
@@ -428,7 +428,16 @@ class ECAPAModelDDP(nn.Module):
         self.print_info("BEGIN embeddings")
 
         emb_dataset = EmbeddingsDataset(setfiles, eval_path)
-        emb_loader = DataLoader(emb_dataset, batch_size=32, num_workers=n_cpu, collate_fn=collate_fn)
+        # emb_loader = DataLoader(emb_dataset, batch_size=32, num_workers=n_cpu, collate_fn=collate_fn)
+        emb_loader = DataLoader(
+            emb_dataset,
+            batch_size=32,
+            shuffle=False,
+            sampler=DistributedSampler(emb_dataset, shuffle=False),
+            num_workers=n_cpu,
+            drop_last=True,
+            collate_fn=collate_fn
+        )
         for idx, batch in tqdm.tqdm(enumerate(emb_loader, start=1), total=len(emb_loader), disable=self.disable_tqdm):
             all_file, all_data_1, all_lengths_1, all_data_2 = batch
             for i in range(len(all_file)):
@@ -611,7 +620,16 @@ class ECAPAModel2(nn.Module):
         sys.stdout.flush()
 
         emb_dataset = EmbeddingsDataset2(setfiles, eval_path)
-        emb_loader = DataLoader(emb_dataset, batch_size=100, num_workers=n_cpu, collate_fn=collate_fn)
+        # emb_loader = DataLoader(emb_dataset, batch_size=100, num_workers=n_cpu, collate_fn=collate_fn)
+        emb_loader = DataLoader(
+            emb_dataset,
+            batch_size=32,
+            shuffle=False,
+            sampler=DistributedSampler(emb_dataset, shuffle=False),
+            num_workers=n_cpu,
+            drop_last=True,
+            collate_fn=collate_fn
+        )
         for idx, batch in tqdm.tqdm(enumerate(emb_loader, start=1), total=len(emb_loader)):
             all_file, all_data_1, all_lengths_1, all_data_2 = batch
             for i in range(len(all_file)):
