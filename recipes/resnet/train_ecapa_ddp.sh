@@ -1,6 +1,6 @@
 #!/bin/bash
 # job name: kf_ddp (fbank other) kf_1_ddp (fbank kiwano)
-#SBATCH --job-name=kf_1_ddp
+#SBATCH --job-name=kf_ddp
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:2
 #SBATCH --constraint=GPURAM_Max_16GB
@@ -14,7 +14,8 @@
 source /etc/profile.d/conda.sh
 conda activate kiwano
 
-python3  utils/train_ecapa_tdnn_2_ddp.py --eval --initial_model exps/exp1_1_ddp/model/model_0001.model  --feat_dim 81 --n_cpu 10
+# python3  utils/train_ecapa_tdnn_2_ddp.py --eval --initial_model exps/exp1_1_ddp/model/model_0001.model  --feat_dim 81 --n_cpu 10
 # python3 utils/train_ecapa_tdnn_2_ddp.py --save_path exps/exp1_1_ddp  --feat_dim 81 --n_cpu 10 --batch_size 128
+python3 utils/train_ecapa_tdnn_ddp.py --save_path exps/exp1_ddp --feat_type fbank --feat_dim 80 --n_cpu 10 --batch_size 128
 
 conda deactivate
