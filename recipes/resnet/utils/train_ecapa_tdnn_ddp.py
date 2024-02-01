@@ -103,6 +103,13 @@ def main_ddp(
     parser.add_argument('--save_path', type=str, default="exps/exp1", help='Path to save the score.txt and models')
     parser.add_argument('--initial_model', type=str, default="", help='Path of the initial_model')
 
+    parser.add_argument('--musan_list_path', type=str, default="data/musan/",
+                        help='Path where your musan list is')
+    parser.add_argument('--rirs_noise_list_path', type=str, default="data/rirs_noises/",
+                        help='Path where your rirs noise list is')
+    parser.add_argument('--training_list_path', type=str, default="data/voxceleb2/",
+                        help='Path where your training list is')
+
     # Model and Loss settings
     parser.add_argument('--C', type=int, default=1024, help='Channel size for the speaker encoder')
     parser.add_argument('--m', type=float, default=0.2, help='Loss margin in AAM softmax')
@@ -126,14 +133,14 @@ def main_ddp(
 
     # Define the data loader
     musan = SegmentSet()
-    musan.from_dict(Path(f"data/musan/"))
+    musan.from_dict(Path(args.musan_list_path))
 
     musan_music = musan.get_speaker("music")
     musan_speech = musan.get_speaker("speech")
     musan_noise = musan.get_speaker("noise")
 
     reverb = SegmentSet()
-    reverb.from_dict(Path("data/rirs_noises/"))
+    reverb.from_dict(Path(args.rirs_noise_list_path))
 
     ddp_setup(rank, world_size, args.master_port)
 
@@ -152,7 +159,7 @@ def main_ddp(
         ]),
     )
 
-    training_data.from_dict(Path(f"data/voxceleb2/"))
+    training_data.from_dict(Path(args.training_list_path))
     training_sampler = DistributedSampler(training_data)
     trainLoader = DataLoader(
         training_data,

@@ -2,23 +2,20 @@
 import argparse
 import glob
 import os
+import sys
 import time
 import warnings
 from pathlib import Path
-
-import sys
+from typing import List, Union
 
 import torch
 from torch.utils.data import DataLoader, Dataset
-from typing import List, Union
 
-from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, CropWaveForm, Reverb, \
-    SpecAugment, Augmentation
+from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CropWaveForm, Reverb, \
+    Augmentation
 from kiwano.dataset import SegmentSet
-from kiwano.features import Fbank
 from kiwano.model import ECAPAModel
 from kiwano.model.tools import init_args
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
 
 class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
@@ -77,7 +74,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
     parser.add_argument("--lr_decay", type=float, default=0.97, help='Learning rate decay every [test_step] epochs')
 
-    # Training and evaluation path/lists, save path
+    # Paths
     parser.add_argument('--eval_list', type=str, default=f"db/voxceleb1/veri_test2.txt",
                         help='The path of the evaluation list: veri_test2.txt, list_test_all2.txt, list_test_hard2.txt'
                              'veri_test2.txt comes from '
@@ -86,6 +83,13 @@ if __name__ == '__main__':
                         help='The path of the evaluation data, eg:"data/voxceleb1/" in my case')
     parser.add_argument('--save_path', type=str, default="exps/exp1", help='Path to save the score.txt and models')
     parser.add_argument('--initial_model', type=str, default="", help='Path of the initial_model')
+
+    parser.add_argument('--musan_list_path', type=str, default="data/musan/",
+                        help='Path where your musan list is')
+    parser.add_argument('--rirs_noise_list_path', type=str, default="data/rirs_noises/",
+                        help='Path where your rirs noise list is')
+    parser.add_argument('--training_list_path', type=str, default="data/voxceleb2/",
+                        help='Path where your training list is')
 
     # Model and Loss settings
     parser.add_argument('--C', type=int, default=1024, help='Channel size for the speaker encoder')
@@ -111,14 +115,14 @@ if __name__ == '__main__':
 
     # Define the data loader
     musan = SegmentSet()
-    musan.from_dict(Path(f"data/musan/"))
+    musan.from_dict(Path(args.musan_list_path))
 
     musan_music = musan.get_speaker("music")
     musan_speech = musan.get_speaker("speech")
     musan_noise = musan.get_speaker("noise")
 
     reverb = SegmentSet()
-    reverb.from_dict(Path("data/rirs_noises/"))
+    reverb.from_dict(Path(args.rirs_noise_list_path))
 
     training_data = SpeakerTrainingSegmentSet(
         audio_transforms=Sometimes([
@@ -135,7 +139,7 @@ if __name__ == '__main__':
         ]),
     )
 
-    training_data.from_dict(Path(f"data/voxceleb2/"))
+    training_data.from_dict(Path(args.training_list_path))
     trainLoader = DataLoader(training_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu,
                              drop_last=True, pin_memory=True)
 
