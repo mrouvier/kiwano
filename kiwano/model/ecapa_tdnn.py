@@ -16,6 +16,7 @@ import torch.nn.functional as F
 
 from kiwano.augmentation import Augmentation
 from kiwano.features import Fbank
+from kiwano.model import CustomWavLMModel
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 
 
@@ -155,9 +156,10 @@ class EcapaTdnn(nn.Module):
                                                      n_mels=self.feat_dim),
             )
             self.specaug = FbankAug()  # Spec augmentation
-
-        else:
+        elif self.feat_type == 'wav2vec2':
             self.wav2vec2 = CustomWav2Vec2Model(model_name=model_name)
+        else:
+            self.wavlm = CustomWavLMModel(model_name=model_name)
 
         self.conv1 = nn.Conv1d(self.feat_dim, C, kernel_size=5, stride=1, padding=2)
         self.relu = nn.ReLU()
@@ -181,16 +183,18 @@ class EcapaTdnn(nn.Module):
 
     def forward(self, x, aug, learnable_weights=None, is_2d=False):
         with torch.no_grad():
-            if learnable_weights is None:
+            if self.feat_type == 'fbank':
                 x = self.torchfbank(x) + 1e-6
                 x = x.log()
                 x = x - torch.mean(x, dim=-1, keepdim=True)
                 if aug:
                     x = self.specaug(x)
-            if learnable_weights is not None:
+            elif self.feat_type == 'wav2vec2':
                 x = self.wav2vec2(x, learnable_weights, is_2d) + 1e-6
                 # x = x.log()
                 # x = x - torch.mean(x, dim=-1, keepdim=True)
+            else:
+                x = self.wavlm(x, learnable_weights) + 1e-6
 
         x = self.conv1(x)
         x = self.relu(x)
@@ -248,7 +252,6 @@ class EcapaTdnn2(nn.Module):
         self.bn6 = nn.BatchNorm1d(192)
 
     def forward(self, x):
-
         x = self.conv1(x)
         x = self.relu(x)
         x = self.bn1(x)

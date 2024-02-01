@@ -29,6 +29,8 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+from kiwano.model.wavlm import CustomWavLMModel
+
 
 def collate_fn(batch):
     # Separate filenames, data_1, and data_2
@@ -127,6 +129,10 @@ class ECAPAModel(nn.Module):
                     torch.zeros(n_layers, feat_dim))  # 13 couches: CNN + 12 transformers
             else:
                 self.learnable_weights = nn.Parameter(torch.ones(n_layers))
+        elif self.feat_type == 'wavlm':
+            wavlm = CustomWavLMModel(model_name=model_name)
+            n_layers, feat_dim = wavlm.get_output_dim()
+            self.learnable_weights = nn.Parameter(torch.ones(n_layers))
 
         # ECAPA-TDNN
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -219,16 +225,13 @@ class ECAPAModel(nn.Module):
                 data_2 = all_data_2[i].to(self.device)
 
                 with torch.no_grad():
-                    if self.learnable_weights is None:
-                        embedding_1 = self.speaker_encoder(data_1, aug=False)
-                        embedding_2 = self.speaker_encoder(data_2, aug=False)
-                    else:
-                        embedding_1 = self.speaker_encoder(data_1, aug=False,
-                                                           learnable_weights=self.learnable_weights,
-                                                           is_2d=self.is_2d)
-                        embedding_2 = self.speaker_encoder(data_2, aug=False,
-                                                           learnable_weights=self.learnable_weights,
-                                                           is_2d=self.is_2d)
+                    embedding_1 = self.speaker_encoder(data_1, aug=False,
+                                                       learnable_weights=self.learnable_weights,
+                                                       is_2d=self.is_2d)
+                    embedding_2 = self.speaker_encoder(data_2, aug=False,
+                                                       learnable_weights=self.learnable_weights,
+                                                       is_2d=self.is_2d)
+
                     embedding_1 = F.normalize(embedding_1, p=2, dim=1)
                     embedding_2 = F.normalize(embedding_2, p=2, dim=1)
                 embeddings[file] = [embedding_1, embedding_2]
@@ -281,12 +284,9 @@ class ECAPAModel(nn.Module):
                 data = data_batch[i]
                 data = data.to(self.device)
                 with torch.no_grad():
-                    if self.learnable_weights is None:
-                        embedding = self.speaker_encoder(data, aug=False)
-                    else:
-                        embedding = self.speaker_encoder(data, aug=False,
-                                                         learnable_weights=self.learnable_weights,
-                                                         is_2d=self.is_2d)
+                    embedding = self.speaker_encoder(data, aug=False,
+                                                     learnable_weights=self.learnable_weights,
+                                                     is_2d=self.is_2d)
 
                     embedding = F.normalize(embedding, p=2, dim=1)
 
@@ -343,6 +343,10 @@ class ECAPAModelDDP(nn.Module):
                     torch.zeros(n_layers, feat_dim))  # 13 couches: CNN + 12 transformers
             else:
                 self.learnable_weights = nn.Parameter(torch.ones(n_layers))
+        elif self.feat_type == 'wavlm':
+            wavlm = CustomWavLMModel(model_name=model_name)
+            n_layers, feat_dim = wavlm.get_output_dim()
+            self.learnable_weights = nn.Parameter(torch.ones(n_layers))
 
         # ECAPA-TDNN
         self.device = torch.device(f"cuda:{self.gpu_id}" if torch.cuda.is_available() else "cpu")
@@ -379,12 +383,9 @@ class ECAPAModelDDP(nn.Module):
             self.zero_grad()
             labels = torch.LongTensor(labels).to(self.gpu_id)
             # labels = torch.LongTensor(labels)
-            if self.learnable_weights is not None:
-                speaker_embedding = self.speaker_encoder(data.to(self.gpu_id), aug=True,
-                                                         learnable_weights=self.learnable_weights,
-                                                         is_2d=self.is_2d)
-            else:
-                speaker_embedding = self.speaker_encoder(data.to(self.gpu_id), aug=True)
+            speaker_embedding = self.speaker_encoder(data.to(self.gpu_id), aug=True,
+                                                     learnable_weights=self.learnable_weights,
+                                                     is_2d=self.is_2d)
 
             # speaker_embedding = self.speaker_encoder.forward(data, aug=True)
             nloss, prec = self.speaker_loss(speaker_embedding, labels)
@@ -439,16 +440,13 @@ class ECAPAModelDDP(nn.Module):
                 data_2 = all_data_2[i].to(self.gpu_id)
 
                 with torch.no_grad():
-                    if self.learnable_weights is None:
-                        embedding_1 = self.speaker_encoder(data_1, aug=False)
-                        embedding_2 = self.speaker_encoder(data_2, aug=False)
-                    else:
-                        embedding_1 = self.speaker_encoder(data_1, aug=False,
-                                                           learnable_weights=self.learnable_weights,
-                                                           is_2d=self.is_2d)
-                        embedding_2 = self.speaker_encoder(data_2, aug=False,
-                                                           learnable_weights=self.learnable_weights,
-                                                           is_2d=self.is_2d)
+                    embedding_1 = self.speaker_encoder(data_1, aug=False,
+                                                       learnable_weights=self.learnable_weights,
+                                                       is_2d=self.is_2d)
+                    embedding_2 = self.speaker_encoder(data_2, aug=False,
+                                                       learnable_weights=self.learnable_weights,
+                                                       is_2d=self.is_2d)
+
                     embedding_1 = F.normalize(embedding_1, p=2, dim=1)
                     embedding_2 = F.normalize(embedding_2, p=2, dim=1)
                 embeddings[file] = [embedding_1, embedding_2]
@@ -495,12 +493,9 @@ class ECAPAModelDDP(nn.Module):
                 data = data_batch[i]
                 data = data.to(self.gpu_id)
                 with torch.no_grad():
-                    if self.learnable_weights is None:
-                        embedding = self.speaker_encoder(data, aug=False)
-                    else:
-                        embedding = self.speaker_encoder(data, aug=False,
-                                                         learnable_weights=self.learnable_weights,
-                                                         is_2d=self.is_2d)
+                    embedding = self.speaker_encoder(data, aug=False,
+                                                     learnable_weights=self.learnable_weights,
+                                                     is_2d=self.is_2d)
 
                     embedding = F.normalize(embedding, p=2, dim=1)
 
