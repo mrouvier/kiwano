@@ -8,15 +8,13 @@ This model is modified and combined based on the following three projects:
 '''
 
 import math
-import torch
-import torchaudio
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchaudio
 
-from kiwano.augmentation import Augmentation
-from kiwano.features import Fbank
-from kiwano.model import CustomWavLMModel
+from kiwano.model.wavlm import CustomWavLMModel
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 
 
