@@ -331,10 +331,11 @@ class ECAPAModelDDP(nn.Module):
         torch.cuda.empty_cache()
         self.disable_tqdm = self.gpu_id != 0
 
+        self.feat_type = feat_type
         self.learnable_weights = None
         self.is_2d = is_2d
         self.find_unused_parameters = False
-        if feat_type == 'wav2vec2':
+        if self.feat_type == 'wav2vec2':
             self.find_unused_parameters = True
             wav2vec2 = CustomWav2Vec2Model(model_name=model_name)
             n_layers, feat_dim = wav2vec2.get_output_dim()

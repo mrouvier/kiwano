@@ -1,6 +1,6 @@
 #!/bin/bash
 # job name: kf_ddp (fbank other) kf_1_ddp (fbank kiwano)
-#SBATCH --job-name=kf_1_ddp
+#SBATCH --job-name=kf_ddp
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=GPURAM_Max_16GB
