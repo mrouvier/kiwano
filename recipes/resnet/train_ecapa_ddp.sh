@@ -2,7 +2,7 @@
 # job name: kf_ddp (fbank other) kf_1_ddp (fbank kiwano)
 #SBATCH --job-name=kf_ddp
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:3
+#SBATCH --gres=gpu:2
 #SBATCH --constraint=GPURAM_Max_16GB
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=64GB
