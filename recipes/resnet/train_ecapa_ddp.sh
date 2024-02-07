@@ -4,7 +4,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:2
 #SBATCH --constraint=GPURAM_Max_16GB
-#SBATCH --exclude=beroe,calyps
+#SBATCH --exclude=beroe,calypso
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=64GB
 #SBATCH --cpus-per-task=10
