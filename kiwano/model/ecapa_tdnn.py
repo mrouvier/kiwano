@@ -14,6 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchaudio
 
+from kiwano.model import CustomHuBERTModel
 from kiwano.model.wavlm import CustomWavLMModel
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 
@@ -156,8 +157,10 @@ class EcapaTdnn(nn.Module):
             self.specaug = FbankAug()  # Spec augmentation
         elif self.feat_type == 'wav2vec2':
             self.wav2vec2 = CustomWav2Vec2Model(model_name=model_name)
-        else:
+        elif self.feat_type == 'wavlm':
             self.wavlm = CustomWavLMModel(model_name=model_name)
+        else:
+            self.hubert = CustomHuBERTModel(model_name=model_name)
 
         self.conv1 = nn.Conv1d(self.feat_dim, C, kernel_size=5, stride=1, padding=2)
         self.relu = nn.ReLU()
@@ -191,8 +194,10 @@ class EcapaTdnn(nn.Module):
                 x = self.wav2vec2(x, learnable_weights, is_2d) + 1e-6
                 # x = x.log()
                 # x = x - torch.mean(x, dim=-1, keepdim=True)
-            else:
+            elif self.feat_type == 'wavlm':
                 x = self.wavlm(x, learnable_weights) + 1e-6
+            else:
+                x = self.hubert(x, learnable_weights) + 1e-6
 
         x = self.conv1(x)
         x = self.relu(x)

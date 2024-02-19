@@ -20,6 +20,7 @@ import torch.nn.functional as F
 from kiwano.augmentation import CropWaveForm, Linear, CMVN, Crop, Permute
 from kiwano.features import FeatureExtractor, Fbank
 from kiwano.model.ecapa_tdnn import EcapaTdnn, EcapaTdnn2
+from kiwano.model.hubert import CustomHuBERTModel
 from kiwano.model.loss import AAMsoftmax
 from kiwano.model.tools import tuneThresholdfromScore, ComputeMinDcf, ComputeErrorRates
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
@@ -132,6 +133,10 @@ class ECAPAModel(nn.Module):
         elif self.feat_type == 'wavlm':
             wavlm = CustomWavLMModel(model_name=model_name)
             n_layers, feat_dim = wavlm.get_output_dim()
+            self.learnable_weights = nn.Parameter(torch.ones(n_layers))
+        elif self.feat_type == 'hubert':
+            hubert = CustomHuBERTModel(model_name=model_name)
+            n_layers, feat_dim = hubert.get_output_dim()
             self.learnable_weights = nn.Parameter(torch.ones(n_layers))
 
         # ECAPA-TDNN
@@ -347,6 +352,10 @@ class ECAPAModelDDP(nn.Module):
         elif self.feat_type == 'wavlm':
             wavlm = CustomWavLMModel(model_name=model_name)
             n_layers, feat_dim = wavlm.get_output_dim()
+            self.learnable_weights = nn.Parameter(torch.ones(n_layers))
+        elif self.feat_type == 'hubert':
+            hubert = CustomHuBERTModel(model_name=model_name)
+            n_layers, feat_dim = hubert.get_output_dim()
             self.learnable_weights = nn.Parameter(torch.ones(n_layers))
 
         # ECAPA-TDNN
