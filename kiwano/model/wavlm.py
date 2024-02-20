@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import WavLMForCTC, AutoFeatureExtractor
+from transformers import WavLMForCTC, AutoFeatureExtractor, AutoProcessor
 
 
 class CustomWavLMModel(nn.Module):
@@ -11,7 +11,8 @@ class CustomWavLMModel(nn.Module):
         super().__init__()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = WavLMForCTC.from_pretrained(model_name, output_hidden_states=True).to(self.device)
-        self.processor = AutoFeatureExtractor.from_pretrained(model_name)
+        # self.processor = AutoFeatureExtractor.from_pretrained(model_name)
+        self.processor = AutoProcessor.from_pretrained(model_name)
 
     def forward(self, x, learnable_weights):
         with torch.no_grad():
