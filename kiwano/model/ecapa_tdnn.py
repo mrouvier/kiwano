@@ -14,7 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchaudio
 
-from kiwano.model import CustomHuBERTModel
+from kiwano.model.hubert import CustomHuBERTModel
 from kiwano.model.wavlm import CustomWavLMModel
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 

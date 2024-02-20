@@ -1,35 +1,26 @@
 import glob
 import os
-import pdb
-import random
 import sys
 import time
-from typing import Union
 
 import numpy
 import numpy as np
 import soundfile
 import torch
+import torch.nn.functional as F
 import torchaudio
 import tqdm
-from scipy import signal
 from torch import nn
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import Dataset, DataLoader
 
-import torch.nn.functional as F
-
-from kiwano.augmentation import CropWaveForm, Linear, CMVN, Crop, Permute
-from kiwano.features import FeatureExtractor, Fbank
+from kiwano.augmentation import Linear, CMVN, Crop, Permute
+from kiwano.features import Fbank
 from kiwano.model.ecapa_tdnn import EcapaTdnn, EcapaTdnn2
 from kiwano.model.hubert import CustomHuBERTModel
 from kiwano.model.loss import AAMsoftmax
 from kiwano.model.tools import tuneThresholdfromScore, ComputeMinDcf, ComputeErrorRates
-from torch.utils.data import Dataset, DataLoader, DistributedSampler
-
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
-import torch.distributed as dist
-import torch.multiprocessing as mp
-from torch.nn.parallel import DistributedDataParallel as DDP
-
 from kiwano.model.wavlm import CustomWavLMModel
 
 
