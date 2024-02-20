@@ -113,7 +113,8 @@ class ECAPAModel(nn.Module):
 
         self.learnable_weights = None
         self.is_2d = is_2d
-        if feat_type == 'wav2vec2':
+        self.feat_type = feat_type
+        if self.feat_type == 'wav2vec2':
             wav2vec2 = CustomWav2Vec2Model(model_name=model_name)
             n_layers, feat_dim = wav2vec2.get_output_dim()
             if self.is_2d:
