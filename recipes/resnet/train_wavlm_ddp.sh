@@ -28,7 +28,9 @@ conda activate kiwano
 
 # python3 utils/train_ecapa_tdnn_ddp.py --save_path exps/exp_wavlm_base_sv_ddp --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base-sv
 
-python3 utils/train_ecapa_tdnn_ddp.py --save_path exps/exp_wavlm_base_ddp --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base
+# python3 utils/train_ecapa_tdnn_ddp.py --save_path exps/exp_wavlm_base_ddp --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base
+
+python3 -m pdb utils/train_ecapa_tdnn_ddp.py --save_path exps/exp_wavlm_base_ddp --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base
 
 
 conda deactivate
