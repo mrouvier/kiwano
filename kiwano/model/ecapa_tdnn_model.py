@@ -342,10 +342,12 @@ class ECAPAModelDDP(nn.Module):
             else:
                 self.learnable_weights = nn.Parameter(torch.ones(n_layers))
         elif self.feat_type == 'wavlm':
+            self.find_unused_parameters = True
             wavlm = CustomWavLMModel(model_name=model_name)
             n_layers, feat_dim = wavlm.get_output_dim()
             self.learnable_weights = nn.Parameter(torch.ones(n_layers))
         elif self.feat_type == 'hubert':
+            self.find_unused_parameters = True
             hubert = CustomHuBERTModel(model_name=model_name)
             n_layers, feat_dim = hubert.get_output_dim()
             self.learnable_weights = nn.Parameter(torch.ones(n_layers))
