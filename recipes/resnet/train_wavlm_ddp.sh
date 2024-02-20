@@ -1,5 +1,10 @@
 #!/bin/bash
-# job names: kwlmb_ddp (base),  kwlmbcv_ddp (base cv), kwlmbp_ddp (base plus), kwlmbpcv_ddp (base plus cv), kwlml_ddp (large),
+# job names: kwlmb_ddp (base),
+# kwlmbcv_ddp (base cv),
+# kwlmbp_ddp (base plus),
+# kwlmbpcv_ddp (base plus cv),
+# kwlml_ddp (large)
+
 #SBATCH --job-name=kwlmb_ddp
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:2
