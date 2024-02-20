@@ -3,10 +3,10 @@
 #SBATCH --job-name=kf_ddp
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:2
-#SBATCH --constraint=GPURAM_Min_12GB&GPURAM_Max_16GB
+#SBATCH --constraint=GPURAM_Max_16GB
 #SBATCH --exclude=beroe,calypso
 #SBATCH --time=7-00:00:00
-#SBATCH --mem=16GB
+#SBATCH --mem=64GB
 #SBATCH --cpus-per-task=10
 #SBATCH --output=%x_output.log
 #SBATCH --error=%x_error.log
