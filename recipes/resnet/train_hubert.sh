@@ -11,7 +11,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=GPURAM_Max_16GB
 #SBATCH --time=7-00:00:00
-#SBATCH --mem=16GB
+#SBATCH --mem=32GB
 #SBATCH --cpus-per-task=10
 #SBATCH --output=%x_output.log
 #SBATCH --error=%x_error.log
@@ -27,8 +27,8 @@ conda activate kiwano
 
 # python3 utils/train_ecapa_tdnn.py --save_path exps/exp_hubert_large_ls960_ft --feat_type hubert --n_cpu 10 --batch_size 128 --model_name facebook/hubert-large-ls960-ft
 
-python3 utils/train_ecapa_tdnn.py --save_path exps/exp_hubert_xlarge_ls960_ft --feat_type hubert --n_cpu 10 --batch_size 128 --model_name  facebook/hubert-xlarge-ls960-ft
+# python3 utils/train_ecapa_tdnn.py --save_path exps/exp_hubert_xlarge_ls960_ft --feat_type hubert --n_cpu 10 --batch_size 128 --model_name  facebook/hubert-xlarge-ls960-ft
 
-# python3  utils/train_ecapa_tdnn.py --save_path exps/exp_hubert_base_ls960 --feat_type hubert --n_cpu 10 --batch_size 128 --model_name facebook/hubert-base-ls960
+python3  utils/train_ecapa_tdnn.py --save_path exps/exp_hubert_base_ls960 --feat_type hubert --n_cpu 10 --batch_size 64 --model_name facebook/hubert-base-ls960
 
 conda deactivate
