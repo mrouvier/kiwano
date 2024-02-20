@@ -55,11 +55,7 @@ python3 utils/train_ecapa_tdnn.py --save_path exps/exp3 --feat_type wav2vec2 --n
 ```
 Lance l'entraînement de l’ECAPA-TDNN avec l'extracteur de caractéristiques de type wav2vec2 utilisant le modèle `facebook/wav2vec2-base-960h`. L'entraînement utilise 10 CPUs avec une taille d'échantillonnage de 128 et enregistre les résultats dans `exps/exp3`.
 
-Vous pouvez effectuer l'entraînement avec d'autre modèles wav2vec2:
-
-  - `facebook/wav2vec2-large-960h`
-  - `facebook/wav2vec2-large-robust-ft-libri-960h`
-  - `facebook/wav2vec2-large-960h-lv60-self`
+Vous pouvez effectuer l'entraînement avec d'autre modèles wav2vec2:`facebook/wav2vec2-large-960h`, `facebook/wav2vec2-large-robust-ft-libri-960h`, `facebook/wav2vec2-large-960h-lv60-self`
 
 
 
