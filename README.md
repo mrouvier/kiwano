@@ -1,7 +1,42 @@
 # Kiwano
 
 Kiwano is an advanced open-source toolkit for speaker verification based on PyTorch.
+# Installation
 
+Commencer par cloner le en faisant:
+
+```bash
+git clone https://github.com/mrouvier/kiwano.git
+```
+
+Par la suite, on crée un environnement avec `python 3.9`:
+
+```bash
+conda create --name kiwano python=3.9
+```
+On active l'environnement en faisant:
+
+```bash
+conda activate kiwano
+```
+
+On installe les librairies:
+```bash
+pip install -r requirements.txt
+```
+
+Pour l'entraînement et l'évaluation de l'ECAPA-TDNN, il faudrait se mettre sur la branche `wav2vec2`
+
+```bash
+git checkout wav2vec2
+```
+
+Par la suite il faudra se rendre dans le repertoire `resnet`, donc à partir de la racine du projet, il faudrait faire:
+```bash
+cd recipes/resnet
+```
+
+Dans toutes les commandes qui suivront, nous supposerons que nous sommes dans le répertoire `recipes/resnet`
 
 # Entraînement et l'Évaluation
 
