@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import WavLMForCTC, AutoFeatureExtractor, Wav2Vec2Processor, HubertForCTC, HubertModel
+from transformers import WavLMForCTC, AutoFeatureExtractor, Wav2Vec2Processor, HubertForCTC, HubertModel, AutoProcessor
 
 
 class CustomHuBERTModel(nn.Module):
@@ -12,7 +12,7 @@ class CustomHuBERTModel(nn.Module):
     def __init__(self, model_name="facebook/hubert-base-ls960"):
         super().__init__()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.processor = Wav2Vec2Processor.from_pretrained(model_name)
+        self.processor = AutoProcessor.from_pretrained(model_name)
         self.model = HubertModel.from_pretrained(model_name, output_hidden_states=True).to(self.device)
 
     def forward(self, x, learnable_weights):
