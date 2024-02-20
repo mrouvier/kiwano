@@ -34,7 +34,7 @@ class CustomHuBERTModel(nn.Module):
         return result
 
     def get_output_dim(self):
-        x = [torch.randn(16_000)]
+        x = torch.randn(1, 16_000)
         with torch.no_grad():
             x = self.processor(x, return_tensor='pt', sampling_rate=16_000)
             x = x.input_values[0]
