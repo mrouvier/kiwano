@@ -36,7 +36,7 @@ class CustomWavLMModel(nn.Module):
         x = torch.randn(16_000)
         with torch.no_grad():
             x = self.processor(x, return_tensor='pt', sampling_rate=16_000)
-            x = x.input_values[0]
+            x = x.input_values
             x = torch.tensor(x).to(self.device)
             output = self.model(x)
 
