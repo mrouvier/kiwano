@@ -15,16 +15,14 @@ source /etc/profile.d/conda.sh
 conda activate kiwano
 
 
-# python3 train_ecapa_tdnn.py --save_path exps/exp_wavlm_large --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-large
+# python3 utils/train_ecapa_tdnn.py --save_path exps/exp_wavlm_large --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-large
 
-# python3 train_ecapa_tdnn.py --save_path exps/exp_wavlm_base_plus_sv --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base-plus-sv
+# python3 utils/train_ecapa_tdnn.py --save_path exps/exp_wavlm_base_plus_sv --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base-plus-sv
 
-# python3 train_ecapa_tdnn.py --save_path exps/exp_wavlm_base_plus --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base-plus
+# python3 utils/train_ecapa_tdnn.py --save_path exps/exp_wavlm_base_plus --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base-plus
 
-# python3 train_ecapa_tdnn.py --save_path exps/exp_wavlm_base_sv --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base-sv
+# python3 utils/train_ecapa_tdnn.py --save_path exps/exp_wavlm_base_sv --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base-sv
 
-python3 train_ecapa_tdnn.py --save_path exps/exp_wavlm_base --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base
-
-# python3 -m pdb train_ecapa_tdnn.py --save_path exps/exp_wavlm_base --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base
+python3 utils/train_ecapa_tdnn.py --save_path exps/exp_wavlm_base --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base
 
 conda deactivate
