@@ -3,7 +3,7 @@
 #SBATCH --job-name=bwlmb
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --constraint=GPURAM_Min_12GB&GPURAM_Max_16GB
+#SBATCH --constraint=GPURAM_Min_12GB
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=16GB
 #SBATCH --cpus-per-task=10
@@ -23,7 +23,9 @@ conda activate kiwano
 
 # python3 utils/train_ecapa_tdnn.py --save_path exps/exp_wavlm_base_sv --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base-sv
 
-python3 utils/train_ecapa_tdnn.py --save_path exps/exp_wavlm_base --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base
+# python3 utils/train_ecapa_tdnn.py --save_path exps/exp_wavlm_base --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base
+
+python3 utils/train_ecapa_tdnn.py --save_path exps/exp_wavlm_base_ddp --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base
 
 # python3 -m pdb utils/train_ecapa_tdnn.py --save_path exps/exp_wavlm_base --feat_type wavlm --n_cpu 10 --batch_size 128 --model_name microsoft/wavlm-base
 
