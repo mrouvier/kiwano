@@ -4,7 +4,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 # #SBATCH --constraint=GPURAM_Min_12GB
-#SBATCH --constraint=GPURAM_Min_16GB
+# #SBATCH --constraint=GPURAM_Min_16GB
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=16GB
 #SBATCH --cpus-per-task=10
