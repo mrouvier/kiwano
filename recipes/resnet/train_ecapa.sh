@@ -17,5 +17,5 @@ conda activate kiwano
 
 # python3 utils/train_ecapa_tdnn_2.py --save_path exps/exp1_1  --feat_dim 81 --n_cpu 10 --batch_size 128
 # python3 utils/train_ecapa_tdnn.py --save_path exps/exp1 --feat_type fbank --feat_dim 80 --n_cpu 10 --batch_size 128
-python3 utils/train_ecapa_tdnn.py --save_path exps/exp1_ddp --feat_type fbank --feat_dim 80 --n_cpu 10 --batch_size 256
+python3 utils/train_ecapa_tdnn.py --save_path exps/exp1_ddp --feat_type fbank --feat_dim 80 --n_cpu 10 --batch_size 512
 conda deactivate
