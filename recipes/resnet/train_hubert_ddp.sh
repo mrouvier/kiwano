@@ -6,10 +6,10 @@
 # job name: khb_ls960_ddp (hubert-base-ls960)
 
 
-#SBATCH --job-name=khb_ls960_ddp
+#SBATCH --job-name=khxl_ls960_ft_ddp
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:2
-#SBATCH --constraint=GPURAM_Min_12GB&GPURAM_Max_16GB
+#SBATCH --constraint=GPURAM_Min_12GB
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=16GB
 #SBATCH --cpus-per-task=10
