@@ -6,7 +6,7 @@
 # #SBATCH --constraint=GPURAM_Min_12GB
 # #SBATCH --constraint=GPURAM_Min_16GB
 #SBATCH --time=7-00:00:00
-#SBATCH --mem=32GB
+#SBATCH --mem=16GB
 #SBATCH --cpus-per-task=10
 #SBATCH --output=%x_output.log
 #SBATCH --error=%x_error.log
