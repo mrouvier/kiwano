@@ -42,8 +42,8 @@ conda activate kiwano
 #mv db/voxceleb2/wav/train_list.txt db/voxceleb2/
 
 
-rm -r db/cn_celeb/
-python3 local/download_cn_celeb.py db/cn_celeb/
+# rm -r db/cn_celeb/
+# python3 local/download_cn_celeb.py db/cn_celeb/
 # python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
 
 python3 local/extract_vietnam_celeb.py db/vietnam_celeb/
