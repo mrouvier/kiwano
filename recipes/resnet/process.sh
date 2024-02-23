@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=pk
+#SBATCH --job-name=cnceleb
 ##SBATCH --partition=gpu
 ##SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
 ##SBATCH --mem=16GB
-#SBATCH --output=pk_output.log
-#SBATCH --error=pk_error.log
+#SBATCH --output=%x_output.log
+#SBATCH --error=%x_error.log
 
 
 source /etc/profile.d/conda.sh
@@ -40,5 +40,12 @@ conda activate kiwano
 #cp -rf ./../../../dataset/db/voxceleb2/*  db/voxceleb2/wav/
 #rm -rf db/voxceleb2/wav/vox2_meta.csv
 #mv db/voxceleb2/wav/train_list.txt db/voxceleb2/
+
+
+python3 local/download_cn_celeb.py db/cn_celeb/
+python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
+
+# python3 local/download_vietnam_celeb.py db/vietnam_celeb/
+# python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
 
 conda deactivate

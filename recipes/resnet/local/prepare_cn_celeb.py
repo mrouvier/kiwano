@@ -106,7 +106,7 @@ def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike):
     out_data = Path(out_data)
     out_data.mkdir(parents=True, exist_ok=True)
 
-    listeTrain = open(out_data / "listeTrain", "w")
+    listeTrain = open(out_data / "liste", "w")
     listeDev = open(out_data / "listeDev", "w")
     listeTest = open(out_data / "listeTest", "w")
 

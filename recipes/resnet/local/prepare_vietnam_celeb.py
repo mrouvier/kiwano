@@ -27,7 +27,7 @@ def prepare_vietnam_celeb(in_data: Pathlike, out_data: Pathlike):
     out_data = Path(out_data)
     out_data.mkdir(parents=True, exist_ok=True)
 
-    listeTrain = open(out_data / "listeTrain", "w")
+    listeTrain = open(out_data / "liste", "w")
     listeTest = open(out_data / "listeTest", "w")
 
     trainFiles = []
