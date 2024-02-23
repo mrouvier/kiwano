@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=vietnam_celeb
+#SBATCH --job-name=cn_celeb
 ##SBATCH --partition=gpu
 ##SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
@@ -42,9 +42,9 @@ conda activate kiwano
 #mv db/voxceleb2/wav/train_list.txt db/voxceleb2/
 
 
-# python3 local/download_cn_celeb.py db/cn_celeb/
-# python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
+python3 local/download_cn_celeb.py db/cn_celeb/
+python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
 
-python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
+# python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
 
 conda deactivate
