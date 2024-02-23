@@ -331,7 +331,7 @@ class ECAPAModelDDP(nn.Module):
         self.feat_type = feat_type
         self.learnable_weights = None
         self.is_2d = is_2d
-        self.find_unused_parameters = True
+        self.find_unused_parameters = False
         if self.feat_type == 'wav2vec2':
             self.find_unused_parameters = True
             wav2vec2 = CustomWav2Vec2Model(model_name=model_name)
