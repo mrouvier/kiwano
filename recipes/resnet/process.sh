@@ -3,7 +3,7 @@
 ##SBATCH --partition=gpu
 ##SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
-##SBATCH --mem=16GB
+#SBATCH --mem=16GB
 #SBATCH --output=%x_output.log
 #SBATCH --error=%x_error.log
 
@@ -44,8 +44,9 @@ conda activate kiwano
 
 rm -r db/cn_celeb/
 python3 local/download_cn_celeb.py db/cn_celeb/
-python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
+# python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
 
+python3 local/extract_vietnam_celeb.py db/vietnam_celeb/
 # python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
 
 conda deactivate
