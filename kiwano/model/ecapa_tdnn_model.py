@@ -331,7 +331,9 @@ class ECAPAModelDDP(nn.Module):
         self.feat_type = feat_type
         self.learnable_weights = None
         self.is_2d = is_2d
+        self.find_unused_parameters = True
         if self.feat_type == 'wav2vec2':
+            self.find_unused_parameters = True
             wav2vec2 = CustomWav2Vec2Model(model_name=model_name)
             n_layers, feat_dim = wav2vec2.get_output_dim()
             if self.is_2d:
@@ -340,10 +342,12 @@ class ECAPAModelDDP(nn.Module):
             else:
                 self.learnable_weights = nn.Parameter(torch.ones(n_layers))
         elif self.feat_type == 'wavlm':
+            self.find_unused_parameters = True
             wavlm = CustomWavLMModel(model_name=model_name)
             n_layers, feat_dim = wavlm.get_output_dim()
             self.learnable_weights = nn.Parameter(torch.ones(n_layers))
         elif self.feat_type == 'hubert':
+            self.find_unused_parameters = True
             hubert = CustomHuBERTModel(model_name=model_name)
             n_layers, feat_dim = hubert.get_output_dim()
             self.learnable_weights = nn.Parameter(torch.ones(n_layers))
@@ -355,7 +359,7 @@ class ECAPAModelDDP(nn.Module):
         self.speaker_encoder = DDP(
             self.speaker_encoder,
             device_ids=[self.gpu_id],
-            find_unused_parameters=True
+            find_unused_parameters=self.find_unused_parameters
         )
 
         # self.speaker_encoder = ECAPA_TDNN(C=C, feat_type=feat_type, feat_dim=feat_dim)
