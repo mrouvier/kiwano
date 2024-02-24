@@ -1,9 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=cn_celeb_1
+#SBATCH --job-name=vn_celeb
 ##SBATCH --partition=gpu
 ##SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
-#SBATCH --mem=16GB
+#SBATCH --mem=64GB
+#SBATCH --cpus-per-task=20
 #SBATCH --output=%x_output.log
 #SBATCH --error=%x_error.log
 
@@ -49,8 +50,8 @@ conda activate kiwano
 #wget https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzab -P db/cn_celeb/
 #wget https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzac -P db/cn_celeb/
 
-cat  db/cn_celeb/cn-celeb2_v2.* >  db/cn_celeb/cn-celeb2.zip
-unzip db/cn_celeb/cn-celeb2.zip -d db/cn_celeb/
+# cat  db/cn_celeb/cn-celeb2_v2.* >  db/cn_celeb/cn-celeb2.zip
+# unzip db/cn_celeb/cn-celeb2.zip -d db/cn_celeb/
 
 # python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
 
@@ -59,6 +60,6 @@ unzip db/cn_celeb/cn-celeb2.zip -d db/cn_celeb/
 # rm  db/vietnam_celeb/vietnam_celeb.zip
 # cat  db/vietnam_celeb/vietnam-celeb-part* >  db/vietnam_celeb/vietnam-celeb.zip
 # unzip db/vietnam_celeb/vietnam-celeb.zip -d db/vietnam_celeb/
-# python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
+python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
 
 conda deactivate
