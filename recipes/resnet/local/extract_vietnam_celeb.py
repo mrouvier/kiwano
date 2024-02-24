@@ -7,7 +7,7 @@ from kiwano.utils import Pathlike
 
 def extract_vietnam_celeb(target_dir: Pathlike = "."):
     zip_name = "vietnam_celeb.zip"
-    zip_path = f"{target_dir}{zip_name}"
+    zip_path = target_dir/zip_name
     with open(zip_path, "wb") as outFile:
         for file in sorted(target_dir.glob("vietnam-celeb-part*")):
             with open(file, "rb") as inFile:
