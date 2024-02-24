@@ -42,15 +42,15 @@ conda activate kiwano
 #mv db/voxceleb2/wav/train_list.txt db/voxceleb2/
 
 
-rm -r db/cn_celeb/*
+# rm -r db/cn_celeb/*
 # python3 local/download_cn_celeb.py db/cn_celeb/
-# wget https://www.openslr.org/resources/82/cn-celeb_v2.tar.gz  -P db/cn_celeb/
-# wget https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzaa -P db/cn_celeb/
-# wget https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzab -P db/cn_celeb/
-# wget https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzac -P db/cn_celeb/
+wget https://www.openslr.org/resources/82/cn-celeb_v2.tar.gz  -P db/cn_celeb/
+wget https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzaa -P db/cn_celeb/
+wget https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzab -P db/cn_celeb/
+wget https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzac -P db/cn_celeb/
 
 # cat  db/cn_celeb/cn-celeb2_v2.* >  db/cn_celeb/cn-celeb2.zip
-unzip db/cn_celeb/cn-celeb2.zip -d db/cn_celeb/
+# unzip db/cn_celeb/cn-celeb2.zip -d db/cn_celeb/
 
 # python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
 
