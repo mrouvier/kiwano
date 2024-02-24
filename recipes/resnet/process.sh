@@ -48,6 +48,7 @@ conda activate kiwano
 
 # python3 local/extract_vietnam_celeb.py db/vietnam_celeb/
 rm  db/vietnam_celeb/vietnam-celeb.zip
+rm  db/vietnam_celeb/vietnam_celeb.zip
 cat  db/vietnam_celeb/vietnam-celeb-part* >  db/vietnam_celeb/vietnam-celeb.zip
 unzip db/vietnam_celeb/vietnam-celeb.zip -d db/vietnam_celeb/
 # python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
