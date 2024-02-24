@@ -60,6 +60,17 @@ conda activate kiwano
 # rm  db/vietnam_celeb/vietnam_celeb.zip
 # cat  db/vietnam_celeb/vietnam-celeb-part* >  db/vietnam_celeb/vietnam-celeb.zip
 # unzip db/vietnam_celeb/vietnam-celeb.zip -d db/vietnam_celeb/
-python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
+rm db/vietnam_celeb/README.txt
+rm db/vietnam_celeb/speaker-metadata.tsv
+rm db/vietnam_celeb/vietnam-celeb-h.txt
+rm db/vietnam_celeb/vietnam-celeb.zip
+rm -r db/vietnam_celeb/data
+rm db/vietnam_celeb/vietnam-celeb-e.txt
+rm db/vietnam_celeb/vietnam-celeb-t.txt
+
+zip -F db/vietnam_celeb/vietnam-celeb-part.zip --out db/vietnam_celeb/full-dataset.zip
+unzip db/vietnam_celeb/full-dataset.zip
+
+# python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
 
 conda deactivate
