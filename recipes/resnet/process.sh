@@ -60,8 +60,8 @@ conda activate kiwano
 # cat  db/vietnam_celeb/vietnam-celeb-part* >  db/vietnam_celeb/vietnam-celeb.zip
 # unzip db/vietnam_celeb/vietnam-celeb.zip -d db/vietnam_celeb/
 
-rm db/vietnam_celeb/full-dataset.zip
-rm db/vietnam_celeb/zisqymuN
+# rm db/vietnam_celeb/full-dataset.zip
+# rm db/vietnam_celeb/zisqymuN
 python3 local/extract_vietnam_celeb.py db/vietnam_celeb/
 #zip -F db/vietnam_celeb/vietnam-celeb-part.zip --out db/vietnam_celeb/full-dataset.zip
 #unzip db/vietnam_celeb/full-dataset.zip
