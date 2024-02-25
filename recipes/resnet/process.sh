@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=vn_celeb
+#SBATCH --job-name=cn_celeb
 ##SBATCH --partition=gpu
 ##SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
@@ -52,7 +52,8 @@ conda activate kiwano
 
 #rm db/cn_celeb/cn-celeb2.zip
 #python3 local/extract_cn_celeb.py db/cn_celeb/
-# python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
+rm -r data/cn_celeb/
+python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
 
 # python3 local/extract_vietnam_celeb.py db/vietnam_celeb/
 # rm  db/vietnam_celeb/vietnam-celeb.zip
@@ -71,7 +72,7 @@ conda activate kiwano
 #unzip db/vietnam_celeb/full-dataset.zip
 #mv data/id0* db/vietnam_celeb/data/
 
-rm -r data/vietnam_celeb/
-python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
+#rm -r data/vietnam_celeb/
+#python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
 
 conda deactivate
