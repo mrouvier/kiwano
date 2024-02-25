@@ -12,19 +12,18 @@ from kiwano.utils import Pathlike
 def extract_vietnam_celeb(target_dir: Pathlike = "."):
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
-    tar_gz_name = "vietnam-celeb.tar.gz"
-    tar_gz_path = target_dir / tar_gz_name
-    with open(tar_gz_path, "wb") as outFile:
+    zip_name = "vietnam-celeb.zip"
+    zip_path = target_dir / zip_name
+    with open(zip_path, "wb") as outFile:
         for file in tqdm(sorted(target_dir.glob("vietnam-celeb-part.z0*"))):
             with open(file, "rb") as inFile:
                 shutil.copyfileobj(inFile, outFile)
-
     print(f"Unzipping train...", flush=True)
-    with tarfile.open(tar_gz_path) as zf:
+    with zipfile.ZipFile(zip_name) as zf:
         zf.extractall(target_dir)
 
     print(f"Unzipping test...", flush=True)
-    with tarfile.open(target_dir / "vietnam-celeb-part.zip") as zf:
+    with zipfile.ZipFile(target_dir / "vietnam-celeb-part.zip") as zf:
         zf.extractall(target_dir)
 
 

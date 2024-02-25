@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=cn_celeb
+#SBATCH --job-name=vn_celeb
 ##SBATCH --partition=gpu
 ##SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
@@ -50,8 +50,8 @@ conda activate kiwano
 #wget https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzab -P db/cn_celeb/
 #wget https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzac -P db/cn_celeb/
 
-rm db/cn_celeb/cn-celeb2.zip
-python3 local/extract_cn_celeb.py db/cn_celeb/
+#rm db/cn_celeb/cn-celeb2.zip
+#python3 local/extract_cn_celeb.py db/cn_celeb/
 # python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
 
 # python3 local/extract_vietnam_celeb.py db/vietnam_celeb/
@@ -59,14 +59,10 @@ python3 local/extract_cn_celeb.py db/cn_celeb/
 # rm  db/vietnam_celeb/vietnam_celeb.zip
 # cat  db/vietnam_celeb/vietnam-celeb-part* >  db/vietnam_celeb/vietnam-celeb.zip
 # unzip db/vietnam_celeb/vietnam-celeb.zip -d db/vietnam_celeb/
-#rm db/vietnam_celeb/README.txt
-#rm db/vietnam_celeb/speaker-metadata.tsv
-#rm db/vietnam_celeb/vietnam-celeb-h.txt
-#rm db/vietnam_celeb/vietnam-celeb.zip
-#rm -r db/vietnam_celeb/data
-#rm db/vietnam_celeb/vietnam-celeb-e.txt
-#rm db/vietnam_celeb/vietnam-celeb-t.txt
-#
+
+rm db/vietnam_celeb/full-dataset.zip
+rm db/vietnam_celeb/zisqymuN
+python3 local/extract_vietnam_celeb.py db/vietnam_celeb/
 #zip -F db/vietnam_celeb/vietnam-celeb-part.zip --out db/vietnam_celeb/full-dataset.zip
 #unzip db/vietnam_celeb/full-dataset.zip
 
