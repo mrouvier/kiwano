@@ -14,12 +14,12 @@ def extract_vietnam_celeb(target_dir: Pathlike = "."):
     target_dir.mkdir(parents=True, exist_ok=True)
     zip_name = "vietnam-celeb.zip"
     zip_path = target_dir / zip_name
-    # with open(zip_path, "wb") as outFile:
-    #     for file in tqdm(sorted(target_dir.glob("vietnam-celeb-part.z0*"))):
-    #         with open(file, "rb") as inFile:
-    #             shutil.copyfileobj(inFile, outFile)
+    with open(zip_path, "wb") as outFile:
+        for file in tqdm(sorted(target_dir.glob("vietnam-celeb-part.z0*"))):
+            with open(file, "rb") as inFile:
+                shutil.copyfileobj(inFile, outFile)
     print(f"Unzipping train...", flush=True)
-    with tarfile.open(zip_path) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         zf.extractall(target_dir)
 
     print(f"Unzipping test...", flush=True)
