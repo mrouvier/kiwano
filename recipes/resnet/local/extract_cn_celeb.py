@@ -1,7 +1,10 @@
 import argparse
 import shutil
+import tarfile
 import zipfile
 from pathlib import Path
+
+from tqdm import tqdm
 
 from kiwano.utils import Pathlike
 
@@ -9,15 +12,19 @@ from kiwano.utils import Pathlike
 def extract_cn_celeb(target_dir: Pathlike = "."):
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
-    zip_name = "cn_celeb.zip"
-    zip_path = target_dir / zip_name
-    with open(zip_path, "wb") as outFile:
-        for file in sorted(target_dir.glob("cn-celeb2_v2.*")):
+    tar_gz_name = "cn-celeb2.tar.gz"
+    tar_gz_path = target_dir / tar_gz_name
+    with open(tar_gz_path, "wb") as outFile:
+        for file in tqdm(sorted(target_dir.glob("cn-celeb2_v2.tar.gza*"))):
             with open(file, "rb") as inFile:
                 shutil.copyfileobj(inFile, outFile)
 
-    print(f"Unzipping files...", flush=True)
-    with zipfile.ZipFile(zip_path) as zf:
+    print(f"Unzipping train...", flush=True)
+    with tarfile.open(tar_gz_path) as zf:
+        zf.extractall(target_dir)
+
+    print(f"Unzipping test...", flush=True)
+    with tarfile.open(target_dir / "cn-celeb_v2.tar.gz") as zf:
         zf.extractall(target_dir)
 
 
