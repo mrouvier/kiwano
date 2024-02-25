@@ -19,11 +19,9 @@ def extract_vietnam_celeb(target_dir: Pathlike = "."):
     #              'vietnam-celeb-part.z01',
     #              'vietnam-celeb-part.z02',
     #              'vietnam-celeb-part.z03']
-    zip_files = ['vietnam-celeb-part.zip']
-    with open(zip_path, "wb") as outFile:
-        for file in tqdm(zip_files):
-            path = target_dir / file
-            with open(path, "rb") as inFile:
+    with open(zip_name, "wb") as outFile:
+        for file in tqdm(sorted(target_dir.glob("vietnam-celeb-part.zip"))):
+            with open(file, "rb") as inFile:
                 shutil.copyfileobj(inFile, outFile)
     print(f"Unzipping files...", flush=True)
     with zipfile.ZipFile(zip_path) as zf:
