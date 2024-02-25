@@ -43,7 +43,7 @@ def prepare_vietnam_celeb(in_data: Pathlike, out_data: Pathlike):
         futuresTrain = []
         futuresTest = []
 
-        for segment in (in_data / "data").rglob("*.wav"):
+        for segment in tqdm((in_data / "data").rglob("*.wav"), desc="Creating Jobs"):
             part = segment.parts
             endOfPart = part[-2:]
             endOfPath = endOfPart[0]+"/"+endOfPart[1]
