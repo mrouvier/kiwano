@@ -4,7 +4,7 @@
 ##SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=64GB
-# #SBATCH --cpus-per-task=20
+#SBATCH --cpus-per-task=8
 #SBATCH --output=%x_output.log
 #SBATCH --error=%x_error.log
 
@@ -69,8 +69,9 @@ conda activate kiwano
 #rm  db/vietnam_celeb/vietnam-celeb.zip
 #zip -F db/vietnam_celeb/vietnam-celeb-part.zip --out db/vietnam_celeb/full-dataset.zip
 #unzip db/vietnam_celeb/full-dataset.zip
-mv data/id0* db/vietnam_celeb/data/
+#mv data/id0* db/vietnam_celeb/data/
 
-# python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
+rm -r data/vietnam_celeb/
+python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
 
 conda deactivate
