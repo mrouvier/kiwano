@@ -19,7 +19,7 @@ def extract_vietnam_celeb(target_dir: Pathlike = "."):
     #         with open(file, "rb") as inFile:
     #             shutil.copyfileobj(inFile, outFile)
     print(f"Unzipping train...", flush=True)
-    with zipfile.ZipFile(zip_path) as zf:
+    with tarfile.open(zip_path) as zf:
         zf.extractall(target_dir)
 
     print(f"Unzipping test...", flush=True)
