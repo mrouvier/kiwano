@@ -154,15 +154,41 @@ def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike):
         os.remove(in_data / "cn-celeb_v2.tar.gz")
 
 
+def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
+    in_data = Path(in_data)
+    out_data = Path(out_data)
+    out_data.mkdir(parents=True, exist_ok=True)
+
+    listeEval = open(out_data / f"{oldfile}.edited", "w")
+    with open(in_data / oldfile, "r") as f:
+        for line in f:
+            line = line.strip().split("\t")
+
+            part0 = line[0].strip()
+            part1 = line[1].strip()
+            part2 = line[2].strip()
+
+            speaker1 = f"{part0}.wav"
+            speaker2 = part1.split("/")[1]
+            label = part2
+
+            listeEval.write(f"{label}\t{speaker1}\t{speaker2}\n")
+
+    listeEval.close()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('in_data', metavar='in_data', type=str,
+    parser.add_argument('--in_data', metavar='in_data', type=str,
                         help='the path to the directory where CN-Celeb2_flac and CN-Celeb_flac are stored')
-    parser.add_argument('out_data', metavar="out_data", type=str,
+    parser.add_argument('--out_data', metavar="out_data", type=str,
                         help='the path to the target directory where the liste will be stored')
     parser.add_argument('--deleteZIP', action="store_true", default=False,
                         help='to delete the ZIP files already extracted (default: False)')
+    parser.add_argument('--old_file', metavar="old_file", type=str,
+                        help='old file name')
 
     args = parser.parse_args()
 
-    prepare_cn_celeb(args.deleteZIP, args.in_data, args.out_data)
+    # prepare_cn_celeb(args.deleteZIP, args.in_data, args.out_data)
+    create_new_eval_list(args.in_data, args.in_data, args.old_file)
