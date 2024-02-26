@@ -164,6 +164,7 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
         for line in f:
             line = line.strip().split("\t")
             if len(line) > 0:
+                print(line, flush=True)
                 part0 = line[0].strip()
                 part1 = line[1].strip()
                 part2 = line[2].strip()
