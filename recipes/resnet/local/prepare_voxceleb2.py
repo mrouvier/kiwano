@@ -85,6 +85,7 @@ def _process_file(file_path: Pathlike, output: Pathlike, sampling_frequency: int
 
 def get_number_speaker(in_data: Pathlike, fname: str):
     speaker_ids = []
+    in_data = Path(in_data)
     with open(in_data / fname, "r") as f:
         for line in f:
             line = line.strip().split()
