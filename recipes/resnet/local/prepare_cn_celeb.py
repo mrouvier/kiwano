@@ -163,16 +163,16 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     with open(in_data / oldfile, "r") as f:
         for line in f:
             line = line.strip().split("\t")
+            if len(line) > 0:
+                part0 = line[0].strip()
+                part1 = line[1].strip()
+                part2 = line[2].strip()
 
-            part0 = line[0].strip()
-            part1 = line[1].strip()
-            part2 = line[2].strip()
+                speaker1 = f"{part0}.wav"
+                speaker2 = part1.split("/")[1]
+                label = part2
 
-            speaker1 = f"{part0}.wav"
-            speaker2 = part1.split("/")[1]
-            label = part2
-
-            listeEval.write(f"{label}\t{speaker1}\t{speaker2}\n")
+                listeEval.write(f"{label}\t{speaker1}\t{speaker2}\n")
 
     listeEval.close()
 
