@@ -211,5 +211,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_cn_celeb(args.deleteZIP, args.in_data, args.out_data)
-    create_new_eval_list(args.in_data, args.in_data, args.old_file)
-    # create_new_train_list(args.in_data, args.out_data, args.old_file)
+    # create_new_eval_list(args.in_data, args.in_data, args.old_file)
+    create_new_train_list(args.in_data, args.out_data, args.old_file)
