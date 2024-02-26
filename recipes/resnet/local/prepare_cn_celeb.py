@@ -162,9 +162,8 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     listeEval = open(out_data / f"{oldfile}.edited", "w")
     with open(in_data / oldfile, "r") as f:
         for line in f:
-            line = line.strip().split("\t")
-            if len(line) > 0:
-                print(line, flush=True)
+            line = line.strip().split(" ")
+            if len(line) > 3:
                 part0 = line[0].strip()
                 part1 = line[1].strip()
                 part2 = line[2].strip()
