@@ -82,8 +82,8 @@ python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb_flac/eval/lists
 #rm -r data/vietnam_celeb/
 #python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
 
-#python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ db/vietnam_celeb/ vietnam-celeb-t.txt
+python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --out_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
 
-python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
+# python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
 
 conda deactivate
