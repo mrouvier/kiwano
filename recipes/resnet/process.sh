@@ -55,7 +55,8 @@ conda activate kiwano
 #rm -r data/cn_celeb/
 #python3 local/prepare_cn_celeb.py db/cn_celeb/ data/cn_celeb/
 # mv  data/cn_celeb/CN-Celeb2_flac/wav db/cn_celeb/CN-Celeb2_flac/
-mv  data/cn_celeb/CN-Celeb_flac/* db/cn_celeb/CN-Celeb_flac/
+mv  data/cn_celeb/CN-Celeb_flac/dev db/cn_celeb/CN-Celeb_flac/
+mv  data/cn_celeb/CN-Celeb_flac/eval db/cn_celeb/CN-Celeb_flac/
 
 # python3 local/extract_vietnam_celeb.py db/vietnam_celeb/
 # rm  db/vietnam_celeb/vietnam-celeb.zip
