@@ -162,7 +162,7 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     listeEval = open(out_data / f"{oldfile}.edited", "w")
     with open(in_data / oldfile, "r") as f:
         for line in f:
-            line = line.strip().split(" ")
+            line = line.strip().split()
             if len(line) == 3:
                 part0 = line[0].strip()
                 part1 = line[1].strip()
@@ -172,9 +172,29 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
                 speaker2 = part1.split("/")[1]
                 label = part2
 
-                listeEval.write(f"{label}\t{speaker1}\t{speaker2}\n")
+                listeEval.write(f"{label} {speaker1} {speaker2}\n")
 
     listeEval.close()
+
+
+def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
+    in_data = Path(in_data)
+    out_data = Path(out_data)
+    out_data.mkdir(parents=True, exist_ok=True)
+
+    listeTrain = open(out_data / f"{oldfile}.edited", "w")
+    with open(in_data / oldfile, "r") as f:
+        for line in f:
+            line = line.strip().split()
+            if len(line) == 4:
+                part1 = line[1].strip()
+                part3 = line[3].strip()
+
+                speaker = part3.split('/')[-2:]
+
+                listeTrain.write(f"{part1} {speaker}\n")
+
+    listeTrain.close()
 
 
 if __name__ == '__main__':
@@ -192,3 +212,4 @@ if __name__ == '__main__':
 
     # prepare_cn_celeb(args.deleteZIP, args.in_data, args.out_data)
     create_new_eval_list(args.in_data, args.in_data, args.old_file)
+    # create_new_train_list(args.in_data, args.out_data, args.old_file)

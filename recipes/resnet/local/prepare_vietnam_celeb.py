@@ -74,11 +74,11 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     listeTrain = open(out_data / f"{oldfile}.edited", "w")
     with open(in_data / oldfile, "r") as f:
         for line in f:
-            line = line.strip().split("\t")
+            line = line.strip().split()
             dir = line[0].strip()
             fname = line[1].strip()
             full_path = f"{dir}/{fname}"
-            listeTrain.write(f"{dir}\t{full_path}\n")
+            listeTrain.write(f"{dir} {full_path}\n")
 
     listeTrain.close()
 
@@ -107,5 +107,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_vietnam_celeb(args.in_data, args.out_data)
-    # create_new_train_list(args.in_data, args.out_data, args.old_file)
-    get_number_speaker(args.in_data, args.old_file)
+    create_new_train_list(args.in_data, args.out_data, args.old_file)
+    # get_number_speaker(args.in_data, args.old_file)
