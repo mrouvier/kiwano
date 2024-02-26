@@ -83,6 +83,22 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     listeTrain.close()
 
 
+def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
+    in_data = Path(in_data)
+    out_data = Path(out_data)
+    out_data.mkdir(parents=True, exist_ok=True)
+
+    listeEval = open(out_data / f"{oldfile}.edited", "w")
+    with open(in_data / oldfile, "r") as f:
+        for line in f:
+            # line = line.strip().split("\t")
+            line = line.strip().replace("\t", " ")
+            if len(line) > 0:
+                listeEval.write(f"{line}\n")
+
+    listeEval.close()
+
+
 def get_number_speaker(in_data: Pathlike, fname: str):
     speaker_ids = []
     with open(in_data / fname, "r") as f:
@@ -107,5 +123,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_vietnam_celeb(args.in_data, args.out_data)
-    create_new_train_list(args.in_data, args.out_data, args.old_file)
+    # create_new_train_list(args.in_data, args.out_data, args.old_file)
+    create_new_eval_list(args.in_data, args.in_data, args.old_file)
     # get_number_speaker(args.in_data, args.old_file)

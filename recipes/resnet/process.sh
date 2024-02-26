@@ -86,4 +86,6 @@ python3 local/prepare_cn_celeb.py --in_data data/cn_celeb/ --old_file liste --ou
 
 # python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
 
+python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-e.txt
+
 conda deactivate
