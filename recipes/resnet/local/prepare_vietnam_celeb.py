@@ -83,16 +83,29 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     listeTrain.close()
 
 
+def get_number_speaker(in_data: Pathlike, fname: str):
+    speaker_ids = []
+    with open(in_data / fname, "r") as f:
+        for line in f:
+            line = line.strip().split("\t")
+            spkId = line[0].strip()
+            speaker_ids.append(spkId)
+
+    speaker_ids = set(speaker_ids)
+    print(f"Number of speaker is: {len(speaker_ids)}")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('in_data', metavar='in_data', type=str,
+    parser.add_argument('--in_data', metavar='in_data', type=str,
                         help='the path to the directory "data", where the wav files are stored')
-    parser.add_argument('out_data', metavar="out_data", type=str,
+    parser.add_argument('--out_data', metavar="out_data", type=str,
                         help='the path to the target directory where the liste will be stored')
-    parser.add_argument('old_file', metavar="old_file", type=str,
+    parser.add_argument('--old_file', metavar="old_file", type=str,
                         help='old file name')
 
     args = parser.parse_args()
 
     # prepare_vietnam_celeb(args.in_data, args.out_data)
-    create_new_train_list(args.in_data, args.out_data, args.old_file)
+    # create_new_train_list(args.in_data, args.out_data, args.old_file)
+    get_number_speaker(args.in_data, args.old_file)
