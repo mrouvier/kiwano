@@ -61,7 +61,7 @@ python3 local/prepare_voxceleb2.py --in_data db/voxceleb2/ --old_file train_list
 
 # python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb_flac/eval/lists/ --old_file trials.lst
 
-python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb_flac/eval/lists/ --old_file trials.lst.edited
+python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb2_flac --old_file liste.edited
 
 # python3 local/prepare_cn_celeb.py --in_data data/cn_celeb/ --old_file liste --out_data db/cn_celeb/CN-Celeb2_flac/
 
@@ -89,6 +89,6 @@ python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb_flac/eval/lists
 
 # python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
 
-python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-e.txt.edited
+python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt.edited
 
 conda deactivate
