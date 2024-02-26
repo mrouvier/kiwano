@@ -163,7 +163,7 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     with open(in_data / oldfile, "r") as f:
         for line in f:
             line = line.strip().split(" ")
-            if len(line) > 3:
+            if len(line) == 3:
                 part0 = line[0].strip()
                 part1 = line[1].strip()
                 part2 = line[2].strip()
