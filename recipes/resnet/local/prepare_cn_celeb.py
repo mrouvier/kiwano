@@ -197,6 +197,18 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     listeTrain.close()
 
 
+def get_number_speaker(in_data: Pathlike, fname: str):
+    speaker_ids = []
+    with open(in_data / fname, "r") as f:
+        for line in f:
+            line = line.strip().split()
+            spkId = line[0].strip()
+            speaker_ids.append(spkId)
+
+    speaker_ids = set(speaker_ids)
+    print(f"Cn_celeb - Number of speaker in {fname}: {len(speaker_ids)}")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_data', metavar='in_data', type=str,
@@ -212,4 +224,5 @@ if __name__ == '__main__':
 
     # prepare_cn_celeb(args.deleteZIP, args.in_data, args.out_data)
     # create_new_eval_list(args.in_data, args.in_data, args.old_file)
-    create_new_train_list(args.in_data, args.out_data, args.old_file)
+    # create_new_train_list(args.in_data, args.out_data, args.old_file)
+    get_number_speaker(args.in_data, args.old_file)

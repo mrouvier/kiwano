@@ -103,12 +103,12 @@ def get_number_speaker(in_data: Pathlike, fname: str):
     speaker_ids = []
     with open(in_data / fname, "r") as f:
         for line in f:
-            line = line.strip().split("\t")
+            line = line.strip().split()
             spkId = line[0].strip()
             speaker_ids.append(spkId)
 
     speaker_ids = set(speaker_ids)
-    print(f"Number of speaker is: {len(speaker_ids)}")
+    print(f"Vietnam_celeb - Number of speaker in {fname}: {len(speaker_ids)}")
 
 
 if __name__ == '__main__':
@@ -124,5 +124,5 @@ if __name__ == '__main__':
 
     # prepare_vietnam_celeb(args.in_data, args.out_data)
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
-    create_new_eval_list(args.in_data, args.in_data, args.old_file)
-    # get_number_speaker(args.in_data, args.old_file)
+    # create_new_eval_list(args.in_data, args.in_data, args.old_file)
+    get_number_speaker(args.in_data, args.old_file)
