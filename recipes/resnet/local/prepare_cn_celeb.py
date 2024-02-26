@@ -190,7 +190,7 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
                 part1 = line[1].strip()
                 part3 = line[3].strip()
 
-                speaker = part3.split('/')[-2:]
+                speaker = "/".join(part3.split('/')[-2:])
 
                 listeTrain.write(f"{part1} {speaker}\n")
 
