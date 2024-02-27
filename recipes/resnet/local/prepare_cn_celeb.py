@@ -161,7 +161,8 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
 
     listeEval = open(out_data / f"{oldfile}.edited", "w")
     with open(in_data / oldfile, "r") as f:
-        for line in tqdm(f):
+        lines = f.readlines()
+        for line in tqdm(lines):
             line = line.strip().split()
             if len(line) == 3:
                 part0 = line[0].strip()
@@ -176,6 +177,8 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
                 path2 = f"db/cn_celeb/CN-Celeb_flac/eval/wav/{speaker2}"
                 if os.path.exists(path1) and os.path.exists(path2):
                     listeEval.write(f"{label} {speaker1} {speaker2}\n")
+                else:
+                    print(f"{label} {path1} {path2}", flush=True)
 
     listeEval.close()
 
@@ -187,7 +190,8 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
 
     listeTrain = open(out_data / f"{oldfile}.edited", "w")
     with open(in_data / oldfile, "r") as f:
-        for line in tqdm(f):
+        lines = f.readlines()
+        for line in tqdm(lines):
             line = line.strip().split()
             if len(line) == 4:
                 part1 = line[1].strip()
@@ -196,6 +200,8 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
                 path = f"db/cn_celeb/CN-Celeb2_flac/wav/{speaker}"
                 if os.path.exists(path):
                     listeTrain.write(f"{part1} {speaker}\n")
+                else:
+                    print(path, flush=True)
 
     listeTrain.close()
 

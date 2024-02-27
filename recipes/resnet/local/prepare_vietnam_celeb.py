@@ -74,7 +74,8 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
 
     listeTrain = open(out_data / f"{oldfile}.edited", "w")
     with open(in_data / oldfile, "r") as f:
-        for line in tqdm(f):
+        lines = f.readlines()
+        for line in tqdm(lines):
             line = line.strip().split()
             dir = line[0].strip()
             fname = line[1].strip()
@@ -82,6 +83,8 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
             full_path = f"db/vietnam_celeb/data/{path}"
             if os.path.exists(full_path):
                 listeTrain.write(f"{dir} {path}\n")
+            else:
+                print(full_path, flush=True)
 
     listeTrain.close()
 
@@ -102,6 +105,8 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
             path2 = f"db/vietnam_celeb/data/{speaker2}"
             if os.path.exists(path1) and os.path.exists(path2):
                 listeEval.write(f"{label} {speaker1} {speaker2}\n")
+            else:
+                print(f"{label} {path1} {path2}", flush=True)
 
     listeEval.close()
 
