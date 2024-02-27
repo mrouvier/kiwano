@@ -22,7 +22,7 @@ conda activate kiwano
 #Prepare Voxceleb2
 #python3 local/download_voxceleb2.py db/voxceleb2/
 #python3 local/prepare_voxceleb2.py db/voxceleb2/ data/voxceleb2/
-python3 local/prepare_voxceleb2.py --in_data db/voxceleb2/ --old_file train_list.txt
+#python3 local/prepare_voxceleb2.py --in_data db/voxceleb2/ --old_file train_list.txt
 
 #Prepare MUSAN
 #python3 local/download_musan.py db/musan/
