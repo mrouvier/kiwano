@@ -42,7 +42,7 @@ conda activate kiwano
 #cp -rf ./../../../dataset/db/voxceleb2/*  db/voxceleb2/wav/
 #rm -rf db/voxceleb2/wav/vox2_meta.csv
 #mv db/voxceleb2/wav/train_list.txt db/voxceleb2/
-python3 local/prepare_voxceleb2.py --in_data db/voxceleb2/ --out_data db/voxceleb2/--old_file train_list.txt
+python3 local/prepare_voxceleb2.py --in_data db/voxceleb2/ --out_data db/voxceleb2/ --old_file train_list.txt
 
 # rm -r db/cn_celeb/*
 # python3 local/download_cn_celeb.py db/cn_celeb/
