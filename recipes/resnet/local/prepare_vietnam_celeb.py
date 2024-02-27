@@ -74,7 +74,7 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
 
     listeTrain = open(out_data / f"{oldfile}.edited", "w")
     with open(in_data / oldfile, "r") as f:
-        for line in f:
+        for line in tqdm(f):
             line = line.strip().split()
             dir = line[0].strip()
             fname = line[1].strip()
@@ -93,7 +93,7 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
 
     listeEval = open(out_data / f"{oldfile}.edited", "w")
     with open(in_data / oldfile, "r") as f:
-        for line in f:
+        for line in tqdm(f):
             line = line.strip().split("\t")
             speaker1 = line[1].strip()
             speaker2 = line[-1].strip()
