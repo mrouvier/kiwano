@@ -114,6 +114,24 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     listeTrain.close()
 
 
+def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
+    in_data = Path(in_data)
+    out_data = Path(out_data)
+    out_data.mkdir(parents=True, exist_ok=True)
+
+    listeEval = open(out_data / f"{oldfile}.edited", "w")
+    with open(in_data / oldfile, "r") as f:
+        for line in f:
+            line = line.strip().split()
+            speaker1 = line[1].strip()
+            speaker2 = line[-1].strip()
+            label = line[0].strip()
+            path1 = f"db/voxceleb1/wav/{speaker1}"
+            path2 = f"db/voxceleb1/wav/{speaker2}"
+            if os.path.exists(path1) and os.path.exists(path2):
+                listeEval.write(f"{label} {speaker1} {speaker2}\n")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_data', metavar='in_data', type=str,
