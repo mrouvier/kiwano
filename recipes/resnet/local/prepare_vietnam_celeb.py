@@ -79,7 +79,7 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
             dir = line[0].strip()
             fname = line[1].strip()
             path = f"{dir}/{fname}"
-            full_path = f"db/cn_celeb/CN-Celeb2_flac/wav/{path}"
+            full_path = f"db/vietnam_celeb/data/{path}"
             if os.path.exists(full_path):
                 listeTrain.write(f"{dir} {path}\n")
 
@@ -94,10 +94,14 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     listeEval = open(out_data / f"{oldfile}.edited", "w")
     with open(in_data / oldfile, "r") as f:
         for line in f:
-            # line = line.strip().split("\t")
-            line = line.strip().replace("\t", " ")
-            if len(line) > 0:
-                listeEval.write(f"{line}\n")
+            line = line.strip().split("\t")
+            speaker1 = line[1].strip()
+            speaker2 = line[-1].strip()
+            label = line[0].strip()
+            path1 = f"db/vietnam_celeb/data/{speaker1}"
+            path2 = f"db/vietnam_celeb/data/{speaker2}"
+            if os.path.exists(path1) and os.path.exists(path2):
+                listeEval.write(f"{label} {speaker1} {speaker2}\n")
 
     listeEval.close()
 

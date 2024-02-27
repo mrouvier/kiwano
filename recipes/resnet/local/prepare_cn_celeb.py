@@ -169,10 +169,13 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
                 part2 = line[2].strip()
 
                 speaker1 = f"{part0}.wav"
-                speaker2 = part1.split("/")[1]
+                speaker2 = part1.split("/")[-1]
                 label = part2
 
-                listeEval.write(f"{label} {speaker1} {speaker2}\n")
+                path1 = f"db/cn_celeb/CN-Celeb_flac/eval/wav/{speaker1}"
+                path2 = f"db/cn_celeb/CN-Celeb_flac/eval/wav/{speaker2}"
+                if os.path.exists(path1) and os.path.exists(path2):
+                    listeEval.write(f"{label} {speaker1} {speaker2}\n")
 
     listeEval.close()
 
@@ -190,7 +193,8 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
                 part1 = line[1].strip()
                 part3 = line[-1].strip()
                 speaker = "/".join(part3.split('/')[-2:])
-                if os.path.exists(part3):
+                path = f"db/cn_celeb/CN-Celeb2_flac/wav/{speaker}"
+                if os.path.exists(path):
                     listeTrain.write(f"{part1} {speaker}\n")
 
     listeTrain.close()

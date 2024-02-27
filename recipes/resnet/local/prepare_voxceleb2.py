@@ -107,7 +107,7 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
             line = line.strip().split()
             dir = line[0].strip()
             fname = line[1].strip()
-            full_path = f"db/voxceleb2/{fname}"
+            full_path = f"db/voxceleb2/wav/{fname}"
             if os.path.exists(full_path):
                 listeTrain.write(f"{dir} {fname}\n")
 
