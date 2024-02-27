@@ -61,11 +61,11 @@ python3 local/prepare_voxceleb2.py --in_data db/voxceleb1/  --old_file veri_test
 #mv data/cn_celeb/CN-Celeb_flac/dev/wav db/cn_celeb/CN-Celeb_flac/dev/
 #mv data/cn_celeb/CN-Celeb_flac/eval/wav db/cn_celeb/CN-Celeb_flac/eval/
 
-python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb_flac/eval/lists/ --old_file trials.lst
+# python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb_flac/eval/lists/ --old_file trials.lst
 
 # python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb2_flac --old_file liste.edited
 
-# python3 local/prepare_cn_celeb.py --in_data data/cn_celeb/ --old_file liste --out_data db/cn_celeb/CN-Celeb2_flac/
+python3 local/prepare_cn_celeb.py --in_data data/cn_celeb/ --old_file liste --out_data db/cn_celeb/CN-Celeb2_flac/
 
 # python3 local/extract_vietnam_celeb.py db/vietnam_celeb/
 # rm  db/vietnam_celeb/vietnam-celeb.zip
@@ -87,12 +87,12 @@ python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb_flac/eval/lists
 #rm -r data/vietnam_celeb/
 #python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
 
-# python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --out_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
+python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --out_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
 
 # python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
 
 # python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt.edited
 
-python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-e.txt
+# python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-e.txt
 
 conda deactivate
