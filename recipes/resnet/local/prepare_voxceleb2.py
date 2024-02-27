@@ -96,6 +96,24 @@ def get_number_speaker(in_data: Pathlike, fname: str):
     print(f"Voxceleb2 - Number of speaker in {fname}: {len(speaker_ids)}")
 
 
+def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
+    in_data = Path(in_data)
+    out_data = Path(out_data)
+    out_data.mkdir(parents=True, exist_ok=True)
+
+    listeTrain = open(out_data / f"{oldfile}.edited", "w")
+    with open(in_data / oldfile, "r") as f:
+        for line in f:
+            line = line.strip().split()
+            dir = line[0].strip()
+            fname = line[1].strip()
+            full_path = f"db/voxceleb2/{fname}"
+            if os.path.exists(full_path):
+                listeTrain.write(f"{dir} {fname}\n")
+
+    listeTrain.close()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_data', metavar='in_data', type=str,
@@ -112,4 +130,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
-    get_number_speaker(args.in_data, args.old_file)
+    # get_number_speaker(args.in_data, args.old_file)
+    create_new_train_list(args.in_data, args.out_data, args.old_file)

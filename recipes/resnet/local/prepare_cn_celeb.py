@@ -188,11 +188,10 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
             line = line.strip().split()
             if len(line) == 4:
                 part1 = line[1].strip()
-                part3 = line[3].strip()
-
+                part3 = line[-1].strip()
                 speaker = "/".join(part3.split('/')[-2:])
-
-                listeTrain.write(f"{part1} {speaker}\n")
+                if os.path.exists(part3):
+                    listeTrain.write(f"{part1} {speaker}\n")
 
     listeTrain.close()
 
@@ -224,6 +223,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_cn_celeb(args.deleteZIP, args.in_data, args.out_data)
-    create_new_eval_list(args.in_data, args.in_data, args.old_file)
-    # create_new_train_list(args.in_data, args.out_data, args.old_file)
+    # create_new_eval_list(args.in_data, args.in_data, args.old_file)
+    create_new_train_list(args.in_data, args.out_data, args.old_file)
     # get_number_speaker(args.in_data, args.old_file)

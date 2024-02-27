@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import os
 
 from kiwano.utils import Pathlike
 from pathlib import Path
@@ -77,8 +78,10 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
             line = line.strip().split()
             dir = line[0].strip()
             fname = line[1].strip()
-            full_path = f"{dir}/{fname}"
-            listeTrain.write(f"{dir} {full_path}\n")
+            path = f"{dir}/{fname}"
+            full_path = f"db/cn_celeb/CN-Celeb2_flac/wav/{path}"
+            if os.path.exists(full_path):
+                listeTrain.write(f"{dir} {path}\n")
 
     listeTrain.close()
 
