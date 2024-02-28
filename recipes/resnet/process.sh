@@ -22,7 +22,7 @@ conda activate kiwano
 #Prepare Voxceleb2
 #python3 local/download_voxceleb2.py db/voxceleb2/
 #python3 local/prepare_voxceleb2.py db/voxceleb2/ data/voxceleb2/
-#python3 local/prepare_voxceleb2.py --in_data db/voxceleb2/ --old_file train_list.txt
+python3 local/prepare_voxceleb2.py --in_data db/voxceleb2/ --old_file train_list.txt.edited
 
 #Prepare MUSAN
 #python3 local/download_musan.py db/musan/
@@ -63,9 +63,9 @@ conda activate kiwano
 
 # python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb_flac/eval/lists/ --old_file trials.lst
 
-# python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb2_flac --old_file liste.edited
+python3 local/prepare_cn_celeb.py --in_data db/cn_celeb/CN-Celeb2_flac --old_file liste.edited
 
-python3 local/prepare_cn_celeb.py --in_data data/cn_celeb/ --old_file liste --out_data db/cn_celeb/CN-Celeb2_flac/
+# python3 local/prepare_cn_celeb.py --in_data data/cn_celeb/ --old_file liste --out_data db/cn_celeb/CN-Celeb2_flac/
 
 # python3 local/extract_vietnam_celeb.py db/vietnam_celeb/
 # rm  db/vietnam_celeb/vietnam-celeb.zip
@@ -87,12 +87,21 @@ python3 local/prepare_cn_celeb.py --in_data data/cn_celeb/ --old_file liste --ou
 #rm -r data/vietnam_celeb/
 #python3 local/prepare_vietnam_celeb.py db/vietnam_celeb/ data/vietnam_celeb/
 
-python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --out_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
+# python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --out_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
 
 # python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt
 
-# python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt.edited
+python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-t.txt.edited
 
 # python3 local/prepare_vietnam_celeb.py --in_data db/vietnam_celeb/ --old_file vietnam-celeb-e.txt
+
+rm vietnam-celeb.zip
+rm db/cn_celeb/cn-celeb2_v2.tar.*
+rm db/cn_celeb/cn-celeb2_v2.tar.*
+rm db/cn_celeb/cn-celeb_v2.tar.gz
+rm db/cn_celeb/cn-celeb2.tar.gz
+rm db/vietnam_celeb/vietnam-celeb-part.*
+rm db/vietnam_celeb/full-dataset.zip
+
 
 conda deactivate
