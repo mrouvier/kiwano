@@ -116,15 +116,15 @@ conda activate kiwano
 #python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-train2006 --out_data db/nist/nist-sre-train2006
 #python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-train2008 --out_data db/nist/nist-sre-train2008
 
-python3 local/prepare_nist.py  --in_data db/nist/nist-sre-train2004 --out_data db/nist/nist-sre-train2004 --old_file MASTER
-python3 local/prepare_nist.py  --in_data db/nist/nist-sre-train2005 --out_data db/nist/nist-sre-train2005 --old_file MASTER
-python3 local/prepare_nist.py  --in_data db/nist/nist-sre-train2006 --out_data db/nist/nist-sre-train2006 --old_file MASTER
-python3 local/prepare_nist.py  --in_data db/nist/nist-sre-train2008 --out_data db/nist/nist-sre-train2008 --old_file MASTER
+#python3 local/prepare_nist.py  --in_data db/nist/nist-sre-train2004 --out_data db/nist/nist-sre-train2004 --old_file MASTER
+#python3 local/prepare_nist.py  --in_data db/nist/nist-sre-train2005 --out_data db/nist/nist-sre-train2005 --old_file MASTER
+#python3 local/prepare_nist.py  --in_data db/nist/nist-sre-train2006 --out_data db/nist/nist-sre-train2006 --old_file MASTER
+#python3 local/prepare_nist.py  --in_data db/nist/nist-sre-train2008 --out_data db/nist/nist-sre-train2008 --old_file MASTER
 
-#python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2004 --out_data db/nist/nist-sre-test2004 --old_file MASTER
-#python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2005 --out_data db/nist/nist-sre-test2005 --old_file MASTER
-#python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2006 --out_data db/nist/nist-sre-test2006 --old_file MASTER
-#python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2008 --out_data db/nist/nist-sre-test2008 --old_file MASTER
+python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2004 --out_data db/nist/nist-sre-test2004 --old_file MASTER
+python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2005 --out_data db/nist/nist-sre-test2005 --old_file MASTER
+python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2006 --out_data db/nist/nist-sre-test2006 --old_file MASTER
+python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2008 --out_data db/nist/nist-sre-test2008 --old_file MASTER
 
 
 
