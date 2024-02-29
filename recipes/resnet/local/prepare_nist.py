@@ -86,7 +86,7 @@ def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
             line = line.strip().split()
             if len(line) == 8:
                 idspk = line[1].strip()
-                fname = f"{line[2].strip()}.wav"
+                fname = f"{line[2].strip()}.sph"
                 full_path = in_data / fname
                 if full_path.exists():
                     listeTrain.write(f"{idspk} {fname}\n")
@@ -107,13 +107,13 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
         for i, line in tqdm(enumerate(lines)):
             line = line.strip().split()
             if len(line) == 8:
-                spkId1 = f"{line[1].strip()}.wav"
+                spkId1 = f"{line[1].strip()}.sph"
                 path1 = in_data / spkId1
                 others = lines[(i + 1):]
                 for line2 in others:
                     line2 = line2.strip().split()
                     if len(line2) == 8:
-                        spkId2 = f"{line2[1].strip()}.wav"
+                        spkId2 = f"{line2[1].strip()}.sph"
                         path2 = in_data / spkId2
                         label = 1 if spkId1 == spkId2 else 0
                         if path1.exists() and path2.exists():
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
-    convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
+    # convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
     # get_number_speaker(args.in_data, args.old_file)
-    # create_new_train_list(args.in_data, args.out_data, args.old_file)
+    create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.in_data, args.old_file)
