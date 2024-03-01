@@ -71,7 +71,7 @@ def get_number_speaker(in_data: Pathlike, fname: str):
             speaker_ids.append(spkId)
 
     speaker_ids = set(speaker_ids)
-    print(f"Voxceleb2 - Number of speaker in {fname}: {len(speaker_ids)}")
+    print(f"NIST - Number of speaker in {fname}: {len(speaker_ids)}")
 
 
 def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
@@ -104,7 +104,7 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     listeEval = open(out_data / f"{oldfile}.edited", "w")
     with open(in_data / oldfile, "r") as f:
         lines = f.readlines()
-        for i, line in tqdm(enumerate(lines)):
+        for i, line in tqdm(enumerate(lines), total=len(lines)):
             line = line.strip().split()
             if len(line) == 8:
                 idspk1 = line[1].strip()
@@ -143,6 +143,6 @@ if __name__ == '__main__':
 
     # prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
     # convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
-    # get_number_speaker(args.in_data, args.old_file)
+    get_number_speaker(args.in_data, args.old_file)
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
-    create_new_eval_list(args.in_data, args.out_data, args.old_file)
+    # create_new_eval_list(args.in_data, args.out_data, args.old_file)
