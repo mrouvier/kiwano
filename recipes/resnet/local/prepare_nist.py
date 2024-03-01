@@ -20,12 +20,12 @@ def get_duration(file_path: str):
 
 def process_file(segment: Pathlike, in_data: Pathlike, sampling_frequency: int):
     # db/nist/nist-sre-test2004/xeot.sph
-    name = segment.split('/')[-1].split('.')[0]
+    name = segment.name.replace(".sph", ".wav")
 
-    output = str(Path(in_data / name)) + ".wav"
+    output = in_data / name
 
-    if not Path(output).exists():
-        _process_file(segment, Path(output), sampling_frequency)
+    if not output.exists():
+        _process_file(segment, output, sampling_frequency)
 
 
 def convert_sph_to_wav_nist(sampling_frequency: int, canDeleteZIP: bool, in_data: Pathlike = ".",
