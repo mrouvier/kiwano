@@ -107,15 +107,17 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
         for i, line in tqdm(enumerate(lines)):
             line = line.strip().split()
             if len(line) == 8:
+                idspk1 = line[1].strip()
                 file1 = f"{line[2].strip()}.sph"
                 path1 = in_data / file1
                 others = lines[(i + 1):]
                 for line2 in others:
                     line2 = line2.strip().split()
                     if len(line2) == 8:
+                        idspk2 = line2[1].strip()
                         file2 = f"{line2[2].strip()}.sph"
                         path2 = in_data / file2
-                        label = 1 if file1 == file2 else 0
+                        label = 1 if idspk1 == idspk2 else 0
                         if path1.exists() and path2.exists():
                             listeEval.write(f"{label} {file1} {file2}\n")
                         else:
