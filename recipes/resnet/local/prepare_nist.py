@@ -53,7 +53,7 @@ def _process_file(file_path: Pathlike, output: Pathlike, sampling_frequency: int
     cmd = "ffmpeg -y -threads 1 -i " + str(file_path) + " -acodec pcm_s16le -ac 1 -ar " + str(
         sampling_frequency) + " -ab 48 -threads 1 " + str(output)
     proc = run(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-    print(cmd)
+    print(cmd, flush=True)
 
     # audio = np.frombuffer(raw_audio, dtype=np.float32)
 
@@ -68,7 +68,7 @@ def get_number_speaker(in_data: Pathlike, fname: str):
             speaker_ids.append(spkId)
 
     speaker_ids = set(speaker_ids)
-    print(f"NIST - Number of speaker in {fname}: {len(speaker_ids)}")
+    print(f"NIST - Number of speaker in {fname}: {len(speaker_ids)}", flush=True)
 
 
 def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
