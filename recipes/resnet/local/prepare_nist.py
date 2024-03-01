@@ -22,7 +22,7 @@ def process_file(segment: Pathlike, in_data: Pathlike, sampling_frequency: int):
     # db/nist/nist-sre-test2004/xeot.sph
     name = segment.name.replace(".sph", ".wav")
 
-    output = in_data / name
+    output = Path(in_data) / name
 
     if not output.exists():
         _process_file(segment, output, sampling_frequency)
@@ -69,6 +69,17 @@ def get_number_speaker(in_data: Pathlike, fname: str):
 
     speaker_ids = set(speaker_ids)
     print(f"NIST - Number of speaker in {fname}: {len(speaker_ids)}", flush=True)
+
+
+def change_sph_ext_to_wav(in_data: Pathlike, fname: str):
+    lines = []
+    in_data = Path(in_data)
+    with open(in_data / fname, "r") as f:
+        lines = f.readlines()
+
+    lines = [line.replace('.sph', '.wav') for line in lines if len(line.strip()) > 0]
+    with open(in_data / fname, "w") as f:
+        f.writelines(lines)
 
 
 def create_new_train_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
