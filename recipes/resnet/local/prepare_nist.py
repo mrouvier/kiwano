@@ -21,11 +21,8 @@ def get_duration(file_path: str):
 def process_file(segment: Pathlike, in_data: Pathlike, sampling_frequency: int):
     # db/nist/nist-sre-test2004/xeot.sph
     name = segment.split('/')[-1].split('.')[0]
-    nameDir = "wav"
-    if sampling_frequency != 16000:
-        nameDir = nameDir + "_" + str(sampling_frequency)
 
-    output = str(Path(in_data / name)) + f"_{nameDir}_.wav"
+    output = str(Path(in_data / name)) + ".wav"
 
     if not Path(output).exists():
         _process_file(segment, Path(output), sampling_frequency)
@@ -142,7 +139,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
-    # convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
-    get_number_speaker(args.in_data, args.old_file)
+    convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
+    # get_number_speaker(args.in_data, args.old_file)
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
