@@ -153,3 +153,4 @@ if __name__ == '__main__':
     # get_number_speaker(args.in_data, args.old_file)
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
+    change_sph_ext_to_wav(args.in_data, args.old_file)
