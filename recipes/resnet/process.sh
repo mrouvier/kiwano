@@ -136,31 +136,31 @@ conda activate kiwano
 #python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2006  --old_file nist_sre_test2006_MASTER.edited
 #python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2008  --old_file nist_sre_test2008_MASTER.edited
 
-rm  db/nist/nist-sre-test2004/*.wav
-rm  db/nist/nist-sre-test2005/*.wav
-rm  db/nist/nist-sre-test2006/*.wav
-rm  db/nist/nist-sre-test2008/*.wav
+#rm  db/nist/nist-sre-test2004/*.wav
+#rm  db/nist/nist-sre-test2005/*.wav
+#rm  db/nist/nist-sre-test2006/*.wav
+#rm  db/nist/nist-sre-test2008/*.wav
+#
+#rm  db/nist/nist-sre-test2004/*.sph
+#rm  db/nist/nist-sre-test2005/*.sph
+#rm  db/nist/nist-sre-test2006/*.sph
+#rm  db/nist/nist-sre-test2008/*.sph
+#
+#rm  db/nist/nist-sre-train2004/*.sph
+#rm  db/nist/nist-sre-train2005/*.sph
+#rm  db/nist/nist-sre-train2006/*.sph
+#rm  db/nist/nist-sre-train2008/*.sph
+#
+#rm  db/nist/nist-sre-train2004/*.wav
+#rm  db/nist/nist-sre-train2005/*.wav
+#rm  db/nist/nist-sre-train2006/*.wav
+#rm  db/nist/nist-sre-train2008/*.wav
 
-rm  db/nist/nist-sre-test2004/*.sph
-rm  db/nist/nist-sre-test2005/*.sph
-rm  db/nist/nist-sre-test2006/*.sph
-rm  db/nist/nist-sre-test2008/*.sph
-
-rm  db/nist/nist-sre-train2004/*.sph
-rm  db/nist/nist-sre-train2005/*.sph
-rm  db/nist/nist-sre-train2006/*.sph
-rm  db/nist/nist-sre-train2008/*.sph
-
-rm  db/nist/nist-sre-train2004/*.wav
-rm  db/nist/nist-sre-train2005/*.wav
-rm  db/nist/nist-sre-train2006/*.wav
-rm  db/nist/nist-sre-train2008/*.wav
-
-rm -r db/nist/nist-sre-test2010
+#rm -r db/nist/nist-sre-test2010
 
 
 # python3 local/prepare_nist.py
 
-du -h /local_disk/helios/mmlamah/
+du -sh /local_disk/helios/mmlamah/
 
 conda deactivate
