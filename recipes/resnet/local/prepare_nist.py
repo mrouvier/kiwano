@@ -72,7 +72,6 @@ def get_number_speaker(in_data: Pathlike, fname: str):
 
 
 def change_sph_ext_to_wav(in_data: Pathlike, fname: str):
-    lines = []
     in_data = Path(in_data)
     with open(in_data / fname, "r") as f:
         lines = f.readlines()
@@ -150,7 +149,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
-    convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
+    # convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
     # get_number_speaker(args.in_data, args.old_file)
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
