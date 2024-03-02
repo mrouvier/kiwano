@@ -2,8 +2,12 @@
 
 import sys
 import glob
+
+from torch.utils.data import Dataset, DataLoader
+
 from kiwano.utils import Pathlike
 from pathlib import Path
+import soundfile as sf
 import torchaudio
 import argparse
 from concurrent.futures import as_completed
@@ -133,6 +137,31 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
     listeEval.close()
 
 
+class ConvertDataset(Dataset):
+    def __init__(self, files):
+        self.files = files
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, i):
+        file = self.files[i]
+        data, sr = sf.read(file, samplerate=16000)
+        new_file = file.replace('.sph', '.wav')
+        sf.write(new_file, data, samplerate=sr)
+        os.remove(file)
+        return file
+
+
+def custom_convert_sph_to_wav(in_data: Pathlike):
+    print(f"Path: {in_data}", flush=True)
+    files = Path(in_data).rglob("*.sph")
+    dataset = ConvertDataset(files)
+    loader = DataLoader(dataset, batch_size=32, drop_last=False, num_workers=8)
+    for i, batch in tqdm(enumerate(loader), total=len(loader)):
+        print(f"Batch index {i + 1}", flush=True)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_data', metavar='in_data', type=str,
@@ -154,3 +183,4 @@ if __name__ == '__main__':
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
     # change_sph_ext_to_wav(args.in_data, args.old_file)
+    custom_convert_sph_to_wav(args.in_data)
