@@ -147,7 +147,7 @@ class ConvertDataset(Dataset):
     def __getitem__(self, i):
         file = self.files[i]
         data, sr = sf.read(file)
-        new_file = file.replace('.sph', '.wav')
+        new_file = str(file).replace('.sph', '.wav')
         sf.write(new_file, data, samplerate=16000)
         os.remove(file)
         return file
