@@ -103,8 +103,8 @@ conda activate kiwano
 #rm db/vietnam_celeb/vietnam-celeb-part.*
 #rm db/vietnam_celeb/full-dataset.zip
 
-#cp -r /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-test*  db/nist
-#cp -r /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-train*  db/nist
+cp -r /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-test2004  db/nist
+cp -r /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-train2004  db/nist
 
 #python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-test2004 --out_data db/nist/nist-sre-test2004
 #python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-test2005 --out_data db/nist/nist-sre-test2005
