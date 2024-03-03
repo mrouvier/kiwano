@@ -22,11 +22,11 @@ def get_duration(file_path: str):
     return info.num_frames / info.sample_rate
 
 
-def process_file(segment: Pathlike, in_data: Pathlike, sampling_frequency: int):
+def process_file(segment: Pathlike, out_data: Pathlike, sampling_frequency: int):
     # db/nist/nist-sre-test2004/xeot.sph
-    name = segment.name.replace(".sph", ".wav")
+    # name = segment.name.replace(".sph", ".wav")
 
-    output = Path(in_data) / name
+    output = Path(out_data) / segment.name
 
     if not output.exists():
         _process_file(segment, output, sampling_frequency)
@@ -41,14 +41,14 @@ def convert_sph_to_wav_nist(sampling_frequency: int, canDeleteZIP: bool, in_data
     with ProcessPoolExecutor(num_jobs) as ex:
         futures = []
 
-        for segment in Path(in_data).rglob("*.sph"):
+        for segment in Path(in_data).rglob("*.wav"):
             futures.append(ex.submit(process_file, segment, out_data, sampling_frequency))
 
-        for future in tqdm(futures, total=len(futures), desc=f"Processing Nist Train..."):
+        for future in tqdm(futures, total=len(futures), desc=f"Processing Nist ... "):
             future.result()
 
     if canDeleteZIP:
-        for file in sorted(in_data.glob("*.sph")):
+        for file in tqdm(sorted(in_data.glob("*.wav")), desc="Deletion "):
             os.remove(file)
 
 
@@ -260,10 +260,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
-    # convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
+    convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 8)
     # get_number_speaker(args.in_data, args.old_file)
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
     # change_sph_ext_to_wav(args.in_data, args.old_file)
-    custom_convert_sph_to_wav(args.in_data, args.out_data)
+    # custom_convert_sph_to_wav(args.in_data, args.out_data)
     # extract_channel(args.in_data)

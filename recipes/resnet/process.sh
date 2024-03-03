@@ -106,12 +106,12 @@ conda activate kiwano
 #cp -r /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-test2004  db/nist
 #cp -r /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-train2004  db/nist
 
-#python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-test2004 --out_data db/nist/nist-sre-test2004
+python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-test2004 --out_data db/nist/nist-sre-test2004/wav
 #python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-test2005 --out_data db/nist/nist-sre-test2005
 #python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-test2006 --out_data db/nist/nist-sre-test2006
 #python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-test2008 --out_data db/nist/nist-sre-test2008
 #
-#python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-train2004 --out_data db/nist/nist-sre-train2004
+python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-train2004 --out_data db/nist/nist-sre-train2004/wav
 #python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-train2005 --out_data db/nist/nist-sre-train2005
 #python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-train2006 --out_data db/nist/nist-sre-train2006
 #python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-train2008 --out_data db/nist/nist-sre-train2008
@@ -160,13 +160,13 @@ conda activate kiwano
 
 #rm db/nist/nist-sre-train2004/*.wav
 #rm db/nist/nist-sre-test2004/*.wav
-python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-train2004 --out_data db/nist/nist-sre-train2004
-python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-test2004 --out_data db/nist/nist-sre-test2004
+#python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-train2004 --out_data db/nist/nist-sre-train2004
+#python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-test2004 --out_data db/nist/nist-sre-test2004
 #
 #rm db/nist/nist-sre-train2005/*.wav
 #rm db/nist/nist-sre-test2005/*.wav
-python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-train2005 --out_data db/nist/nist-sre-train2005
-python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-test2005 --out_data db/nist/nist-sre-test2005
+#python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-train2005 --out_data db/nist/nist-sre-train2005
+#python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-test2005 --out_data db/nist/nist-sre-test2005
 
 #rm -r db/cn_celeb/CN-Celeb_flac/data
 #rm -r db/cn_celeb/CN-Celeb2_flac/data
