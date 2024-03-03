@@ -166,10 +166,10 @@ conda activate kiwano
 #python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-test2005 --out_data db/nist/nist-sre-test2005
 
 # 621G	/local_disk/helios/mmlamah/
-python3 local/prepare_nist.py --in_data db/nist-sre-train2005
-python3 local/prepare_nist.py --in_data db/nist-sre-test2005
+python3 local/prepare_nist.py --in_data db/nist/nist-sre-train2005
+python3 local/prepare_nist.py --in_data db/nist/nist-sre-test2005
 
-du -sh db/nist-sre-train2005
-du -sh db/nist-sre-test2005
+du -sh db/nist/nist-sre-train2005
+du -sh db/nist/nist-sre-test2005
 
 conda deactivate
