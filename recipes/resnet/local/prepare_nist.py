@@ -148,9 +148,6 @@ class ConvertDataset(Dataset):
     def __getitem__(self, i):
         in_path = self.files[i]
         old_name = in_path.name
-        if old_name == "MASTER":
-            shutil.copy(in_path, self.out_data / old_name)
-            return old_name
         file = str(in_path)
         data, sr = sf.read(file)
         new_name = old_name.replace('.sph', '.wav')
@@ -161,8 +158,8 @@ class ConvertDataset(Dataset):
 
 def custom_convert_sph_to_wav(in_data: Pathlike, out_data: Pathlike):
     print(f"Path: {in_data}", flush=True)
+    shutil.copy(in_data / "MASTER", out_data / "MASTER")
     files = list(Path(in_data).rglob("*.sph"))
-    files.append(in_data / "MASTER")
     dataset = ConvertDataset(files, out_data)
     loader = DataLoader(dataset, batch_size=32, drop_last=False, num_workers=8)
     n_batch = len(loader)
