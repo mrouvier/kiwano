@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import shutil
 import sys
 import glob
 
@@ -138,28 +138,36 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
 
 
 class ConvertDataset(Dataset):
-    def __init__(self, files):
+    def __init__(self, files, out_data):
         self.files = files
+        self.out_data = out_data
 
     def __len__(self):
         return len(self.files)
 
     def __getitem__(self, i):
-        file = str(self.files[i])
+        in_path = self.files[i]
+        old_name = in_path.name
+        if old_name == "MASTER":
+            shutil.copy(in_path, self.out_data / old_name)
+            return old_name
+        file = str(in_path)
         data, sr = sf.read(file)
-        new_file = file.replace('.sph', '.wav')
-        sf.write(new_file, data, samplerate=16000)
-        os.remove(file)
+        new_name = old_name.replace('.sph', '.wav')
+        out_path = self.out_data / new_name
+        sf.write(out_path, data, samplerate=16000)
         return file
 
 
-def custom_convert_sph_to_wav(in_data: Pathlike):
+def custom_convert_sph_to_wav(in_data: Pathlike, out_data: Pathlike):
     print(f"Path: {in_data}", flush=True)
     files = list(Path(in_data).rglob("*.sph"))
-    dataset = ConvertDataset(files)
+    files.append(in_data / "MASTER")
+    dataset = ConvertDataset(files, out_data)
     loader = DataLoader(dataset, batch_size=32, drop_last=False, num_workers=8)
-    for i, batch in tqdm(enumerate(loader), total=len(loader)):
-        print(f"Batch index {i + 1}", flush=True)
+    n_batch = len(loader)
+    for i, batch in tqdm(enumerate(loader), total=n_batch):
+        print(f"Batch  [{i + 1}/{n_batch}] done", flush=True)
 
 
 if __name__ == '__main__':
@@ -183,4 +191,4 @@ if __name__ == '__main__':
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
     # change_sph_ext_to_wav(args.in_data, args.old_file)
-    custom_convert_sph_to_wav(args.in_data)
+    custom_convert_sph_to_wav(args.in_data, args.out_data)
