@@ -140,7 +140,7 @@ def create_new_eval_list(in_data: Pathlike, out_data: Pathlike, oldfile: str):
 class ConvertDataset(Dataset):
     def __init__(self, files, out_data):
         self.files = files
-        self.out_data = out_data
+        self.out_data = Path(out_data)
 
     def __len__(self):
         return len(self.files)
@@ -158,7 +158,7 @@ class ConvertDataset(Dataset):
 
 def custom_convert_sph_to_wav(in_data: Pathlike, out_data: Pathlike):
     print(f"Path: {in_data}", flush=True)
-    shutil.copy(in_data / "MASTER", out_data / "MASTER")
+    shutil.copy(Path(in_data) / "MASTER", Path(out_data) / "MASTER")
     files = list(Path(in_data).rglob("*.sph"))
     dataset = ConvertDataset(files, out_data)
     loader = DataLoader(dataset, batch_size=32, drop_last=False, num_workers=8)
