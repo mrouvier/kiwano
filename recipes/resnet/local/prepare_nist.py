@@ -168,9 +168,10 @@ def custom_convert_sph_to_wav(in_data: Pathlike, out_data: Pathlike):
 
 
 class ExtractDataset(Dataset):
-    def __init__(self, lines, in_data):
+    def __init__(self, lines, in_data, out_data):
         self.lines = lines
         self.in_data = Path(in_data)
+        self.out_data = Path(out_data)
 
     def __len__(self):
         return len(self.lines)
@@ -189,7 +190,7 @@ class ExtractDataset(Dataset):
         if 0 <= int_channel < nchannels:
             channel_data = data[:, int_channel]
             new_fname = f"{fname}_{channel}.wav"
-            new_path = self.in_data / new_fname
+            new_path = self.out_data / new_fname
             sf.write(new_path, channel_data, sr)
         else:
             print("Ce cannal n'existe pas dans l'audio", flush=True)
@@ -209,14 +210,16 @@ class DeleteDataset(Dataset):
         return file
 
 
-def extract_channel(in_data: Pathlike):
+def extract_channel(in_data: Pathlike, out_data: Pathlike):
     print(f"Path: {in_data}", flush=True)
     in_data = Path(in_data)
+    out_data = Path(out_data)
+    out_data.mkdir(parents=True, exist_ok=True)
     master = in_data / "MASTER"
     to_delete = []
     with open(master, mode="r") as mfile:
         lines = mfile.readlines()
-        dataset = ExtractDataset(lines, in_data)
+        dataset = ExtractDataset(lines, in_data, out_data)
         loader = DataLoader(dataset, num_workers=8, drop_last=False, batch_size=32)
         n_batch = len(loader)
         for i, batch in tqdm(enumerate(loader), total=n_batch, desc="Channel: "):
@@ -240,7 +243,7 @@ def extract_channel(in_data: Pathlike):
                 fname = parts[2].strip()
                 channel = parts[3].strip()
                 fdir = in_data.parts[-1]
-                fname = f"{fdir}/{fname}_{channel}.wav"
+                fname = f"{fdir}/wav/{fname}_{channel}.wav"
                 lfile.write(f"{speaker} {fname}")
 
 
@@ -260,10 +263,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
-    convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 8)
+    # convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 8)
     # get_number_speaker(args.in_data, args.old_file)
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
     # change_sph_ext_to_wav(args.in_data, args.old_file)
     # custom_convert_sph_to_wav(args.in_data, args.out_data)
-    # extract_channel(args.in_data)
+    extract_channel(args.in_data, args.out_data)
