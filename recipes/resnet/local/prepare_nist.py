@@ -167,6 +167,83 @@ def custom_convert_sph_to_wav(in_data: Pathlike, out_data: Pathlike):
         print(f"Batch  [{i + 1}/{n_batch}] done", flush=True)
 
 
+class ExtractDataset(Dataset):
+    def __init__(self, lines, in_data):
+        self.lines = lines
+        self.in_data = Path(in_data)
+
+    def __len__(self):
+        return len(self.lines)
+
+    def __getitem__(self, i):
+        line = self.lines[i]
+        parts = line.strip().split()
+        if len(parts) != 8:
+            return ""
+        fname = parts[2].strip()
+        path = self.in_data / f"{fname}.wav"
+        channel = parts[3].strip()
+        data, sr = sf.read(path)
+        nchannels = data.shape[1]
+        int_channel = 0 if channel == 'a' else 1
+        if 0 <= int_channel < nchannels:
+            channel_data = data[:, int_channel]
+            new_fname = f"{fname}_{channel}.wav"
+            new_path = self.in_data / new_fname
+            sf.write(new_path, channel_data, sr)
+        else:
+            print("Ce cannal n'existe pas dans l'audio", flush=True)
+        return str(path)
+
+
+class DeleteDataset(Dataset):
+    def __init__(self, files):
+        self.files = files
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, i):
+        file = self.files[i]
+        os.remove(file)
+        return file
+
+
+def extract_channel(in_data: Pathlike):
+    print(f"Path: {in_data}", flush=True)
+    in_data = Path(in_data)
+    master = in_data / "MASTER"
+    to_delete = []
+    with open(master, mode="r") as mfile:
+        lines = mfile.readlines()
+        dataset = ExtractDataset(lines, in_data)
+        loader = DataLoader(dataset, num_workers=8, drop_last=False, batch_size=32)
+        n_batch = len(loader)
+        for i, batch in tqdm(enumerate(loader), total=n_batch, desc="Channel: "):
+            print(f"Batch  [{i + 1}/{n_batch}] done", flush=True)
+            to_delete.extend(list(batch))
+
+        to_delete = list(set(to_delete))
+        to_delete = [f.strip() for f in to_delete if len(f.strip()) > 0]
+        dataset = DeleteDataset(to_delete)
+        loader = DataLoader(dataset, num_workers=8, drop_last=False, batch_size=32)
+        n_batch = len(loader)
+        for i, batch in tqdm(enumerate(loader), total=n_batch, desc="Delete: "):
+            print(f"Batch  [{i + 1}/{n_batch}] done", flush=True)
+
+        with open(in_data / "liste.txt", mode="w") as lfile:
+            for line in tqdm(lines, total=len(lines), desc="Liste: "):
+                parts = line.strip().split()
+                if len(parts) != 8:
+                    continue
+                speaker = parts[1].strip()
+                fname = parts[2].strip()
+                channel = parts[3].strip()
+                fdir = in_data.parts[-1]
+                fname = f"{fdir}/{fname}_{channel}.wav"
+                lfile.write(f"{speaker} {fname}")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_data', metavar='in_data', type=str,
@@ -188,4 +265,5 @@ if __name__ == '__main__':
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
     # change_sph_ext_to_wav(args.in_data, args.old_file)
-    custom_convert_sph_to_wav(args.in_data, args.out_data)
+    # custom_convert_sph_to_wav(args.in_data, args.out_data)
+    extract_channel(args.in_data)
