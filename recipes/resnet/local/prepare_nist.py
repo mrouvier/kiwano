@@ -152,7 +152,7 @@ class ConvertDataset(Dataset):
         data, sr = sf.read(file)
         new_name = old_name.replace('.sph', '.wav')
         out_path = self.out_data / new_name
-        sf.write(out_path, data, samplerate=16000)
+        sf.write(out_path, data, samplerate=sr)
         return file
 
 
@@ -265,5 +265,5 @@ if __name__ == '__main__':
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
     # change_sph_ext_to_wav(args.in_data, args.old_file)
-    # custom_convert_sph_to_wav(args.in_data, args.out_data)
-    extract_channel(args.in_data)
+    custom_convert_sph_to_wav(args.in_data, args.out_data)
+    # extract_channel(args.in_data)

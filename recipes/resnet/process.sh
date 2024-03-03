@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=nist
-#SBATCH --partition=gpu
+##SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --time=7-00:00:00
 #SBATCH --mem=32GB
-#SBATCH --cpus-per-task=8
+##SBATCH --cpus-per-task=8
 #SBATCH --output=%x_output.log
 #SBATCH --error=%x_error.log
 
@@ -158,18 +158,23 @@ conda activate kiwano
 
 #rm -r db/nist/nist-sre-test2010
 
-
+rm db/nist/nist-sre-train2004/*.wav
+rm db/nist/nist-sre-test2004/*.wav
 #python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-train2004 --out_data db/nist/nist-sre-train2004
 #python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-test2004 --out_data db/nist/nist-sre-test2004
-
+#
+rm db/nist/nist-sre-train2005/*.wav
+rm db/nist/nist-sre-test2005/*.wav
 #python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-train2005 --out_data db/nist/nist-sre-train2005
 #python3 local/prepare_nist.py --in_data /users/rouvier/spkdiarization/sre19/v4/db/nist-sre-test2005 --out_data db/nist/nist-sre-test2005
 
+rm -r db/cn_celeb/CN-Celeb_flac/data
+rm -r db/cn_celeb/CN-Celeb2_flac/data
 # 621G	/local_disk/helios/mmlamah/
-python3 local/prepare_nist.py --in_data db/nist/nist-sre-train2005
-python3 local/prepare_nist.py --in_data db/nist/nist-sre-test2005
+#python3 local/prepare_nist.py --in_data db/nist/nist-sre-train2005
+#python3 local/prepare_nist.py --in_data db/nist/nist-sre-test2005
 
-du -sh db/nist/nist-sre-train2005
-du -sh db/nist/nist-sre-test2005
+#du -sh db/nist/nist-sre-train2005
+#du -sh db/nist/nist-sre-test2005
 
 conda deactivate
