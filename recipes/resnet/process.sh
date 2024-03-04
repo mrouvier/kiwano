@@ -183,13 +183,13 @@ conda activate kiwano
 #python3 local/prepare_nist.py  --in_data db/nist/nist-sre-train2006  --out_data db/nist/nist-sre-train2006/wav1
 #python3 local/prepare_nist.py  --in_data db/nist/nist-sre-test2006  --out_data db/nist/nist-sre-test2006/wav1
 
-python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-test2006/wav1 --out_data db/nist/nist-sre-test2006/wav
-python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-train2006/wav1 --out_data db/nist/nist-sre-train2006/wav
+#python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-test2006/wav1 --out_data db/nist/nist-sre-test2006/wav
+#python3 local/prepare_nist.py --deleteZIP --in_data db/nist/nist-sre-train2006/wav1 --out_data db/nist/nist-sre-train2006/wav
 
 #rm -r db/nist/nist-sre-test2006/wav1
 #rm -r db/nist/nist-sre-train2006/wav1
 
-#du -sh db/nist/
-#du -sh db/nist/nist-sre-test2005
+du -sh db/nist/
+du -sh /local_disk/helios/mmlamah/projects/
 
 conda deactivate
