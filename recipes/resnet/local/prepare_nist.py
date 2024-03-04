@@ -185,15 +185,16 @@ class ExtractDataset(Dataset):
         path = self.in_data / f"{fname}.wav"
         channel = parts[3].strip()
         data, sr = sf.read(path)
-        nchannels = data.shape[1]
-        int_channel = 0 if channel == 'a' else 1
-        if 0 <= int_channel < nchannels:
+        shape = data.shape
+        channel_data = data
+        if len(shape) == 2:
+            int_channel = 0 if channel == 'a' else 1
             channel_data = data[:, int_channel]
-            new_fname = f"{fname}_{channel}.wav"
-            new_path = self.out_data / new_fname
-            sf.write(new_path, channel_data, sr)
-        else:
-            print("Ce cannal n'existe pas dans l'audio", flush=True)
+
+        new_fname = f"{fname}_{channel}.wav"
+        new_path = self.out_data / new_fname
+        sf.write(new_path, channel_data, sr)
+
         return str(path)
 
 
