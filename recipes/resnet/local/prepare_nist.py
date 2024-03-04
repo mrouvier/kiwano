@@ -219,20 +219,20 @@ def extract_channel(in_data: Pathlike, out_data: Pathlike):
     to_delete = []
     with open(master, mode="r") as mfile:
         lines = mfile.readlines()
-        # dataset = ExtractDataset(lines, in_data, out_data)
-        # loader = DataLoader(dataset, num_workers=8, drop_last=False, batch_size=32)
-        # n_batch = len(loader)
-        # for i, batch in tqdm(enumerate(loader), total=n_batch, desc="Channel: "):
-        #     print(f"Batch  [{i + 1}/{n_batch}] done", flush=True)
-        #     to_delete.extend(list(batch))
-        #
-        # to_delete = list(set(to_delete))
-        # to_delete = [f.strip() for f in to_delete if len(f.strip()) > 0]
-        # dataset = DeleteDataset(to_delete)
-        # loader = DataLoader(dataset, num_workers=8, drop_last=False, batch_size=32)
-        # n_batch = len(loader)
-        # for i, batch in tqdm(enumerate(loader), total=n_batch, desc="Delete: "):
-        #     print(f"Batch  [{i + 1}/{n_batch}] done", flush=True)
+        dataset = ExtractDataset(lines, in_data, out_data)
+        loader = DataLoader(dataset, num_workers=8, drop_last=False, batch_size=32)
+        n_batch = len(loader)
+        for i, batch in tqdm(enumerate(loader), total=n_batch, desc="Channel: "):
+            print(f"Batch  [{i + 1}/{n_batch}] done", flush=True)
+            to_delete.extend(list(batch))
+
+        to_delete = list(set(to_delete))
+        to_delete = [f.strip() for f in to_delete if len(f.strip()) > 0]
+        dataset = DeleteDataset(to_delete)
+        loader = DataLoader(dataset, num_workers=8, drop_last=False, batch_size=32)
+        n_batch = len(loader)
+        for i, batch in tqdm(enumerate(loader), total=n_batch, desc="Delete: "):
+            print(f"Batch  [{i + 1}/{n_batch}] done", flush=True)
 
         with open(in_data / "liste.txt", mode="w") as lfile:
             for line in tqdm(lines, total=len(lines), desc="Liste: "):
