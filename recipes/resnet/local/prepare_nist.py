@@ -263,10 +263,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
-    # convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 8)
+    convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 8)
     # get_number_speaker(args.in_data, args.old_file)
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
     # change_sph_ext_to_wav(args.in_data, args.old_file)
     # custom_convert_sph_to_wav(args.in_data, args.out_data)
-    extract_channel(args.in_data, args.out_data)
+    # extract_channel(args.in_data, args.out_data)
