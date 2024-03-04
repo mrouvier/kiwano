@@ -57,7 +57,15 @@ def _process_file(file_path: Pathlike, output: Pathlike, sampling_frequency: int
     cmd = "ffmpeg -y -threads 1 -i " + str(file_path) + " -acodec pcm_s16le -ac 1 -ar " + str(
         sampling_frequency) + " -ab 48 -threads 1 " + str(output)
     proc = run(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-    print(cmd, flush=True)
+    # print(cmd, flush=True)
+
+    # Check if ffmpeg command was successful
+    if proc.returncode == 0:
+        # Delete the old file
+        os.remove(file_path)
+        print(f"{str(file_path)} successfully converted and deleted.", flush=True)
+    else:
+        print(f"{str(file_path)} conversion failed.", flush=True)
 
     # audio = np.frombuffer(raw_audio, dtype=np.float32)
 
@@ -264,10 +272,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
-    # convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 8)
+    convert_sph_to_wav_nist(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 8)
     # get_number_speaker(args.in_data, args.old_file)
     # create_new_train_list(args.in_data, args.out_data, args.old_file)
     # create_new_eval_list(args.in_data, args.out_data, args.old_file)
     # change_sph_ext_to_wav(args.in_data, args.old_file)
     # custom_convert_sph_to_wav(args.in_data, args.out_data)
-    extract_channel(args.in_data, args.out_data)
+    # extract_channel(args.in_data, args.out_data)
