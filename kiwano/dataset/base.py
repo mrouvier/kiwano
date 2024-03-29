@@ -58,6 +58,12 @@ class Segment():
     def load_audio_subsegment(self, start_frame: int, num_frames: int):
         # print(f"fetch subsegment from frame {start_frame} ({num_frames / self.length_samples():.2%}):", self.file_path)
 
+        if self.audio_data is not None:
+            return (
+                self.audio_data[start_frame:start_frame + num_frames],
+                self.sample_rate
+            )
+
         # using the soundfile backend because it seems to be much faster than
         # the ffmpeg backend for partial reads like this
         audio_data, self.sample_rate = torchaudio.load(
