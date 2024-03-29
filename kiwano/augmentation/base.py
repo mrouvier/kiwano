@@ -112,14 +112,12 @@ class Noise(Augmentation):
 
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
         snr_db = random.randint(self.snr_range[0], self.snr_range[1])
+        noise_tensor, noise_sample_rate = self.segs.get_random().load_audio()
 
-        noise_seg = self.segs.get_random()
-        noise_tensor, noise_sample_rate = noise_seg.load_audio_subsegment(
-            start_frame=random.randint(0, max(0, noise_seg.length_samples() - len(tensor))),
-            num_frames=len(tensor)
-        )
-
-        if len(noise_tensor) < len(tensor):
+        if len(noise_tensor) > len(tensor):
+            start = random.randint(0, len(noise_tensor) - len(tensor))
+            noise_tensor = noise_tensor[start:start + len(tensor)]
+        else:
             n = math.ceil(len(tensor) / len(noise_tensor))
             noise_tensor = noise_tensor.repeat(n)
             start = random.randint(0, len(noise_tensor) - len(tensor))
