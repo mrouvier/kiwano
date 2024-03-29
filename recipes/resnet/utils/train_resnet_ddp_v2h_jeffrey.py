@@ -26,8 +26,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 import argparse
 
-import idr_torch
-import hostlist
+# import hostlist
 import logging
 import os
 
@@ -68,17 +67,17 @@ class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
 
 if __name__ == '__main__':
 
-    hostnames = hostlist.expand_hostlist(os.environ['SLURM_JOB_NODELIST'])
-    os.environ["MASTER_ADDR"] = hostnames[0]
-    os.environ["MASTER_PORT"] = "29500"
-    rank = int(os.environ["SLURM_NODEID"])
-    world = int(os.environ["SLURM_JOB_NUM_NODES"])
-    master_addr = hostnames[0]
-    port = int(os.environ["MASTER_PORT"])
+    # hostnames = hostlist.expand_hostlist(os.environ['SLURM_JOB_NODELIST'])
+    # os.environ["MASTER_ADDR"] = hostnames[0]
+    # os.environ["MASTER_PORT"] = "29500"
+    # rank = int(os.environ["SLURM_NODEID"])
+    # world = int(os.environ["SLURM_JOB_NUM_NODES"])
+    # master_addr = hostnames[0]
+    # port = int(os.environ["MASTER_PORT"])
+
     checkpoint = None
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--local_rank", type=int)
     parser.add_argument("--musan", type=str, default="data/musan/")
     parser.add_argument("--rirs_noises", type=str, default = "data/rirs_noises/")
     parser.add_argument("--checkpoint", type=str)
@@ -86,6 +85,8 @@ if __name__ == '__main__':
     parser.add_argument("exp_dir", type=str, metavar="exp_dir")
 
     args = parser.parse_args()
+
+    
 
 
     if args.checkpoint:
@@ -96,9 +97,16 @@ if __name__ == '__main__':
     if args.checkpoint:
         epochs_start = checkpoint["epochs"]
 
-    device = torch.device("cuda")
+    print(f"waiting for DDP")
 
-    torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=rank, world_size=world)
+    torch.distributed.init_process_group(backend='nccl', init_method='env://')
+
+    rank = dist.get_rank()
+    gpu_id = rank % torch.cuda.device_count()
+
+    device = torch.device(gpu_id)
+
+    print(f"rank {rank}: prepare segment data")
 
     musan = SegmentSet()
     musan.from_dict(Path(args.musan))
@@ -134,9 +142,9 @@ if __name__ == '__main__':
 
     train_sampler = DistributedSampler(training_data, num_replicas=dist.get_world_size(), rank=dist.get_rank(), shuffle=True)
 
-    train_dataloader = DataLoader(training_data, batch_size=32, drop_last=True, shuffle=False, num_workers=15, sampler=train_sampler, pin_memory=True)
-    iterator = iter(train_dataloader)
+    print(f"rank {rank}: dataloader")
 
+    train_dataloader = DataLoader(training_data, batch_size=8, drop_last=True, shuffle=False, num_workers=15, sampler=train_sampler, pin_memory=True)
 
     resnet_model = ResNetV2()
     if args.checkpoint:
@@ -144,7 +152,9 @@ if __name__ == '__main__':
     resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)
     resnet_model.to(device)
 
-    resnet_model = torch.nn.parallel.DistributedDataParallel(resnet_model) #, device_ids=[args.local_rank], output_device=args.local_rank)
+    print(f"rank {rank}: DDP init")
+
+    resnet_model = DDP(resnet_model, device_ids=[gpu_id])
 
     optimizer = torch.optim.SGD([{'params':resnet_model.module.preresnet.parameters(), 'weight_decay':0.0001, 'lr':0.00001},{'params':resnet_model.module.temporal_pooling.parameters(), 'weight_decay':0.0001, 'lr':0.00001},{'params':resnet_model.module.embedding.parameters(), 'weight_decay':0.0001, 'lr':0.00001},{'params':resnet_model.module.output.parameters(), 'lr':0.00001}], momentum=0.9)
     if args.checkpoint:
@@ -159,13 +169,19 @@ if __name__ == '__main__':
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
 
+    print(f"rank {rank}: entering first epoch")
 
     for epochs in range(epochs_start, 150):
         iterations = 0
         train_sampler.set_epoch(epochs)
         resnet_model.module.set_m( scheduler.get_amsmloss()   )
+
+        print(f"rank {rank}: DDP barrier")
         torch.distributed.barrier()
+        print(f"rank {rank}: DDP barrier reached")
+
         for feats, iden in train_dataloader:
+            print(f"rank {rank}: done data load")
 
             feats = feats.unsqueeze(1)
 
@@ -178,7 +194,6 @@ if __name__ == '__main__':
                 preds = resnet_model(feats, iden)
                 loss = criterion(preds, iden)
 
-
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
@@ -186,9 +201,9 @@ if __name__ == '__main__':
             #loss.backward()
             #optimizer.step()
 
-            if iterations%100 == 0:
-                msg = "{}: Epoch: [{}/{}] ({}/{}) \t C-Loss:{:.4f} \t LR : {:.8f} \t Margin : {:.4f}".format(time.ctime(), epochs, 150, iterations, len(train_dataloader), loss.item(), get_lr(optimizer), resnet_model.module.get_m())
-                print(msg)
+            # if iterations%100 == 0:
+            msg = "{}: Epoch: [{}/{}] ({}/{}) \t C-Loss:{:.4f} \t LR : {:.8f} \t Margin : {:.4f}".format(time.ctime(), epochs, 150, iterations, len(train_dataloader), loss.item(), get_lr(optimizer), resnet_model.module.get_m())
+            print(msg)
 
             iterations += 1
 
