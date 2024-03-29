@@ -10,6 +10,7 @@ import numpy as np
 
 class Segment():
     segmentid: str
+    start_frame: int
     duration: float
     spkid: str
     file_path: str
@@ -20,7 +21,7 @@ class Segment():
     augmentation: None
 
 
-    def __init__(self, segmentid: str, spkid: str, duration: float, file_path: str):
+    def __init__(self, segmentid: str, spkid: str, duration: float, file_path: str, start_frame: int = 0):
         self.segmentid = segmentid
         self.spkid = spkid
         self.duration = duration
@@ -54,6 +55,43 @@ class Segment():
             self.sample_rate = self.sample_rate
 
         return audio_data, self.sample_rate
+
+    def load_audio_subsegment(self, start_frame: int, num_frames: int):
+        # print(f"fetch subsegment from frame {start_frame} ({num_frames / self.length_samples():.2%}):", self.file_path)
+
+        # using the soundfile backend because it seems to be much faster than
+        # the ffmpeg backend for partial reads like this
+        audio_data, self.sample_rate = torchaudio.load(
+            self.file_path,
+            frame_offset=start_frame,
+            num_frames=num_frames,
+            backend="soundfile",
+        )
+        audio_data = audio_data[0]
+
+        # shape might change because of the augmentation and result in too few
+        # frames
+        assert (
+            self.augmentation is None
+        ), "Augmentation is not supported for subsegment"
+
+        return audio_data, self.sample_rate
+
+    def get_sample_rate(self) -> int:
+        """Looks up the sample rate from the file if unknown at this point"""
+
+        if self.sample_rate is not None:
+            return self.sample_rate
+
+        file_info = torchaudio.info(self.file_path, backend="soundfile")
+        self.sample_rate = file_info.sample_rate
+
+        return self.sample_rate
+
+    def length_samples(self) -> int:
+        """Returns the length of the segment in audio samples"""
+
+        return int(self.get_sample_rate() * self.duration)
 
 
 class SegmentSet():
