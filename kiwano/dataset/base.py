@@ -10,7 +10,6 @@ import numpy as np
 
 class Segment():
     segmentid: str
-    start_frame: int
     duration: float
     spkid: str
     file_path: str
@@ -21,7 +20,7 @@ class Segment():
     augmentation: None
 
 
-    def __init__(self, segmentid: str, spkid: str, duration: float, file_path: str, start_frame: int = 0):
+    def __init__(self, segmentid: str, spkid: str, duration: float, file_path: str):
         self.segmentid = segmentid
         self.spkid = spkid
         self.duration = duration
