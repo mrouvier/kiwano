@@ -12,7 +12,7 @@ python3 local/prepare_musan.py db/musan/ data/musan/
 
 #Prepare RIRS NOISES
 python3 local/download_rirs_noises.py db/rirs_noises/
-python3 local/prepare_rirs_noises.py db/musan/ data/rirs_noises
+python3 local/prepare_rirs_noises.py db/rirs_noises/ data/rirs_noises
 
 
 #Train resnet
