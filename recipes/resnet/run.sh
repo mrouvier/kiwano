@@ -35,5 +35,5 @@ fi
 #Train resnet
 if [ $stage -le 4 ]
 then
-  bash run_kiwano.sh
+  sbatch run_kiwano.sh
 fi
