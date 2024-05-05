@@ -1,5 +1,5 @@
 import argparse
-from recipes.resnet.utils.scoring import read_keys
+from kiwano.utils import read_keys
 import torch
 from kiwano.embedding import read_pkl
 

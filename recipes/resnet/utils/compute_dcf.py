@@ -3,8 +3,8 @@
 import numpy as np
 
 
-from recipes.resnet.utils.scoring import read_scores, read_keys, compute_fpr_fnr_threshold
-from recipes.resnet.utils.compute_cosine import scoring_xvector
+from kiwano.utils import read_scores, read_keys, compute_fpr_fnr_threshold
+
 import argparse
 
 
