@@ -14,20 +14,20 @@ Kiwano is an advanced open-source toolkit for speaker verification based on PyTo
 
 - First, clone the repo :
 
-```
+```bash
 git clone https://github.com/mrouvier/kiwano
 ```
 
 - Second, install the requirements :
 
-```
+```bash
 cd kiwano
 pip install -r requirements.txt
 ```
 
 - Third, install kiwano in the environment :
 
-```
+```bash
 cd kiwano
 pip install -e .
 ```
