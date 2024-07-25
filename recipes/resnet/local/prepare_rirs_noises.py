@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import sys
-from kiwano.utils import Pathlike
+from kiwano.utils import Pathlike, get_all_files
 from pathlib import Path
 import torchaudio
 from tqdm import tqdm
@@ -21,7 +21,9 @@ def prepare_rirs_noises(in_data: Pathlike, out_data: Pathlike):
 
     liste = open(out_data / "liste", "w")
 
-    for segment in Path(in_data).rglob("*.wav"):
+    wav_lst = get_all_files(in_data, match_and=[".wav"])
+
+    for segment in tqdm(wav_lst):
         duration = str(round(float(get_duration(segment)),2))
         name = str(segment).split("/")[-1].split(".")[0]
         room = str(segment).split("/")[-3]

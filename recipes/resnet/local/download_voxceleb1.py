@@ -4,7 +4,9 @@ import logging
 import zipfile
 import shutil
 import sys
-from kiwano.utils import Pathlike, urlretrieve_progress, check_md5
+import os
+from tqdm import tqdm
+from kiwano.utils import Pathlike, urlretrieve_progress, check_md5, parallel_unzip, copy_files
 from pathlib import Path
 from typing import Optional
 
@@ -13,18 +15,18 @@ import argparse
 
 
 VOXCELEB1_PARTS_URL = [
-    ["https://thor.robots.ox.ac.uk/~vgg/data/voxceleb/vox1a/vox1_dev_wav_partaa", "e395d020928bc15670b570a21695ed96"],
-    ["https://thor.robots.ox.ac.uk/~vgg/data/voxceleb/vox1a/vox1_dev_wav_partab", "bbfaaccefab65d82b21903e81a8a8020"],
-    ["https://thor.robots.ox.ac.uk/~vgg/data/voxceleb/vox1a/vox1_dev_wav_partac", "017d579a2a96a077f40042ec33e51512"],
-    ["https://thor.robots.ox.ac.uk/~vgg/data/voxceleb/vox1a/vox1_dev_wav_partad", "7bb1e9f70fddc7a678fa998ea8b3ba19"],
-    ["https://thor.robots.ox.ac.uk/~vgg/data/voxceleb/vox1a/vox1_test_wav.zip", "185fdc63c3c739954633d50379a3d102"]
+    ["http://drbenchmark.univ-avignon.fr/corpus/voxceleb1/vox1a/vox1_dev_wav_partaa", "e395d020928bc15670b570a21695ed96"],
+    ["http://drbenchmark.univ-avignon.fr/corpus/voxceleb1/vox1a/vox1_dev_wav_partab", "bbfaaccefab65d82b21903e81a8a8020"],
+    ["http://drbenchmark.univ-avignon.fr/corpus/voxceleb1/vox1a/vox1_dev_wav_partac", "017d579a2a96a077f40042ec33e51512"],
+    ["http://drbenchmark.univ-avignon.fr/corpus/voxceleb1/vox1a/vox1_dev_wav_partad", "7bb1e9f70fddc7a678fa998ea8b3ba19"],
+    ["http://drbenchmark.univ-avignon.fr/corpus/voxceleb1/vox1a/vox1_test_wav.zip", "185fdc63c3c739954633d50379a3d102"]
 ]
 
 
 VOXCELEB1_TRIALS_URL = [
-    ["https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test2.txt", "b73110731c9223c1461fe49cb48dddfc"], #voxceleb1-o cleaned
-    ["https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_hard2.txt", "857790e09d579a68eb2e339a090343c8"], #voxceleb1-h cleaned
-    ["https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/list_test_all2.txt", "a53e059deb562ffcfc092bf5d90d9f3a"] #voxceleb1-e cleaned
+    ["http://drbenchmark.univ-avignon.fr/corpus/voxceleb1/meta/veri_test2.txt", "b73110731c9223c1461fe49cb48dddfc"], #voxceleb1-o cleaned
+    ["http://drbenchmark.univ-avignon.fr/corpus/voxceleb1/meta/list_test_hard2.txt", "857790e09d579a68eb2e339a090343c8"], #voxceleb1-h cleaned
+    ["http://drbenchmark.univ-avignon.fr/corpus/voxceleb1/meta/list_test_all2.txt", "a53e059deb562ffcfc092bf5d90d9f3a"] #voxceleb1-e cleaned
 ]
 
 VOXCELEB1_META_URL = [
@@ -33,8 +35,7 @@ VOXCELEB1_META_URL = [
 
 
 
-
-def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool] = False):
+def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool] = False, check_md5: Optional[bool] = False, jobs: int = 10):
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -51,21 +52,19 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
             elif force_download :
                 urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
 
-        with open(zip_path, "wb") as outFile:
-            for file in sorted(target_dir.glob("vox1_dev_wav_part*")):
-                with open(file, "rb") as inFile:
-                    shutil.copyfileobj(inFile, outFile)
 
-        logging.info(f"Unzipping dev...")
-        with zipfile.ZipFile(zip_path) as zf:
-            zf.extractall(target_dir)
+        logging.info(f"Concatenating files...")
+        copy_files(zip_path, target_dir, "vox1_dev_wav_part*")
 
-        logging.info(f"Unzipping test...")
-        with zipfile.ZipFile(target_dir / "vox1_test_wav.zip") as zf:
-            zf.extractall(target_dir)
+        logging.info(f"Extracting zip...")
+        parallel_unzip(zip_path, target_dir, jobs)
+
+        logging.info(f"Extracting zip...")
+        parallel_unzip(target_dir / "vox1_test_wav.zip", target_dir, jobs)
 
 
-    #check_md5(target_dir, VOXCELEB1_PARTS_URL)
+    if check_md5:
+        check_md5(target_dir, VOXCELEB1_PARTS_URL)
 
 
     for url in VOXCELEB1_TRIALS_URL:
@@ -75,7 +74,8 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
         elif force_download:
             urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
 
-    check_md5(target_dir, VOXCELEB1_TRIALS_URL)
+    if check_md5:
+        check_md5(target_dir, VOXCELEB1_TRIALS_URL)
 
     for url in VOXCELEB1_META_URL:
         fname=target_dir / url[0].split("/")[-1]
@@ -84,7 +84,8 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
         elif force_download:
             urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
 
-    #check_md5(target_dir, VOXCELEB1_META_URL)
+    if check_md5:
+        check_md5(target_dir, VOXCELEB1_META_URL)
 
 
 
@@ -92,12 +93,16 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--force_download', action="store_true", default=False,
-                        help='force the download, overwrites files (default: False)')
-    parser.add_argument('target_dir', metavar='target_dir', type=str,
-                        help='the path to the target directory where the data will be stored')
+    parser.add_argument('--thread', type=int, default=10,
+            help='Number of parallel jobs (default: 10)')
+    parser.add_argument('--force_download', action='store_true', default=False,
+            help='Force the download, overwriting existing files (default: False)')
+    parser.add_argument('--check_md5', action='store_true', default=False,
+            help='Verify MD5 checksums of the files (default: False)')
+    parser.add_argument('target_dir', type=str, metavar='TARGET_DIR',
+            help='Path to the target directory where the data will be stored')
 
     args = parser.parse_args()
 
-    download_voxceleb1(args.target_dir, args.force_download)
+    download_voxceleb1(args.target_dir, args.force_download, args.check_md5, args.thread)
 

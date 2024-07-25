@@ -2,7 +2,7 @@
 
 import sys
 import glob
-from kiwano.utils import Pathlike
+from kiwano.utils import Pathlike, get_all_files
 from pathlib import Path
 import torchaudio
 import argparse
@@ -57,10 +57,12 @@ def prepare_voxceleb2(sampling_frequency: int, canDeleteZIP: bool, in_data: Path
 
     liste = open(out_data / nameListe, "w")
 
+    wav_lst = get_all_files(in_data / "dev" / "aac", match_and=[".m4a"])
+
     with ProcessPoolExecutor(num_jobs) as ex:
         futures = []
 
-        for segment in Path(in_data / "dev" / "aac").rglob("*.m4a"):
+        for segment in wav_lst:
             futures.append( ex.submit(process_file, segment, out_data, sampling_frequency) )
 
         for future in tqdm( futures, total=len(futures), desc=f"Processing VoxCeleb2..."):
@@ -86,7 +88,6 @@ def _process_file(file_path: Pathlike, output: Pathlike, sampling_frequency: int
     #ffmpeg -v 8 -i {segment} -f wav -acodec pcm_s16le - |
     cmd = "ffmpeg -y -threads 1 -i "+str(file_path)+" -acodec pcm_s16le -ac 1 -ar "+str(sampling_frequency)+" -ab 48 -threads 1 "+str(output)
     proc = run(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-    print(cmd)
 
     #audio = np.frombuffer(raw_audio, dtype=np.float32)
 
