@@ -33,15 +33,12 @@ def download_voxceleb2(target_dir: Pathlike = ".", force_download: Optional[bool
     zip_path = target_dir / zip_name
 
 
-    parallel_unzip(zip_path, target_dir, jobs)
-
-
     if zip_path.exists() and not force_download:
         logging.info(f"Skipping {zip_name} because file exists.")
     else:
         for url in VOXCELEB2_PARTS_URL:
             fname = target_dir / url[0].split("/")[-1]
-            if not fname.exists() or force_download:
+            if not fname.exists() and not force_download:
                 urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb2 {url[0].split('/')[-1]}")
 
 
