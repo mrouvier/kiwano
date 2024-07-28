@@ -10,7 +10,7 @@ from typing import Optional
 import argparse
 
 RIRS_NOISES_PARTS_URL = [
-    ["http://www.openslr.org/resources/28/rirs_noises.zip", "e6f48e257286e05de56413b4779d8ffb"],
+        ["https://openslr.elda.org/resources/28/rirs_noises.zip", "e6f48e257286e05de56413b4779d8ffb"],
 ]
 
 def download_rirs_noises(target_dir: Pathlike = ".", force_download: Optional[bool] = False, check_md5: Optional[bool] = False, jobs: int = 10):

@@ -21,13 +21,13 @@ def prepare_rirs_noises(in_data: Pathlike, out_data: Pathlike):
 
     liste = open(out_data / "liste", "w")
 
-    wav_lst = get_all_files(in_data, match_and=[".wav"])
+    wav_lst = get_all_files(in_data, match_and=[".wav"], match_or=["mediumroom", "smallroom"])
 
     for segment in tqdm(wav_lst):
-        duration = str(round(float(get_duration(segment)),2))
         name = str(segment).split("/")[-1].split(".")[0]
         room = str(segment).split("/")[-3]
         if room == "mediumroom" or room == "smallroom":
+            duration = str(round(float(get_duration(segment)),2))
             liste.write(f"{room}_{name} {room} {duration} {segment}\n")
 
     liste.close()
