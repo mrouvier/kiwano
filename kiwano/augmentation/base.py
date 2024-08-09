@@ -194,6 +194,16 @@ def convolve1d(signal: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
     return result[:padded_size]
 
 
+class SignFlip(Augmentation):
+    def __init__(self, flip_prob=0.5):
+        self.flip_prob = flip_prob
+
+    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+        if torch.rand(1).item() < self.flip_prob:
+            return -tensor, sample_rate
+
+        return tensor, sample_rate
+
 
 
 class Reverb(Augmentation):
