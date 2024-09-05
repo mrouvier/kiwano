@@ -235,7 +235,7 @@ def check_md5(dir, liste):
                 print("File ", fname," finally correctly downloaded")
 
 
-def gdrive_download(url, output, verbose=True):
+def gdrive_download(url: str, output: str, verbose=True):
     """Download file from Google Drive.
 
     Args:
@@ -246,7 +246,7 @@ def gdrive_download(url, output, verbose=True):
     if "file/d/" in url:
         url = "https://drive.google.com/uc?export=download&id=" + url.split("/")[-2]
     try:
-        gdown.download(url, output, quiet=verbose)
+        gdown.download(url, output, quiet=not verbose)
     except Exception as e:
         print(e)
         print("Download failed. Please try again.")
