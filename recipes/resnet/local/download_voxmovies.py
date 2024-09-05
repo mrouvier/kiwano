@@ -47,8 +47,6 @@ def download_voxmovies(target_dir: Pathlike = ".", force_download: Optional[bool
         logging.info("Cleaning up metadata files...")
         delete_dot_underscore_files(target_dir)
 
-    if do_check_md5:
-        check_md5(target_dir, VOXMOVIES_URL)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
