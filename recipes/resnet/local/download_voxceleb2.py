@@ -48,7 +48,7 @@ def download_voxceleb2(target_dir: Pathlike = ".", force_download: Optional[bool
         parallel_unzip(zip_path, target_dir, jobs)
 
         if check_md5:
-            check_md5(target_dir, VOXCELEB2_PARTS_URL)
+            check_md5(target_dir, VOXCELEB2_PARTS_URL, "VoxCeleb2")
 
     for url in VOXCELEB2_META_URL:
         fname=target_dir / url[0].split("/")[-1]

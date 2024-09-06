@@ -195,10 +195,11 @@ def urlretrieve_progress(url, filename=None, data=None, desc=None):
 
 
 
-def check_md5(dir, liste):
+def check_md5(dir, liste, dataset_name=""):
     """
     arg1 dir: the directory where the files in the liste are stocked
     arg2 liste: the name of the liste
+    arg3 dataset_name: the name of the dataset
     This function check if all the files in the list are downloaded correctly,
     if not, there are 3 attempts to re-download the file
     """
@@ -224,7 +225,7 @@ def check_md5(dir, liste):
                     break
             except ValueError:
                 print("error downloading file ", fname)
-                urlretrieve_progress(url[0], filename=dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
+                urlretrieve_progress(url[0], filename=dir / url[0].split("/")[-1], desc=f"Downloading {dataset_name} {url[0].split('/')[-1]}")
 
         else:
             if hashlib.md5(fname.read_bytes()).hexdigest() != url[1]:

@@ -62,7 +62,7 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
 
 
     if check_md5:
-        check_md5(target_dir, VOXCELEB1_PARTS_URL)
+        check_md5(target_dir, VOXCELEB1_PARTS_URL, "VoxCeleb1")
 
 
     for url in VOXCELEB1_TRIALS_URL:

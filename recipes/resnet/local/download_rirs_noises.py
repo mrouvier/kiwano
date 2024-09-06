@@ -34,7 +34,7 @@ def download_rirs_noises(target_dir: Pathlike = ".", force_download: Optional[bo
         parallel_unzip(zip_path, target_dir, jobs)
 
     if check_md5:
-        check_md5(target_dir, RIRS_NOISES_PARTS_URL)
+        check_md5(target_dir, RIRS_NOISES_PARTS_URL, "RIRS NOISES")
 
 if __name__ == '__main__':
 

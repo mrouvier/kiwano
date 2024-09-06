@@ -36,7 +36,7 @@ def download_musan(target_dir: Pathlike = ".", force_download: Optional[bool] = 
 
 
     if check_md5:
-        check_md5(target_dir, MUSAN_PARTS_URL)
+        check_md5(target_dir, MUSAN_PARTS_URL, "MUSAN")
 
 if __name__ == '__main__':
 

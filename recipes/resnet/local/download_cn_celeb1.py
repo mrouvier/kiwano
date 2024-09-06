@@ -21,7 +21,7 @@ CN_CELEB_PARTS_URL = [
 
 
 
-def download_cn_celeb(target_dir: Pathlike = ".", force_download: Optional[bool] = False):
+def download_cn_celeb1(target_dir: Pathlike = ".", force_download: Optional[bool] = False):
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -32,7 +32,6 @@ def download_cn_celeb(target_dir: Pathlike = ".", force_download: Optional[bool]
         check_md5(target_dir, CN_CELEB_PARTS_URL)
         logging.info(f"Skipping {tar_gz_name} because file exists.")
     else:
-
         for url in CN_CELEB_PARTS_URL:
             fname=target_dir / url[0].split("/")[-1]
             if not fname.exists() and not force_download:
@@ -72,7 +71,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    download_cn_celeb(args.target_dir, args.force_download)
+    download_cn_celeb1(args.target_dir, args.force_download)
 
 
 
