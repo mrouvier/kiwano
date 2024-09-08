@@ -5,6 +5,7 @@ import numpy as np
 import random
 import math
 import copy
+
 from kiwano.dataset import SegmentSet
 
 from typing import List
@@ -133,6 +134,9 @@ class Noise(Augmentation):
         return tensor, sample_rate
 
 
+
+
+
 class Codec(Augmentation):
     def __init__(self):
         self.codec = [
@@ -194,6 +198,48 @@ def convolve1d(signal: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
     return result[:padded_size]
 
 
+class MediaG722(Augmentation):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+        encoder = torchaudio.io.AudioEffector(format="g722")
+        waveform = encoder.apply(tensor.unsqueeze(1), sample_rate=sample_rate)
+        return waveform.squeeze(1).unsqueeze(0)[0], sample_rate
+
+class MediaVorbis(Augmentation):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+        r = random.randint(6, 9)
+        encoder = torchaudio.io.AudioEffector(format="ogg", encoder="vorbis", codec_config=torchaudio.io.CodecConfig(compression_level=r))
+        waveform = encoder.apply(tensor.unsqueeze(1), sample_rate=sample_rate)
+        return waveform.squeeze(1).unsqueeze(0)[0], sample_rate
+
+
+class MediaOpus(Augmentation):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+        r = random.randint(6, 9)
+        encoder = torchaudio.io.AudioEffector(format="ogg", encoder="opus", codec_config=torchaudio.io.CodecConfig(compression_level=r))
+        waveform = encoder.apply(tensor.unsqueeze(1), sample_rate=sample_rate)
+        return waveform.squeeze(1).unsqueeze(0)[0], sample_rate
+
+
+class MediaMP3(Augmentation):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+        r = random.randint(0,1)
+        if r == 0:
+            #MP3 with constant bitrate
+            b = random.randint(128000, 3200000)
+            encoder = torchaudio.io.AudioEffector(format="mp3", codec_config=torchaudio.io.CodecConfig(bit_rate=b) )
+            waveform = encoder.apply(tensor.unsqueeze(1), sample_rate=sample_rate)
+            return waveform.squeeze(1).unsqueeze(0)[0], sample_rate
+
+        else:
+            #MP3 with variable bitrate
+            q = random.randint(0, 3)
+            c = random.randint(6, 9)
+            encoder = torchaudio.io.AudioEffector(format="mp3", codec_config=torchaudio.io.CodecConfig(qscale=q, compression_level=c) )
+            waveform = encoder.apply(tensor.unsqueeze(1), sample_rate=sample_rate)
+            return waveform.squeeze(1).unsqueeze(0)[0], sample_rate
+
+
+
 class SignFlip(Augmentation):
     def __init__(self, flip_prob=0.5):
         self.flip_prob = flip_prob
@@ -234,8 +280,8 @@ class Filtering(Augmentation):
 
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
         effects = [
-            ["bandpass", "2000", "3500"],
-            ["bandreject", "200", "500"]
+            ["bandpass", "3400", "3700"],
+            ["bandreject", "100", "300"]
         ]
         e = effects[random.randint(0, 1)]
 
