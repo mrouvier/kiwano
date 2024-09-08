@@ -351,6 +351,172 @@ class SEBasicBlock(nn.Module):
         return out
 
 
+class MiniSEBasicBlock(nn.Module):
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(MiniSEBasicBlock, self).__init__()
+
+        self.activation = nn.ReLU(inplace=True)
+
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(planes)
+
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = nn.BatchNorm2d(planes)
+
+        self.downsample = downsample
+        self.stride = stride
+        self.se = SELayer(planes, 1)
+
+
+    def forward(self, x):
+        residual = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.activation(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        out = self.se(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+        
+        out += residual
+        out = self.activation(out)
+        
+        return out
+
+
+
+
+
+
+class ShakeShake(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input1, input2, alpha, beta=None):
+        ctx.save_for_backward(input1, input2, alpha, beta)
+        out = alpha * input1 + (1 - alpha) * input2
+        return out
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input1, input2, alpha, beta = ctx.saved_tensors
+        grad_input1 = beta * grad_output
+        grad_input2 = (1 - beta) * grad_output
+        return grad_input1, grad_input2, None, None
+                                                                                    
+                                                                                    
+class ShakeBasicBlock(nn.Module):
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(ShakeBasicBlock, self).__init__()
+        
+        self.residual_branch1 = ResidualBlock(inplanes, planes, stride)
+        self.residual_branch2 = ResidualBlock(inplanes, planes, stride)
+
+        self.activation = nn.ReLU(inplace=True)
+        
+        self.shake_shake = ShakeShake.apply
+
+        self.downsample = downsample
+
+    def forward(self, x):
+        device = x.device
+
+        residual = x
+        out1 = self.residual_branch1(x)
+        out2 = self.residual_branch2(x)
+
+        batch_size = out1.shape[0]
+
+        if self.training:
+            alpha = torch.rand(batch_size).to(device)
+            alpha = alpha.view(batch_size, 1, 1, 1)
+
+            beta = torch.rand(batch_size).to(device)
+            beta = beta.fill_(0.5)
+            beta = beta.view(batch_size, 1, 1, 1)
+            
+            out = self.shake_shake(out1, out2, alpha, beta)
+        else:
+            alpha = torch.Tensor([0.5]).to(device)
+            out = self.shake_shake(out1, out2, alpha)
+
+        
+        if self.downsample is not None:
+            residual = self.downsample(x)
+        
+        out = out + residual
+        out = self.activation(out)
+        return out
+
+
+
+class ResidualBlock(nn.Module):
+    def __init__(self, inplanes, planes, stride=1):
+        super(ResidualBlock, self).__init__()
+
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.activation = nn.ReLU(inplace=True)
+
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = nn.BatchNorm2d(planes)
+
+    def forward(self, x):
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.activation(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        return out
+
+
+
+
+
+
+
+
+class MiniBasicBlock(nn.Module):
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(MiniBasicBlock, self).__init__()
+
+        self.activation = nn.ReLU(inplace=True)
+
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(planes)
+
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = nn.BatchNorm2d(planes)
+
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        residual = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.activation(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+        
+        out += residual
+        out = self.activation(out)
+        
+        return out
+
+
+
+
 
 class BasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
@@ -465,7 +631,8 @@ class AMSMLoss(nn.Module):
     def reset_parameters(self):
         nn.init.xavier_uniform_(self.W)
 
-    def forward(self, input, label):
+    
+    def forward(self, input, label = None):
         # normalize features
         x = F.normalize(input)
 
@@ -474,6 +641,9 @@ class AMSMLoss(nn.Module):
 
         # dot product
         logits = F.linear(x, W)
+        if label == None:
+            return logits
+
         target_logits = logits - self.m
         one_hot = torch.zeros_like(logits)
         one_hot.scatter_(1, label.view(-1, 1).long(), 1)
@@ -482,6 +652,230 @@ class AMSMLoss(nn.Module):
         # feature re-scale
         output *= self.s
         return output
+
+
+
+class ResNetShakeShakeASVSpoof(nn.Module):
+    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[32, 64, 128, 256], num_blocks=[3,4,6,3]):
+        super(ResNetShakeShakeASVSpoof, self).__init__()
+
+        self.embed_features = embed_features
+        self.num_classes = num_classes
+        self.channels = channels
+        self.num_blocks = num_blocks
+
+        self.pre_conv1 = nn.Conv2d(1, channels[0], 3, 1, 1, bias=False)
+        self.pre_bn1 = nn.BatchNorm2d(channels[0])
+        self.pre_activation1 = nn.ReLU(inplace=True)
+
+        self.layer1 = self._make_layer(channels[0], channels[0], num_blocks[0], stride=1)
+        self.layer2 = self._make_layer(channels[0], channels[1], num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(channels[1], channels[2], num_blocks[2], stride=2)
+        self.layer4 = self._make_layer(channels[2], channels[3], num_blocks[3], stride=2)
+
+        self.norm_stats = torch.nn.BatchNorm1d(2 * 11 * channels[3])
+
+        self.fc_embed = nn.Linear(2 * 11 * channels[3], self.embed_features)
+        self.norm_embed = torch.nn.BatchNorm1d(self.embed_features)
+
+        self.attention = nn.Sequential(
+            nn.Conv1d(channels[3] * 11, channels[3]//2, kernel_size=1),
+            #nn.SiLU(),
+            #nn.BatchNorm1d(channels[3]//2),
+            nn.Tanh(),
+            nn.Conv1d(channels[3]//2, channels[3] * 11, kernel_size=1),
+            nn.Softmax(dim=2),
+        )
+
+        self.output = AMSMLoss(self.embed_features, self.num_classes, s=30, m=0.2)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def extra_repr(self):
+        return 'embed_features={}, num_classes={}'.format(self.embed_features, self.num_classes)
+
+    def get_m(self):
+        return self.output.get_m()
+
+    def get_s(self):
+        return self.output.get_s()
+
+    def set_m(self, m):
+        self.output.set_m(m)
+
+    def set_s(self, s):
+        self.output.set_s(s)
+
+    def new_parameter(self, *size):
+        out = nn.Parameter(torch.FloatTensor(*size))
+        nn.init.xavier_normal_(out)
+        return out
+
+    def _make_layer(self, inchannel, outchannel, block_num, stride=1):
+        downsample = None
+        if stride != 1 or inchannel != outchannel:
+            downsample = nn.Sequential(
+                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(outchannel)
+            )
+
+        layers = []
+        layers.append(ShakeBasicBlock(inchannel, outchannel, stride, downsample))
+
+        for i in range(1, block_num):
+            layers.append(ShakeBasicBlock(outchannel, outchannel))
+        return nn.Sequential(*layers)
+
+    def forward(self, x, iden = None):
+        x = self.pre_conv1(x)
+        x = self.pre_bn1(x)
+        x = self.pre_activation1(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = x.transpose(2, 3)
+        x = x.flatten(1, 2)
+
+        w = self.attention(x)
+
+        mu = torch.sum(x * w, dim=2)
+        sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-5))
+
+        x = torch.cat([mu, sg], dim=1)
+
+        x = self.norm_stats(x)
+
+        x = self.fc_embed(x)
+        x = self.norm_embed(x)
+
+        if iden == None:
+            return self.output(x)
+
+        x = self.output(x, iden)
+
+        return x
+
+
+
+
+
+class ResNetASVSpoof(nn.Module):
+    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[32, 64, 128, 256], num_blocks=[3,4,6,3]):
+        super(ResNetASVSpoof, self).__init__()
+
+        self.embed_features = embed_features
+        self.num_classes = num_classes
+        self.channels = channels
+        self.num_blocks = num_blocks
+
+        self.pre_conv1 = nn.Conv2d(1, channels[0], 3, 1, 1, bias=False)
+        self.pre_bn1 = nn.BatchNorm2d(channels[0])
+        self.pre_activation1 = nn.ReLU(inplace=True)
+
+        self.layer1 = self._make_layer(channels[0], channels[0], num_blocks[0], stride=1)
+        self.layer2 = self._make_layer(channels[0], channels[1], num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(channels[1], channels[2], num_blocks[2], stride=2)
+        self.layer4 = self._make_layer(channels[2], channels[3], num_blocks[3], stride=2)
+
+        self.norm_stats = torch.nn.BatchNorm1d(2 * 11 * channels[3])
+
+        self.fc_embed = nn.Linear(2 * 11 * channels[3], self.embed_features)
+        self.norm_embed = torch.nn.BatchNorm1d(self.embed_features)
+
+        self.attention = nn.Sequential(
+            nn.Conv1d(channels[3] * 11, channels[3]//2, kernel_size=1),
+            #nn.SiLU(),
+            #nn.BatchNorm1d(channels[3]//2),
+            nn.Tanh(),
+            nn.Conv1d(channels[3]//2, channels[3] * 11, kernel_size=1),
+            nn.Softmax(dim=2),
+        )
+
+        self.output = AMSMLoss(self.embed_features, self.num_classes, s=30, m=0.2)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def extra_repr(self):
+        return 'embed_features={}, num_classes={}'.format(self.embed_features, self.num_classes)
+
+    def get_m(self):
+        return self.output.get_m()
+
+    def get_s(self):
+        return self.output.get_s()
+
+    def set_m(self, m):
+        self.output.set_m(m)
+
+    def set_s(self, s):
+        self.output.set_s(s)
+
+    def new_parameter(self, *size):
+        out = nn.Parameter(torch.FloatTensor(*size))
+        nn.init.xavier_normal_(out)
+        return out
+
+    def _make_layer(self, inchannel, outchannel, block_num, stride=1):
+        downsample = None
+        if stride != 1 or inchannel != outchannel:
+            downsample = nn.Sequential(
+                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(outchannel)
+            )
+
+        layers = []
+        layers.append(MiniBasicBlock(inchannel, outchannel, stride, downsample))
+
+        for i in range(1, block_num):
+            layers.append(MiniBasicBlock(outchannel, outchannel))
+        return nn.Sequential(*layers)
+
+    def forward(self, x, iden = None):
+        x = self.pre_conv1(x)
+        x = self.pre_bn1(x)
+        x = self.pre_activation1(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = x.transpose(2, 3)
+        x = x.flatten(1, 2)
+
+        w = self.attention(x)
+
+        mu = torch.sum(x * w, dim=2)
+        sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-5))
+
+        x = torch.cat([mu, sg], dim=1)
+
+        x = self.norm_stats(x)
+
+        x = self.fc_embed(x)
+        x = self.norm_embed(x)
+
+        if iden == None:
+            return self.output(x)
+
+        x = self.output(x, iden)
+
+        return x
+
+
 
 
 class ResNet(nn.Module):
