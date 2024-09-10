@@ -50,9 +50,9 @@ def prepare_trials(in_data: Pathlike, out_data: Pathlike):
             dictEnroll[col1] = col2
     trial_dir = Path(out_data / "CN-Celeb_flac" / "eval" / "lists")
     trial_dir.mkdir(parents=True, exist_ok=True)
-    
+
     with open(in_data / "CN-Celeb_flac" / "eval" / "lists" / "trials.lst", 'r') as trials:
-        with open(out_data / "CN-Celeb_flac" / "eval" / "lists" / "new_trials.lst", 'w') as new_trials:
+        with open(out_data / "CN-Celeb_flac" / "eval" / "lists" / "trials.lst", 'w') as new_trials:
             for line in trials:
                 col1, col2, col3 = line.strip().split(' ')
                 if col3 == "0":
