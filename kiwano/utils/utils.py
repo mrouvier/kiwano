@@ -200,8 +200,8 @@ def check_md5(dir, liste, dataset_name=""):
     arg1 dir: the directory where the files in the liste are stocked
     arg2 liste: the name of the liste
     arg3 dataset_name: the name of the dataset
-    This function check if all the files in the list are downloaded correctly,
-    if not, there are 3 attempts to re-download the file
+    This function checks if all the files in the list are correctly downloaded,
+    if not, 3 attempts are made to re-download the file
     """
 
     for url in liste:
@@ -210,14 +210,7 @@ def check_md5(dir, liste, dataset_name=""):
         for i in range(3):
             try:
                 with open(fname, 'rb') as file:
-                    hash = hashlib.md5()
-                    while True:
-                        chunk = file.read(8096)
-                        if not chunk:
-                            break
-                        hash.update(chunk)
-                    md5 = hash.hexdigest()
-
+                    md5 = hashlib.file_digest(file, 'md5').hexdigest()
                 if md5 != url[1]:
                     raise ValueError()
                 else:
