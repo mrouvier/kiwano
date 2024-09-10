@@ -9,7 +9,7 @@ import argparse
 from pytubefix import YouTube
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from kiwano.utils import Pathlike, check_md5
+from kiwano.utils import Pathlike, check_md5, download_from_github
 from pathlib import Path
 from typing import Optional
 
@@ -18,15 +18,6 @@ ARAB_CELEB_URL = [
     ["https://github.com/CeLuigi/ArabCeleb/blob/main/utterance_info.json", "d22b74358ace281d866f00dad302d53f"]
 ]
 
-def download_from_github(url: str, save_path: str):
-    raw_url = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
-    response = requests.get(raw_url)
-    response.raise_for_status() 
-    
-    with open(save_path, 'wb') as f:
-        f.write(response.content)
-    
-    logging.info(f"Downloaded {url} to {save_path}")
 
 def download_video(args):
     celeb_datadir, id_video, url = args

@@ -7,6 +7,8 @@ import zipfile
 import tarfile
 import os
 import concurrent.futures
+import requests
+import logging
 
 Pathlike = Union[Path, str]
 
@@ -232,3 +234,24 @@ def check_md5(dir, liste):
                 os.remove(fname)
             else:
                 print("File ", fname," finally correctly downloaded")
+
+def download_from_github(url: str, save_path: str):
+    """
+    Download a file from a GitHub URL to a local path.
+
+    Args:
+        url: The URL of the file to download.
+        save_path: The local path to save the file to.
+
+    Raises:
+        requests.HTTPError: If the request to the URL fails.
+
+    """
+    raw_url = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+    response = requests.get(raw_url)
+    response.raise_for_status() 
+    
+    with open(save_path, 'wb') as f:
+        f.write(response.content)
+    
+    logging.info(f"Downloaded {url} to {save_path}")
