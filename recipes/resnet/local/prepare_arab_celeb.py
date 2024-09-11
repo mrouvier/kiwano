@@ -69,7 +69,13 @@ def prepare_arab_celeb(in_data: Pathlike, out_data: Pathlike, jobs: int, samplin
             future.result()
     logging.info("Processing audio files done")
 
-    download_from_github(ARAB_CELEB_URL[0][0], in_data / "veri_test.txt")
+    veri_test_file = in_data / "veri_test.txt"
+    download_from_github(ARAB_CELEB_URL[0][0], veri_test_file)
+    
+    if not check_md5(veri_test_file, ARAB_CELEB_URL[0][1]):
+        logging.error(f"MD5 check failed for veri_test.txt. The file may be corrupted.")
+        return
+
     prepare_trials(in_data, out_data)
 
     logging.info("Processing ArabCeleb done")

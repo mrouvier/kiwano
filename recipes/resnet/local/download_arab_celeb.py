@@ -40,7 +40,9 @@ def download_arab_celeb(target_dir: Pathlike = ".", jobs: int = 1, force_downloa
         utterance_info_url = ARAB_CELEB_URL[0][0]
         logging.info(f"Downloading utterance_info.json...")
         download_from_github(utterance_info_url, utterance_info_file)
-        check_md5(target_dir, ARAB_CELEB_URL)
+        if not check_md5(utterance_info_file, ARAB_CELEB_URL[0][1]):
+            logging.error(f"MD5 check failed for utterance_info.json. The file may be corrupted.")
+            return
     else:
         logging.info("utterance_info.json already exists. Skipping download.")
 
