@@ -198,7 +198,7 @@ def urlretrieve_progress(url, filename=None, data=None, desc=None):
 
 def check_md5(file: Pathlike, hash: str) -> bool:
     """
-    Check the md5 hash of a given file, and re-download it if it is not correct.
+    Check the md5 hash of a given file.
 
     Arguments
     ---------
