@@ -35,7 +35,7 @@ VOXCELEB1_META_URL = [
 
 
 
-def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool] = False, check_md5: Optional[bool] = False, jobs: int = 10):
+def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool] = False, do_check_md5: Optional[bool] = False, jobs: int = 10):
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -45,11 +45,16 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
     if zip_path.exists() and not force_download:
         logging.info(f"Skipping {zip_name} because file exists.")
     else:
-        for url in VOXCELEB1_PARTS_URL:
-            fname = target_dir / url[0].split("/")[-1]
-            if not fname.exists() and not force_download:
-                urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
-
+        for url, md5 in VOXCELEB1_PARTS_URL:
+            fname = target_dir / url.split("/")[-1]
+            if not fname.exists() or force_download:
+                urlretrieve_progress(url, filename=fname, desc=f"Downloading VoxCeleb1 {fname.name}")
+            
+            if do_check_md5:
+                if not check_md5(fname, md5):
+                    logging.warning(f"MD5 check failed for {fname}.")
+                else:
+                    logging.info(f"MD5 check passed for {fname}.")
 
         logging.info(f"Concatenating files...")
         copy_files(zip_path, target_dir, "vox1_dev_wav_part*")
@@ -57,33 +62,30 @@ def download_voxceleb1(target_dir: Pathlike = ".", force_download: Optional[bool
         logging.info(f"Extracting zip...")
         parallel_unzip(zip_path, target_dir, jobs)
 
-        logging.info(f"Extracting zip...")
+        logging.info(f"Extracting test zip...")
         parallel_unzip(target_dir / "vox1_test_wav.zip", target_dir, jobs)
 
+    for url, md5 in VOXCELEB1_TRIALS_URL:
+        fname = target_dir / url.split("/")[-1]
+        if not fname.exists() or force_download:
+            urlretrieve_progress(url, filename=fname, desc=f"Downloading VoxCeleb1 {fname.name}")
+        
+        if do_check_md5:
+            if not check_md5(fname, md5):
+                logging.warning(f"MD5 check failed for {fname}.")
+            else:
+                logging.info(f"MD5 check passed for {fname}.")
 
-    if check_md5:
-        check_md5(target_dir, VOXCELEB1_PARTS_URL, "VoxCeleb1")
-
-
-    for url in VOXCELEB1_TRIALS_URL:
-        fname=target_dir / url[0].split("/")[-1]
-        if not fname.exists() and not force_download:
-            urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
-        elif force_download:
-            urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
-
-    if check_md5:
-        check_md5(target_dir, VOXCELEB1_TRIALS_URL)
-
-    for url in VOXCELEB1_META_URL:
-        fname=target_dir / url[0].split("/")[-1]
-        if not fname.exists() and not force_download:
-            urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
-        elif force_download:
-            urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
-
-    if check_md5:
-        check_md5(target_dir, VOXCELEB1_META_URL)
+    for url, md5 in VOXCELEB1_META_URL:
+        fname = target_dir / url.split("/")[-1]
+        if not fname.exists() or force_download:
+            urlretrieve_progress(url, filename=fname, desc=f"Downloading VoxCeleb1 {fname.name}")
+        
+        if do_check_md5:
+            if not check_md5(fname, md5):
+                logging.warning(f"MD5 check failed for {fname}.")
+            else:
+                logging.info(f"MD5 check passed for {fname}.")
 
 
 
