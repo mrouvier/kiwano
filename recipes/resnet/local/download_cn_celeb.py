@@ -14,7 +14,7 @@ import argparse
 
 
 CN_CELEB_PARTS_URL = [
-    # ["https://www.openslr.org/resources/82/cn-celeb_v2.tar.gz", "7ab1b214028a7439e26608b2d5a0336c"]
+    ["https://www.openslr.org/resources/82/cn-celeb_v2.tar.gz", "7ab1b214028a7439e26608b2d5a0336c"],
     ["https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzaa", "4cdf738cff565ce35ad34274848659c3"],
     ["https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzab", "4ff59a7009b79ef7043498ad3882b81b"],
     ["https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzac", "3aa8e6e7f7ec4382f9926b1b31498228"]
