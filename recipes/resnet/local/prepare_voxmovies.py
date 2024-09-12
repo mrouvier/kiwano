@@ -61,7 +61,7 @@ def prepare_voxmovies(in_data: Pathlike, out_data: Pathlike, jobs: int, sampling
 
         for future in tqdm(futures, total=len(futures), desc="Processing files"):
             name, spkid, duration, segment = future.result()
-            liste.write(f"{name} {spkid} {segment} {duration}\n")
+            liste.write(f"{name} {spkid} {duration} {segment}\n")
 
     liste.close()
 
