@@ -5,3 +5,4 @@ librosa~=0.10.1
 torchvision~=0.15.2
 setuptools~=65.5.1
 torchaudio~=2.0.2
+putybefix~=6.15.4
