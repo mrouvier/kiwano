@@ -102,3 +102,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     prepare_voxmovies(args.in_data, args.out_data, args.thread, args.downsampling, args.deleteZIP)
+   #Note : the trials e2 to e4 use a mix of voxmovies and voxceleb1 datasets
