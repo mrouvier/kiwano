@@ -11,6 +11,7 @@ from subprocess import PIPE, run
 import argparse
 import logging
 import os
+import re
 
 def get_duration(file_path: str):
    info = torchaudio.info(file_path)
@@ -46,7 +47,7 @@ def prepare_trials(in_dir: Pathlike, out_dir: Pathlike):
         for line in f_in:
             file1, file2, label = line.strip().split()
             
-            file2 = file2.replace("_{}_", "_7_01_") # Update the trials to only consider the HiFi mono audios
+            file2 = re.sub(r'_\d+_\{\}_', '_7_01_', file2) # Update the trials to only consider the HiFi mono audios
             file_pair = tuple(sorted([file1, file2])) # Remove duplicates
             
             if file_pair not in processed_pairs:
