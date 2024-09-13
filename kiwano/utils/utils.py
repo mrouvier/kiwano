@@ -7,6 +7,8 @@ import zipfile
 import tarfile
 import os
 import concurrent.futures
+import requests
+import logging
 
 Pathlike = Union[Path, str]
 
@@ -195,40 +197,51 @@ def urlretrieve_progress(url, filename=None, data=None, desc=None):
 
 
 
-def check_md5(dir, liste):
+def check_md5(file: Pathlike, hash: str) -> bool:
     """
-    arg1 dir: the directory where the files in the liste are stocked
-    arg2 liste: the name of the liste
-    This function check if all the files in the list are downloaded correctly,
-    if not, there are 3 attempts to re-download the file
+    Check the md5 hash of a given file.
+
+    Arguments
+    ---------
+    file : Pathlike
+        The file to check.
+    hash : str
+        The expected md5 hash.
+
+    Returns
+    -------
+    bool
+        True if the downloaded file has the correct hash, False otherwise.
     """
-
-    for url in liste:
-        fname = dir / url[0].split("/")[-1]
-
-        for i in range(3):
-            try:
-                with open(fname, 'rb') as file:
-                    hash = hashlib.md5()
-                    while True:
-                        chunk = file.read(8096)
-                        if not chunk:
-                            break
-                        hash.update(chunk)
-                    md5 = hash.hexdigest()
-
-                if md5 != url[1]:
-                    raise ValueError()
-                else:
-                    print("File ", fname, " correctly downloaded")
-                    break
-            except ValueError:
-                print("error downloading file ", fname)
-                urlretrieve_progress(url[0], filename=dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
-
+    try:
+        with open(file, 'rb') as file:
+            md5 = hashlib.file_digest(file, 'md5').hexdigest()
+        if md5 != hash:
+            raise ValueError()
         else:
-            if hashlib.md5(fname.read_bytes()).hexdigest() != url[1]:
-                print("Download failed for file ", fname)
-                os.remove(fname)
-            else:
-                print("File ", fname," finally correctly downloaded")
+            logging.info("File ", file, " correctly downloaded")
+            return True
+    except ValueError:
+        logging.info(f"Error. Hash of the downloaded file {file} not corresponding to the expected one.")
+        return False
+
+def download_from_github(url: str, save_path: str):
+    """
+    Download a file from a GitHub URL to a local path.
+
+    Args:
+        url: The URL of the file to download.
+        save_path: The local path to save the file to.
+
+    Raises:
+        requests.HTTPError: If the request to the URL fails.
+
+    """
+    raw_url = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+    response = requests.get(raw_url)
+    response.raise_for_status() 
+    
+    with open(save_path, 'wb') as f:
+        f.write(response.content)
+    
+    logging.info(f"Downloaded {url} to {save_path}")
