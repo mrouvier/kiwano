@@ -55,7 +55,7 @@ def prepare_trials(in_dir: Pathlike, out_dir: Pathlike):
                 file1_path = out_dir / f"test/{file1.split('_')[0]}/{file1}"
                 file2_path = out_dir / f"test/{file2.split('_')[0]}/{file2}"
                 
-                f_out.write(f"{file1_path} {file2_path} {label}\n")
+                f_out.write(f"{file1_path.parts[-1]} {file2_path.parts[-1]} {label}\n")
 
 def prepare_hi_mia(in_data: Pathlike, out_data: Pathlike, jobs: int, sampling_frequency: int):
     in_data = Path(in_data)
@@ -106,10 +106,10 @@ if __name__ == "__main__":
                         help="Path to the input directory")
     parser.add_argument("out_data", type=str, metavar="OUT_DATA", 
                         help="Path to the output directory")
-    parser.add_argument("sampling_frequency", type=int, metavar="SAMPLING_FREQUENCY", 
+    parser.add_argument("--sampling_frequency", type=int, metavar="SAMPLING_FREQUENCY", default=16000,
                         help="Sampling frequency of the audio files")
-    parser.add_argument("--jobs", type=int, default=8, 
-                        help="Number of parallel jobs (default: 8)")
+    parser.add_argument("--jobs", type=int, default=12, 
+                        help="Number of parallel jobs (default: 12)")
 
     args = parser.parse_args()
 
