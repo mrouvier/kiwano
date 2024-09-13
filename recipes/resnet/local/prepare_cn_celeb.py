@@ -72,7 +72,7 @@ def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike, 
 
     listeTrain = open(out_data / "listeTrain", "w")
     listeDev = open(out_data / "listeDev", "w")
-    listeTest = open(out_data / "listeTest", "w")
+    listeTest = open(out_data / "liste", "w")
 
     dev_files_list = open(in_data / "CN-Celeb_flac" / "dev" / "dev.lst", "r").read().splitlines()
 
@@ -102,14 +102,20 @@ def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike, 
             out_data_path = Path(out_data/ "CN-Celeb_flac" / "eval" / "wav")
             futuresTest.append(ex.submit(process_file, segment, out_data_path, spkid))
 
-        def process_futures(futures, output_file, desc):
+        def process_futures(futures, desc):
+            results = []
             for future in tqdm(futures, desc=desc):
                 name, spkid, duration, segment = future.result()
-                output_file.write(f"{name} {spkid} {duration} {segment}\n")
+                results.append(f"{name} {spkid} {duration} {segment}\n")
+            return results
 
-        process_futures(futuresTrain, listeTrain, "Processing Cn Celeb 2 (Train)")
-        process_futures(futuresDev, listeDev, "Processing Cn Celeb (Dev)")
-        process_futures(futuresTest, listeTest, "Processing Cn Celeb (Test)")
+        train_results = process_futures(futuresTrain, "Processing Cn Celeb 2 (Train)")
+        dev_results = process_futures(futuresDev, "Processing Cn Celeb (Dev)")
+        test_results = process_futures(futuresTest, "Processing Cn Celeb (Test)")
+
+        listeTrain.writelines(train_results)
+        listeDev.writelines(dev_results)
+        listeTest.writelines(test_results)
 
 
     listeTrain.close()
@@ -142,4 +148,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     prepare_cn_celeb(args.deleteZIP, args.in_data, args.out_data, args.thread)
-
