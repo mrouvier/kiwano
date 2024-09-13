@@ -7,6 +7,7 @@ import zipfile
 import tarfile
 import os
 import concurrent.futures
+import gdown
 
 Pathlike = Union[Path, str]
 
@@ -232,3 +233,20 @@ def check_md5(dir, liste):
                 os.remove(fname)
             else:
                 print("File ", fname," finally correctly downloaded")
+
+
+def gdrive_download(url: str, output: str, verbose=True):
+    """Download file from Google Drive.
+
+    Args:
+        url (str): url of the file to download. Can be a shareable link or a direct link.
+        output (str): Path to save the downloaded file.
+        verbose (bool, optional): Display the download progress bar. Defaults to True.
+    """
+    if "file/d/" in url:
+        url = "https://drive.google.com/uc?export=download&id=" + url.split("/")[-2]
+    try:
+        gdown.download(url, output, quiet=not verbose)
+    except Exception as e:
+        print(e)
+        print("Download failed. Please try again.")
