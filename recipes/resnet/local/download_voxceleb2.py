@@ -25,39 +25,42 @@ VOXCELEB2_META_URL = [
     ["https://www.openslr.org/resources/49/vox2_meta.csv", "6090d767f8334733dfe4c6578fa725c2"]
 ]
 
-def download_voxceleb2(target_dir: Pathlike = ".", force_download: Optional[bool] = False, check_md5: Optional[bool] = False, jobs: int = 10):
+def download_voxceleb2(target_dir: Pathlike = ".", force_download: Optional[bool] = False, do_check_md5: Optional[bool] = False, jobs: int = 10):
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
 
     zip_name = "vox2_aac.zip"
     zip_path = target_dir / zip_name
 
-
     if zip_path.exists() and not force_download:
         logging.info(f"Skipping {zip_name} because file exists.")
     else:
-        for url in VOXCELEB2_PARTS_URL:
-            fname = target_dir / url[0].split("/")[-1]
-            if not fname.exists() and not force_download:
-                urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb2 {url[0].split('/')[-1]}")
-
+        for url, md5 in VOXCELEB2_PARTS_URL:
+            fname = target_dir / url.split("/")[-1]
+            if not fname.exists() or force_download:
+                urlretrieve_progress(url, filename=fname, desc=f"Downloading VoxCeleb2 {fname.name}")
+            
+            if do_check_md5:
+                if not check_md5(fname, md5):
+                    logging.warning(f"MD5 check failed for {fname}.")
+                else:
+                    logging.info(f"MD5 check passed for {fname}.")
 
         copy_files(zip_path, target_dir, "vox2_dev_aac_part*")
 
         logging.info(f"Unzipping dev...")
         parallel_unzip(zip_path, target_dir, jobs)
 
-        if check_md5:
-            check_md5(target_dir, VOXCELEB2_PARTS_URL)
-
-    for url in VOXCELEB2_META_URL:
-        fname=target_dir / url[0].split("/")[-1]
+    for url, md5 in VOXCELEB2_META_URL:
+        fname = target_dir / url.split("/")[-1]
         if not fname.exists() or force_download:
-            urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb2 {url[0].split('/')[-1]}")
-
-
-    if check_md5:
-        check_md5(target_dir, VOXCELEB2_META_URL)
+            urlretrieve_progress(url, filename=fname, desc=f"Downloading VoxCeleb2 {fname.name}")
+        
+        if do_check_md5:
+            if not check_md5(fname, md5):
+                logging.warning(f"MD5 check failed for {fname}.")
+            else:
+                logging.info(f"MD5 check passed for {fname}.")
 
 
 if __name__ == '__main__':

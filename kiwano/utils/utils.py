@@ -7,6 +7,7 @@ import zipfile
 import tarfile
 import os
 import concurrent.futures
+import logging
 
 Pathlike = Union[Path, str]
 
@@ -195,40 +196,31 @@ def urlretrieve_progress(url, filename=None, data=None, desc=None):
 
 
 
-def check_md5(dir, liste):
+def check_md5(file: Pathlike, hash: str) -> bool:
     """
-    arg1 dir: the directory where the files in the liste are stocked
-    arg2 liste: the name of the liste
-    This function check if all the files in the list are downloaded correctly,
-    if not, there are 3 attempts to re-download the file
+    Check the md5 hash of a given file.
+
+    Arguments
+    ---------
+    file : Pathlike
+        The file to check.
+    hash : str
+        The expected md5 hash.
+
+    Returns
+    -------
+    bool
+        True if the downloaded file has the correct hash, False otherwise.
     """
-
-    for url in liste:
-        fname = dir / url[0].split("/")[-1]
-
-        for i in range(3):
-            try:
-                with open(fname, 'rb') as file:
-                    hash = hashlib.md5()
-                    while True:
-                        chunk = file.read(8096)
-                        if not chunk:
-                            break
-                        hash.update(chunk)
-                    md5 = hash.hexdigest()
-
-                if md5 != url[1]:
-                    raise ValueError()
-                else:
-                    print("File ", fname, " correctly downloaded")
-                    break
-            except ValueError:
-                print("error downloading file ", fname)
-                urlretrieve_progress(url[0], filename=dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
-
+    try:
+        with open(file, 'rb') as file:
+            md5 = hashlib.file_digest(file, 'md5').hexdigest()
+        if md5 != hash:
+            raise ValueError()
         else:
-            if hashlib.md5(fname.read_bytes()).hexdigest() != url[1]:
-                print("Download failed for file ", fname)
-                os.remove(fname)
-            else:
-                print("File ", fname," finally correctly downloaded")
+            logging.info("File ", file, " correctly downloaded")
+            return True
+    except ValueError:
+        logging.info(f"Error. Hash of the downloaded file {file} not corresponding to the expected one.")
+        return False
+    

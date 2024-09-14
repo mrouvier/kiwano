@@ -13,7 +13,7 @@ RIRS_NOISES_PARTS_URL = [
         ["https://openslr.elda.org/resources/28/rirs_noises.zip", "e6f48e257286e05de56413b4779d8ffb"],
 ]
 
-def download_rirs_noises(target_dir: Pathlike = ".", force_download: Optional[bool] = False, check_md5: Optional[bool] = False, jobs: int = 10):
+def download_rirs_noises(target_dir: Pathlike = ".", force_download: Optional[bool] = False, do_check_md5: Optional[bool] = False, jobs: int = 10):
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -23,18 +23,19 @@ def download_rirs_noises(target_dir: Pathlike = ".", force_download: Optional[bo
     if zip_path.exists() and not force_download:
         logging.info(f"Skipping {zip_name} because file exists.")
     else:
-        for url in RIRS_NOISES_PARTS_URL:
-            fname=target_dir / url[0].split("/")[-1]
-            if not fname.exists() and not force_download:
-                urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading RIRS NOISES {url[0].split('/')[-1]}")
-            elif force_download :
-                urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading RIRS NOISES {url[0].split('/')[-1]}")
+        for url, md5 in RIRS_NOISES_PARTS_URL:
+            fname = target_dir / url.split("/")[-1]
+            if not fname.exists() or force_download:
+                urlretrieve_progress(url, filename=fname, desc=f"Downloading RIRS NOISES {fname.name}")
+            
+            if do_check_md5:
+                if not check_md5(fname, md5):
+                    logging.warning(f"MD5 check failed for {fname}.")
+                else:
+                    logging.info(f"MD5 check passed for {fname}.")
 
         logging.info(f"Unzipping RIRS NOISES...")
         parallel_unzip(zip_path, target_dir, jobs)
-
-    if check_md5:
-        check_md5(target_dir, RIRS_NOISES_PARTS_URL)
 
 if __name__ == '__main__':
 
