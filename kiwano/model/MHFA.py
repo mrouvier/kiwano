@@ -8,6 +8,59 @@ from .WavLM import *
 import torch
 import torch.nn as nn
 
+
+
+
+class AMSMLoss(nn.Module):
+    def __init__(self, num_features, num_classes, s=30.0, m=0.4):
+        super(AMSMLoss, self).__init__()
+        self.num_features = num_features
+        self.n_classes = num_classes
+        self.s = s
+        self.m = m
+        self.W = nn.Parameter(torch.FloatTensor(num_classes, num_features))
+        self.reset_parameters()
+
+    def get_m(self):
+        return self.m
+
+    def get_s(self):
+        return self.s
+
+    def set_m(self, m):
+        self.m = m
+
+    def set_s(self, s):
+        self.s = s
+
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.W)
+
+    
+    def forward(self, input, label = None):
+        # normalize features
+        x = F.normalize(input)
+
+        # normalize weights
+        W = F.normalize(self.W)
+
+        # dot product
+        logits = F.linear(x, W)
+        if label == None:
+            return logits
+
+        target_logits = logits - self.m
+        one_hot = torch.zeros_like(logits)
+        one_hot.scatter_(1, label.view(-1, 1).long(), 1)
+        output = logits * (1 - one_hot) + target_logits * one_hot
+
+        # feature re-scale
+        output *= self.s
+        return output
+
+
+
+
 class MHFATop(nn.Module):
     def __init__(self, head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256):
         super(MHFATop, self).__init__()
@@ -65,26 +118,44 @@ class MHFATop(nn.Module):
 
 
 class MHFA(nn.Module):
-    def __init__(self, ckpt):
+    def __init__(self):
         super(MHFA, self).__init__()
         # checkpoint = torch.load('/mnt/proj3/open-24-5/pengjy_new/WavLM/Pretrained_model/WavLM-Base+.pt')
-        print("Pre-trained Model: {}".format(ckpt)
-        checkpoint = torch.load(ckpt)
+        #print("Pre-trained Model: {}".format(ckpt)
+        checkpoint = torch.load("WavLM-Base+.pt")
         cfg = WavLMConfig(checkpoint['cfg'])
         self.model = WavLM(cfg)
         self.loadParameters(checkpoint['model'])
         self.backend = MHFATop(head_nb=32)
 
+        self.output = AMSMLoss(256, 2, s=30, m=0.2)
 
-    def forward(self, wav_and_flag):
-        x = wav_and_flag[0]
+
+    def forward(self, wav_and_flag, iden = None):
+        x = wav_and_flag#[0]
+
+
+        x = x.reshape(-1, x.size()[-1] )
 
         cnn_outs, layer_results =  self.model.extract_features(x, output_layer=13)
+
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
+
         x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
 
         out = self.backend(x)
+
+
+        if iden == None:
+            return self.output(out)
+
+        out = self.output(out, iden)
         return out
+
+    def get_m(self):
+        return 0
+
+
 
     def loadParameters(self, param):
 
