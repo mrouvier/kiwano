@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import LayerNorm
+from transformers import Wav2Vec2Model, AutoModel, AutoFeatureExtractor
 from .WavLM import *
 
 import torch
@@ -62,18 +63,19 @@ class AMSMLoss(nn.Module):
 
 
 class MHFATop(nn.Module):
-    def __init__(self, head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256):
+    def __init__(self, head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256, number_layers=13):
         super(MHFATop, self).__init__()
 
         # Define learnable weights for key and value computations across layers
-        self.weights_k = nn.Parameter(data=torch.ones(13), requires_grad=True)
-        self.weights_v = nn.Parameter(data=torch.ones(13), requires_grad=True)
+        self.weights_k = nn.Parameter(data=torch.ones(number_layers), requires_grad=True)
+        self.weights_v = nn.Parameter(data=torch.ones(number_layers), requires_grad=True)
 
         # Initialize given parameters
         self.head_nb = head_nb
         self.ins_dim = inputs_dim
         self.cmp_dim = compression_dim
         self.ous_dim = outputs_dim
+        self.number_layers = number_layers
 
         # Define compression linear layers for keys and values
         self.cmp_linear_k = nn.Linear(self.ins_dim, self.cmp_dim)
@@ -117,30 +119,49 @@ class MHFATop(nn.Module):
         return outs
 
 
+class GradMultiply(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, scale):
+        ctx.scale = scale
+        res = x.new(x)
+        return res
+
+    @staticmethod
+    def backward(ctx, grad):
+        return grad * ctx.scale, None
+
+
 class MHFA(nn.Module):
-    def __init__(self):
+    def __init__(self, name, number_head=32):
         super(MHFA, self).__init__()
-        # checkpoint = torch.load('/mnt/proj3/open-24-5/pengjy_new/WavLM/Pretrained_model/WavLM-Base+.pt')
-        #print("Pre-trained Model: {}".format(ckpt)
-        checkpoint = torch.load("WavLM-Base+.pt")
+        checkpoint = torch.load(name)
         cfg = WavLMConfig(checkpoint['cfg'])
         self.model = WavLM(cfg)
         self.loadParameters(checkpoint['model'])
-        self.backend = MHFATop(head_nb=32)
+        self.number_head = number_head
+
+        #self.model = AutoModel.from_pretrained(name)
+
+        self.backend = MHFATop(head_nb=self.number_head)
 
         self.output = AMSMLoss(256, 2, s=30, m=0.2)
 
 
     def forward(self, wav_and_flag, iden = None):
-        x = wav_and_flag#[0]
+        '''
+        out = self.model(wav_and_flag, output_hidden_states=True)
 
+        hidden_states = out.hidden_states
 
-        x = x.reshape(-1, x.size()[-1] )
+        layer_reps = [x for x in hidden_states]
 
+        x = torch.stack(layer_reps)
+        x = x.permute(1, 3, 2, 0)
+        '''
+
+        x = wav_and_flag
         cnn_outs, layer_results =  self.model.extract_features(x, output_layer=13)
-
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
-
         x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
 
         out = self.backend(x)
@@ -154,7 +175,6 @@ class MHFA(nn.Module):
 
     def get_m(self):
         return 0
-
 
 
     def loadParameters(self, param):
@@ -175,4 +195,39 @@ class MHFA(nn.Module):
                 continue;
 
             self_state[name].copy_(param);
+
+
+
+class MHFA_HF(nn.Module):
+    def __init__(self, name):
+        super(MHFA_HF, self).__init__()
+        self.model = AutoModel.from_pretrained(name)
+
+        self.backend = MHFATop(head_nb=32, number_layers=self.model.config.num_hidden_layers+1, inputs_dim=self.model.config.hidden_size)
+
+        self.output = AMSMLoss(256, 2, s=30, m=0.2)
+
+
+    def forward(self, wav_and_flag, iden = None):
+        out = self.model(wav_and_flag, output_hidden_states=True)
+
+        hidden_states = out.hidden_states
+
+        layer_reps = [x for x in hidden_states]
+
+        x = torch.stack(layer_reps)
+        x = x.permute(1, 3, 2, 0)
+
+        out = self.backend(x)
+
+        if iden == None:
+            return self.output(out)
+
+        out = self.output(out, iden)
+        return out
+
+    def get_m(self):
+        return 0
+
+
 
