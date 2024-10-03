@@ -12,11 +12,18 @@ def compute_fpr_fnr_threshold(keys, scores):
     labels = []
     distances = []
 
+    for x in keys:
+        labels.append(int(keys[x]))
+        distances.append(float(scores[x]))
+
+    '''
     for label in keys.values():
         labels.append(int(label))
 
     for distance in scores.values():
         distances.append(float(distance))
+    '''
+
 
     positive_label = 1
     fpr, tpr, thresholds = metrics.roc_curve(labels, distances, pos_label=positive_label)
