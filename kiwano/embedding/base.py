@@ -23,6 +23,9 @@ class EmbeddingSet():
             self._iter = iter(self.h)
         return next(self._h)
 
+    def __contains__(self, name):
+        return name in self.h
+
     def len(self):
         return len(self.h)
 
@@ -105,9 +108,20 @@ def read_pkl(arg: str):
             arr = pickle.loads(  output )
             return arr
         else:
-            file = file.load(arg[6:], "r")
-            arr = pickle.load( file )
-            file.close()
-            return arr
+            f = open(arg[6:], "r")
+            #arr = pickle.load( file )
+            emb = EmbeddingSet()
+            for line in f:
+                parts = line.split()
+
+                key = parts[0]
+                values = list(map(float, parts[1:]))
+
+                tensor_values = torch.tensor(values)
+
+                emb[ key ] = tensor_values
+
+            f.close()
+            return emb
 
 
