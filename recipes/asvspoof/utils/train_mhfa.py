@@ -12,9 +12,9 @@ import random
 
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
-from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, OneOf, Compose, CMVN, Crop, SpecAugment, Reverb
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, OneOf, Compose, CMVN, Crop, SpecAugment, Reverb, Codec16kHzWithEffector, SpeedPerturbV3
 from kiwano.dataset import Segment, SegmentSet
-from kiwano.model import ResNetASVSpoof, IDRDScheduler, JeffreysLoss, MHFA
+from kiwano.model import MHFALarge
 
 import soundfile as sf
 
@@ -158,22 +158,25 @@ if __name__ == '__main__':
     musan.from_dict(Path(args.musan))
 
     musan_noise = musan.get_speaker("noise")
-
+    musan_music = musan.get_speaker("music")
 
     reverb = SegmentSet()
     reverb.from_dict(Path(args.rirs_noises))
 
+
     training_data = SpeakerTrainingSegmentSet(
                                     audio_transforms=OneOf( [
                                         Noise(musan_noise, snr_range=[0,15]),
+                                        Noise(musan_music, snr_range=[5,15]),
                                         Normal(),
+                                        Codec16kHzWithEffector(),
                                         Reverb(reverb)
                                     ] )
                                 )
 
 
     training_data.from_dict(Path(args.training_corpus))
-    training_data.truncate(min_duration=3.0, max_duration=200.0)
+    training_data.truncate(min_duration=2.2, max_duration=200.0)
     training_data.describe()
 
 
@@ -183,7 +186,8 @@ if __name__ == '__main__':
     iterator = iter(train_dataloader)
 
 
-    resnet_model = MHFA()
+    #resnet_model = MHFA("cache/models--microsoft--wavlm-base-plus/snapshots/4c66d4806a428f2e922ccfa1a962776e232d487b/")
+    resnet_model = MHFALarge("WavLM-Large.pt")
     #if args.checkpoint:
     #    resnet_model.load_state_dict(  checkpoint["model"]  )
     resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)
@@ -192,18 +196,11 @@ if __name__ == '__main__':
 
     resnet_model = torch.nn.parallel.DistributedDataParallel(resnet_model, device_ids=[gpu_id], find_unused_parameters=True) #, device_ids=[args.local_rank], output_device=args.local_rank)
 
-    #optimizer = torch.optim.Adam(resnet_model.parameters(), lr = 0.01, weight_decay = 0.001)
-    #optimizer = torch.optim.SGD(resnet_model.parameters(), lr = args.lr, momentum=0.9, weight_decay = args.weight_decay)
-    #optimizer = torch.optim.SGD(resnet_model.parameters(), lr = 0.001, momentum=0.9)
-    optimizer = torch.optim.AdamW(resnet_model.parameters(), lr = 0.0001, weight_decay = 0.1 )
+    optimizer = torch.optim.AdamW(resnet_model.parameters(), lr = 0.00002, weight_decay = 0.1 )
 
     if args.checkpoint:
         optimizer.load_state_dict( checkpoint["optimizer"] )
     criterion = torch.nn.CrossEntropyLoss()
-
-    #scheduler = WarmUpStepLR(optimizer, step_size = args.step_size, gamma = args.gamma, plateau = args.plateau)
-    #if args.checkpoint:
-    #    scheduler.step( checkpoint["epochs"] )
 
     running_loss = [np.nan for _ in range(500)]
 
@@ -213,7 +210,6 @@ if __name__ == '__main__':
         torch.distributed.barrier()
         for feats, iden in train_dataloader:
 
-            #feats = feats.unsqueeze(1)
 
             feats = feats.float().to(device)
             iden = iden.to(device)
@@ -223,10 +219,6 @@ if __name__ == '__main__':
 
             preds = resnet_model(feats, iden)
 
-
-            #print(torch.argmax(preds, dim=1))
-
-            #print("-----")
 
             loss = criterion(preds, iden)
 
@@ -246,8 +238,6 @@ if __name__ == '__main__':
                 print(msg)
 
             iterations += 1
-
-        #scheduler.step()
 
         if dist.get_rank() == 0:
             checkpoint = {
