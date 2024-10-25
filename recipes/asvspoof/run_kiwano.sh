@@ -18,4 +18,4 @@ export NCCL_ASYNC_ERROR_HANDLING=1
 module purge
 module load pytorch-gpu/py3/2.3.0
 
-srun python utils/train_mhfa_v4_large_noisy_lr.py  data/train_final/ exp/mhfa/
+srun python utils/train_mhfa.py  data/train_final/ exp/mhfa/
