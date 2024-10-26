@@ -30,9 +30,11 @@ def process_file(segment: Pathlike, sampling_frequency: int, out_data: Pathlike)
         proc = run(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         new_segment = output
 
+
     duration = str(round(float(get_duration(str(new_segment))),2))
     name = str(segment).split("/")[-1].split(".")[0]
     spkid = str(segment).split("/")[-3]
+
 
     return spkid+"_"+name, spkid, duration, new_segment
 
@@ -49,6 +51,7 @@ def prepare_rirs_noises(in_data: Pathlike, out_data: Pathlike, sampling_frequenc
     wav_lst = get_all_files(in_data, match_and=[".wav"], match_or=["mediumroom", "smallroom"])
 
 
+
     with ProcessPoolExecutor(num_jobs) as ex:
         futures = []
 
@@ -57,7 +60,7 @@ def prepare_rirs_noises(in_data: Pathlike, out_data: Pathlike, sampling_frequenc
             if room == "mediumroom" or room == "smallroom":
                 futures.append( ex.submit(process_file, segment, sampling_frequency, out_data) )
 
-        for future in tqdm(futures, total=len(futures), desc=f"Processing MUSAN..."):
+        for future in tqdm(futures, total=len(futures), desc=f"Processing RIRS NOISES..."):
             name, spkid, duration, segment = future.result()
             liste.write(f"{name} {spkid} {duration} {segment}\n")
 
@@ -75,8 +78,6 @@ if __name__ == '__main__':
             help='Number of parallel jobs (default: 30)')
     parser.add_argument('--downsampling', type=int, default=16000,
                         help='the value of sampling frequency (default: 16000)')
-
-
 
 
     args = parser.parse_args()
