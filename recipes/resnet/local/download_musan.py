@@ -13,7 +13,7 @@ MUSAN_PARTS_URL = [
     ["https://www.openslr.org/resources/17/musan.tar.gz", "0c472d4fc0c5141eca47ad1ffeb2a7df"],
 ]
 
-def download_musan(target_dir: Pathlike = ".", force_download: Optional[bool] = False, check_md5: Optional[bool] = False, jobs: int = 10):
+def download_musan(target_dir: Pathlike = ".", force_download: Optional[bool] = False, check_md5: Optional[bool] = False, num_jobs: int = 10):
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -41,8 +41,8 @@ def download_musan(target_dir: Pathlike = ".", force_download: Optional[bool] = 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--thread', type=int, default=10,
-            help='Number of parallel jobs (default: 10)')
+    parser.add_argument('--num_jobs', type=int, default=30,
+            help='Number of parallel jobs (default: 30)')
     parser.add_argument('--force_download', action='store_true', default=False,
             help='Force the download, overwriting existing files (default: False)')
     parser.add_argument('--check_md5', action='store_true', default=False,
@@ -53,5 +53,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    download_musan(args.target_dir, args.force_download, args.check_md5, args.thread)
+    download_musan(args.target_dir, args.force_download, args.check_md5, args.num_jobs)
 

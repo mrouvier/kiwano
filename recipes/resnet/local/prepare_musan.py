@@ -61,15 +61,15 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('in_data', metavar='in_data', type=str,
-                        help='the path to the target directory where the wav files are stored')
+                        help='Path to the target directory where the wav files are stored')
     parser.add_argument('out_data', metavar="out_data", type=str,
-                        help='the path to the target directory where the liste will be stored')
-    parser.add_argument('--thread', type=int, default=20,
-            help='Number of parallel jobs (default: 20)')
+                        help='Path to the target directory where the liste will be stored')
+    parser.add_argument('--num_jobs', type=int, default=30,
+            help='Number of parallel jobs (default: 30)')
     parser.add_argument('--downsampling', type=int, default=16000,
                         help='the value of sampling frequency (default: 16000)')
 
 
     args = parser.parse_args()
 
-    prepare_musan(args.in_data, args.out_data, args.downsampling, args.thread)
+    prepare_musan(args.in_data, args.out_data, args.downsampling, args.num_jobs)
