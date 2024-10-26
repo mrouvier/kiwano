@@ -7,14 +7,14 @@ stage=0
 if [ $stage -le 0 ]
 then
   python local/download_voxceleb1.py db/voxceleb1/
-  python local/prepare_voxceleb1.py db/voxceleb1/ data/voxceleb1/
+  python local/prepare_voxceleb1.py --vad --num_jobs 30 db/voxceleb1/ data/voxceleb1/
 fi
 
 #Prepare Voxceleb2
 if [ $stage -le 1 ]
 then
-  python local/download_voxceleb2.py db/voxceleb2/
-  python local/prepare_voxceleb2.py db/voxceleb2/ data/voxceleb2/
+  python local/download_voxceleb2.py --num_jobs 30 db/voxceleb2/
+  python local/prepare_voxceleb2.py --vad --num_jobs 30 db/voxceleb2/ data/voxceleb2/
 fi
 
 #Prepare MUSAN
