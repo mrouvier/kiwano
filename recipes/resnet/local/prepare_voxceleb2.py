@@ -49,7 +49,7 @@ def process_file(segment: Pathlike, out_data: Pathlike, sampling_frequency: int,
 
     sf.write(str(output), wav, sampling_frequency)
 
-    duration = wav.shape[0] / sampling_frequency
+    duration = round(wav.shape[0] / sampling_frequency, 2)
 
     return name, spkid, duration, output
 
