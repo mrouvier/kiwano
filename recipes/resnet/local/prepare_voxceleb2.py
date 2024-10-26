@@ -4,58 +4,63 @@ import sys
 import glob
 from kiwano.utils import Pathlike, get_all_files
 from pathlib import Path
+import torch
 import torchaudio
 import argparse
 from concurrent.futures import as_completed
 from concurrent.futures.process import ProcessPoolExecutor
 from tqdm import tqdm
 from subprocess import PIPE, run
+import numpy as np
+import soundfile as sf
 import os
 
+from silero_vad import load_silero_vad, read_audio, get_speech_timestamps, collect_chunks
 
-def get_duration(file_path: str):
-   info = torchaudio.info(file_path)
-   return info.num_frames/info.sample_rate
+model = load_silero_vad()
+
+def ffmpeg(file_path: Pathlike, sampling_frequency: int):
+    cmd = "ffmpeg -y -threads 1 -i "+str(file_path)+" -acodec pcm_s16le -ac 1 -ar "+str(sampling_frequency)+" -ab 48 -threads 1 -f wav -"
+    proc = run(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+    raw_audio = proc.stdout
+    audio_array = np.frombuffer(raw_audio, dtype=np.int16)
+    wav = torch.tensor(audio_array.astype(np.float32) / 32768.0)
+
+    return wav
 
 
-def process_file(segment: Pathlike, in_data: Pathlike, sampling_frequency: int ):
+def process_file(segment: Pathlike, out_data: Pathlike, sampling_frequency: int, vad: bool):
     name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
     spkid = str(segment).split("/")[-3]
     emission = str(segment).split("/")[-2]
     n = str(segment).split("/")[-1].split(".")[0]
 
-    nameDir = "wav"
-    if sampling_frequency != 16000 :
-        nameDir = nameDir+"_"+str(sampling_frequency)
-
-    out = Path(in_data / nameDir / spkid / emission)
+    out = Path(out_data / "wav" / spkid / emission)
     out.mkdir(parents=True, exist_ok=True)
 
-    output = str(Path(in_data / nameDir / spkid / emission / n)) + ".wav"
+    output = str(Path(out_data / "wav" / spkid / emission / n)) + ".wav"
 
-    if not Path(output).exists():
-        _process_file(segment, Path(output), sampling_frequency)
+    wav = ffmpeg(segment, sampling_frequency)
 
-    duration = str(round(float(get_duration(output)),2))
+    if vad:
+        speech_timestamps = get_speech_timestamps(wav, model, sampling_rate=sampling_frequency, threshold=0.6)
+        if len(speech_timestamps) > 0:
+            wav = collect_chunks(speech_timestamps, wav)
 
-    toolkitPath = Path("db") / "voxceleb2" / "wav" / spkid / emission / (n + ".wav")
+    sf.write(str(output), wav, sampling_frequency)
 
-    return name, spkid, duration, toolkitPath
+    duration = wav.shape[0] / sampling_frequency
 
-
-
-
+    return name, spkid, duration, output
 
 
-def prepare_voxceleb2(sampling_frequency: int, canDeleteZIP: bool, in_data: Pathlike = ".", out_data: Pathlike = ".", num_jobs: int = 20):
+
+
+def prepare_voxceleb2(in_data: Pathlike = ".", out_data: Pathlike = ".", sampling_frequency: int = 16000, delete_zip: bool = False, num_jobs: int = 30, vad: bool = False):
     out_data = Path(out_data)
     out_data.mkdir(parents=True, exist_ok=True)
 
-    nameListe = "liste"
-    if sampling_frequency != 16000:
-        nameListe = nameListe + "_" + str(sampling_frequency)
-
-    liste = open(out_data / nameListe, "w")
+    liste = open(out_data / "liste", "w")
 
     wav_lst = get_all_files(in_data / "dev" / "aac", match_and=[".m4a"])
 
@@ -63,7 +68,7 @@ def prepare_voxceleb2(sampling_frequency: int, canDeleteZIP: bool, in_data: Path
         futures = []
 
         for segment in wav_lst:
-            futures.append( ex.submit(process_file, segment, out_data, sampling_frequency) )
+            futures.append( ex.submit(process_file, segment, out_data, sampling_frequency, vad) )
 
         for future in tqdm( futures, total=len(futures), desc=f"Processing VoxCeleb2..."):
             name, spkid, duration, segment = future.result()
@@ -72,37 +77,28 @@ def prepare_voxceleb2(sampling_frequency: int, canDeleteZIP: bool, in_data: Path
 
     liste.close()
 
-    if canDeleteZIP :
+    if delete_zip:
         for file in sorted(in_data.glob("vox2_dev_aac_part*")):
-
             os.remove(file)
-
         os.remove(in_data / "vox2_aac.zip")
 
-
-
-
-
-
-def _process_file(file_path: Pathlike, output: Pathlike, sampling_frequency: int):
-    #ffmpeg -v 8 -i {segment} -f wav -acodec pcm_s16le - |
-    cmd = "ffmpeg -y -threads 1 -i "+str(file_path)+" -acodec pcm_s16le -ac 1 -ar "+str(sampling_frequency)+" -ab 48 -threads 1 "+str(output)
-    proc = run(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-
-    #audio = np.frombuffer(raw_audio, dtype=np.float32)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('in_data', metavar='in_data', type=str,
-                        help='the path to the directory where the directory "dev" is stored')
+                        help='Path to the directory where the directory "dev" is stored')
     parser.add_argument('out_data', metavar="out_data", type=str,
-                        help='the path to the target directory where the liste will be stored')
+                        help='Path to the target directory where the liste will be stored')
+    parser.add_argument('--num_jobs', type=int, default=30,
+                    help='Number of parallel jobs (default: 30)')
+    parser.add_argument('--vad', action='store_true', default=False,
+                    help='Apply VAD (default: False)')
     parser.add_argument('--downsampling', type=int, default=16000,
-                        help='the value of sampling frequency (default: 16000)')
-    parser.add_argument('--deleteZIP', action="store_true", default=False,
-                        help='to delete the ZIP files already extracted (default: False)')
+                        help='Downsampling frequency value (default: 16000)')
+    parser.add_argument('--delete_zip', action="store_true", default=False,
+                        help='Delete the already extracted ZIP files (default: False)')
 
     args = parser.parse_args()
 
-    prepare_voxceleb2(args.downsampling, args.deleteZIP, Path(args.in_data), Path(args.out_data), 20)
+    prepare_voxceleb2(Path(args.in_data), Path(args.out_data), args.downsampling, args.delete_zip, args.num_jobs, args.vad)

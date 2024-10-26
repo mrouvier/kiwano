@@ -25,7 +25,7 @@ VOXCELEB2_META_URL = [
     ["https://www.openslr.org/resources/49/vox2_meta.csv", "6090d767f8334733dfe4c6578fa725c2"]
 ]
 
-def download_voxceleb2(target_dir: Pathlike = ".", force_download: Optional[bool] = False, check_md5: Optional[bool] = False, jobs: int = 10):
+def download_voxceleb2(target_dir: Pathlike = ".", force_download: Optional[bool] = False, check_md5: Optional[bool] = False, num_jobs: int = 30):
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -45,7 +45,7 @@ def download_voxceleb2(target_dir: Pathlike = ".", force_download: Optional[bool
         copy_files(zip_path, target_dir, "vox2_dev_aac_part*")
 
         logging.info(f"Unzipping dev...")
-        parallel_unzip(zip_path, target_dir, jobs)
+        parallel_unzip(zip_path, target_dir, num_jobs)
 
         if check_md5:
             check_md5(target_dir, VOXCELEB2_PARTS_URL)
@@ -63,8 +63,8 @@ def download_voxceleb2(target_dir: Pathlike = ".", force_download: Optional[bool
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--thread', type=int, default=10,
-            help='Number of parallel jobs (default: 10)')
+    parser.add_argument('--num_jobs', type=int, default=30,
+            help='Number of parallel jobs (default: 30)')
     parser.add_argument('--force_download', action='store_true', default=False,
             help='Force the download, overwriting existing files (default: False)')
     parser.add_argument('--check_md5', action='store_true', default=False,
@@ -75,5 +75,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    download_voxceleb2(args.target_dir, args.force_download, args.check_md5, args.thread)
+    download_voxceleb2(args.target_dir, args.force_download, args.check_md5, args.num_jobs)
 
