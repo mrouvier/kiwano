@@ -631,6 +631,8 @@ class AMSMLoss(nn.Module):
     def reset_parameters(self):
         nn.init.xavier_uniform_(self.W)
 
+    def get_w(self):
+        return self.W
     
     def forward(self, input, label = None):
         # normalize features
@@ -1506,6 +1508,29 @@ class ResNetV2(nn.Module):
 
     def set_s(self, s):
         self.output.set_s(s)
+
+    def get_top_training_speaker(self, x):
+        x = self.preresnet(x)
+
+        x = self.temporal_pooling(x)
+
+        x = self.embedding(x)
+
+        x = F.normalize(x)
+
+        W = F.normalize(self.output.get_w())
+
+        logits = F.linear(x, W)
+
+        softmax_tensor = torch.nn.functional.softmax(tensor, dim=1)
+
+        sorted_tensor, _ = torch.sort(softmax_tensor, descending=False)
+
+        cumulative_sum = torch.cumsum(sorted_tensor, dim=1)
+
+        counts = x.shape[1] - (cumulative_sum > 0.8).float().argmax(dim=1) + 1
+
+        return count
 
     def forward(self, x, iden = None):
         x = self.preresnet(x)
