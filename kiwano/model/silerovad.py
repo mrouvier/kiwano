@@ -1,3 +1,9 @@
+import torch
+from torch import Tensor
+from typing import Tuple
+import torch.nn as nn
+
+
 class SileroVadModel(torch.nn.Module):
     def __init__(self):
         super(SileroVadModel, self).__init__()
