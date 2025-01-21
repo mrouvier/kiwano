@@ -1524,7 +1524,7 @@ class ResNetV2(nn.Module):
 
         softmax_tensor = torch.nn.functional.softmax(tensor, dim=1)
 
-        sorted_tensor, _ = torch.sort(softmax_tensor, descending=False)
+        sorted_tensor, _ = torch.sort(softmax_tensor, descending=True)
 
         cumulative_sum = torch.cumsum(sorted_tensor, dim=1)
 
