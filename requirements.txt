@@ -7,3 +7,5 @@ setuptools~=65.5.1
 torchaudio~=2.0.2
 transformers~=4.46.1
 silero_vad~=5.1.2
+idr_torch~=2.2.0
+accelerate~=0.33.0
