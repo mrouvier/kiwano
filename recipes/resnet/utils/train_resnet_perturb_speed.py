@@ -162,7 +162,7 @@ if __name__ == '__main__':
 
     resnet_model = ResNetV2(num_classes=18000)
     if args.checkpoint:
-        resnet_model.load_state_dict(  checkpoint["model"]  )
+        resnet_model.load_state_dict(  checkpoint["model"], map_location=torch.device("cpu")  )
     resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)
     resnet_model.to(device)
 

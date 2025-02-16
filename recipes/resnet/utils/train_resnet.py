@@ -94,7 +94,7 @@ if __name__ == '__main__':
     print("#")
 
     if args.checkpoint:
-        checkpoint = torch.load(args.checkpoint, map_location={"cuda" : "cpu"})
+        checkpoint = torch.load(args.checkpoint, map_location=torch.device("cpu"))
 
 
     epochs_start = 0
