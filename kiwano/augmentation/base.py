@@ -811,11 +811,14 @@ class CMVN(Augmentation):
     >>> output_tensor.shape
     torch.Size([100, 40])
     """
-    def __init__(self, norm_means=True, norm_vars=False):
+    def __init__(self, norm_means: bool = True, norm_vars: bool = False) -> None:
         self.norm_means = norm_means
         self.norm_vars = norm_vars
 
-    def __call__(self, tensor: torch.Tensor):
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
         if self.norm_means == True:
             tensor = tensor - tensor.mean(dim=0)
+        if self.norm_vars:
+            std = tensor.std(dim=0).clamp(min=1e-8)
+            tensor = tensor / std
         return tensor
