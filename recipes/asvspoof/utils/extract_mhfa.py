@@ -11,7 +11,7 @@ from torch import nn
 
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
-from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, OneOf, Compose, CMVN, Crop
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.model import Conformer, MHFALarge #ResNetASVSpoof, ResNetShakeShakeASVSpoof, MHFA, MHFA_HF, MHFALarge
 from kiwano.embedding import EmbeddingSet, write_pkl

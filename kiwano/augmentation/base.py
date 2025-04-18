@@ -102,33 +102,6 @@ class Compose(Pipeline):
             return tensor, sample_rate
 
 
-class Sometimes(Pipeline):
-    def __call__(self, *args):
-        transform = random.choice(self.transforms)
-        if len(args) == 1:
-            tensor = args[0]
-            return transform(tensor)
-        else:
-            tensor = args[0]
-            sample_rate = args[1]
-            return transform(tensor, sample_rate)
-
-
-class Linear(Pipeline):
-    def __call__(self, *args):
-        if len(args) == 1:
-            tensor = args[0]
-            for transform in self.transforms:
-                tensor = transform(tensor)
-            return tensor
-        else:
-            tensor = args[0]
-            sample_rate = args[1]
-            for transform in self.transforms:
-                tensor, sample_rate = transform(tensor, sample_rate)
-            return tensor, sample_rate
-
-
 
 class SpeedPerturbV3(Augmentation):
     def __init__(self, factor: List[float]) -> None:

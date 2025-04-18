@@ -11,7 +11,7 @@ from torch import nn
 
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
-from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop, SpecAugment, Reverb
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Compose, OneOf, CMVN, Crop, SpecAugment, Reverb
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.model import ResNet, SpkScheduler
 
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
 
     training_data = SpeakerTrainingSegmentSet(
-                                    audio_transforms=Sometimes( [
+                                    audio_transforms=OneOf( [
                                         Noise(musan_music, snr_range=[5,15]),
                                         Noise(musan_speech, snr_range=[13,20]),
                                         Noise(musan_noise, snr_range=[0,15]),
@@ -74,7 +74,7 @@ if __name__ == '__main__':
                                         Reverb(reverb)
                                     ] ),
                                     feature_extractor=Fbank(),
-                                    feature_transforms=Linear( [
+                                    feature_transforms=Compose( [
                                         CMVN(),
                                         Crop(350),
                                         SpecAugment(),

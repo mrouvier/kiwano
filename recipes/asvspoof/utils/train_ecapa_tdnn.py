@@ -7,7 +7,7 @@ import sys
 import torch
 from torch.utils.data import DataLoader
 
-from kiwano.augmentation import Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
+from kiwano.augmentation import Noise, Codec, Filtering, Normal, Compose, OneOf, CMVN, Crop
 from kiwano.dataset import SegmentSet
 from kiwano.features import Fbank
 from kiwano.model import ECAPAModel
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     musan_noise = musan.get_speaker("noise")
 
     training_data = SpeakerTrainingSegmentSet(
-        audio_transforms=Sometimes([
+        audio_transforms=OneOf([
             Noise(musan_music, snr_range=[5, 15]),
             Noise(musan_speech, snr_range=[13, 20]),
             Noise(musan_noise, snr_range=[0, 15]),
@@ -32,7 +32,7 @@ if __name__ == '__main__':
             Normal()
         ]),
         feature_extractor=Fbank(),
-        feature_transforms=Linear([
+        feature_transforms=Compose([
             CMVN(),
             Crop(300)
         ]),

@@ -11,7 +11,7 @@ from torch import nn
 
 from kiwano.utils import Pathlike
 from kiwano.features import Fbank
-from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Sometimes, Linear, CMVN, Crop
+from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, Compose, OneOf, CMVN, Crop
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.model import ResNetASVSpoof, ResNetShakeShakeASVSpoof
 from kiwano.embedding import EmbeddingSet, write_pkl
@@ -101,7 +101,7 @@ if __name__ == '__main__':
 
     extracting_data = SpeakerExtractingSegmentSet(
                                     feature_extractor=Fbank(),
-                                    feature_transforms=Linear( [
+                                    feature_transforms=Compose( [
                                         CMVN(),
                                         Crop(1400, random=False),
                                     ] ),
