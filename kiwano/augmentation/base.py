@@ -8,7 +8,7 @@ import copy
 
 from kiwano.dataset import SegmentSet
 
-from typing import List
+from typing import List, Tuple
 
 from scipy import signal
 
@@ -131,10 +131,10 @@ class Linear(Pipeline):
 
 
 class SpeedPerturbV3(Augmentation):
-    def __init__(self, factor: List[float]):
+    def __init__(self, factor: List[float]) -> None:
         self.factor = factor
 
-    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, int]:
         r = random.choice(self.factor)
         wav, _ = torchaudio.sox_effects.apply_effects_tensor(tensor.unsqueeze(0), sample_rate, [['speed', str(r)], ["rate", str(sample_rate)]])
         return wav[0], sample_rate
@@ -170,20 +170,20 @@ class SpeedPerturb(Augmentation):
     >>> augmented_tensor.shape
     torch.Size([...])  # varies depending on speed factor
     """
-    def __init__(self, factor: float):
+    def __init__(self, factor: float) -> None:
         self.factor = factor
 
-    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, int]:
         wav, _ = torchaudio.sox_effects.apply_effects_tensor(tensor.unsqueeze(0), sample_rate, [['speed', str(self.factor)], ["rate", str(sample_rate)]])
         return wav[0], sample_rate
 
 
 
 class SpeedPerturbV2(Augmentation):
-    def __init__(self, factor: float):
+    def __init__(self, factor: float) -> None:
         self.factor = factor
 
-    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, int]:
         old_length = tensor.shape[0]
         new_length = int(old_length / self.factor)
         old_indices = torch.arange(old_length)
@@ -223,7 +223,7 @@ class Normal(Augmentation):
     >>> sr == out_sr
     True
     """
-    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, int]:
         return tensor, sample_rate
 
 
@@ -258,12 +258,12 @@ class B12Attack(Augmentation):
     >>> augmented_audio.shape
     torch.Size([...])
     """
-    def __init__(self, mu: float = 8e-2, sigma2: float = 2.5e-5, amplitude_threshold: float = 5e-2):
+    def __init__(self, mu: float = 8e-2, sigma2: float = 2.5e-5, amplitude_threshold: float = 5e-2) -> None:
         self.mu = mu
         self.sigma2 = sigma2
         self.amplitude_threshold = amplitude_threshold
 
-    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, int]:
         total_samples = tensor.shape[0]
 
         mu_samples = int(self.mu * sample_rate)
@@ -317,12 +317,12 @@ class Noise(Augmentation):
     >>> augmented.shape
     torch.Size([16000])
     """
-    def __init__(self, segs: SegmentSet, snr_range: List[int]):
+    def __init__(self, segs: SegmentSet, snr_range: List[int]) -> None:
         self.segs = segs
         # self.segs.load_audio()
         self.snr_range = snr_range
 
-    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, int]:
         snr_db = random.randint(self.snr_range[0], self.snr_range[1])
         rnd = self.segs.get_random()
         noise_tensor, noise_sample_rate = rnd.load_audio()
@@ -542,10 +542,10 @@ class SignFlip(Augmentation):
     >>> sr
     16000
     """
-    def __init__(self, flip_prob=0.5):
+    def __init__(self, flip_prob:float = 0.5) -> None:
         self.flip_prob = flip_prob
 
-    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, int]:
         if torch.rand(1).item() < self.flip_prob:
             return -tensor, sample_rate
 
@@ -578,11 +578,11 @@ class Reverb(Augmentation):
     >>> augmented_audio.shape
     torch.Size([16000])
     """
-    def __init__(self, segs: SegmentSet):
+    def __init__(self, segs: SegmentSet) -> None:
         self.segs = segs
         self.rir_scaling_factor = 0.5**15
 
-    def __call__(self, tensor: torch.Tensor, sample_rate: int):
+    def __call__(self, tensor: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, int]:
         reverb_tensor, reverb_sample_rate = self.segs.get_random().load_audio()
         size = len(tensor)
 
@@ -622,6 +622,9 @@ class VAD(Augmentation):
     frame is made using the energy of neighboring frames and a proportion
     threshold.
 
+    Reference: The Kaldi speech recognition toolkit
+    Povey et al., https://github.com/kaldi-asr/kaldi/blob/master/src/ivector/voice-activity-detection.cc
+
     Arguments
     ---------
     vad_energy_threshold : float
@@ -642,14 +645,14 @@ class VAD(Augmentation):
     >>> voiced_tensor.shape
     torch.Size([N, 1])  # N <= 100, depending on detected speech frames
     """
-    def __init__(self, vad_energy_threshold=-12.0, vad_energy_mean_scale=0.3, vad_frames_context=2, vad_proportion_threshold=0.3):
+    def __init__(self, vad_energy_threshold:float = -12.0, vad_energy_mean_scale:float = 0.3, vad_frames_context:int = 2, vad_proportion_threshold:float = 0.3) -> None:
         self.vad_energy_threshold = vad_energy_threshold
         self.vad_energy_mean_scale = vad_energy_mean_scale
         self.vad_frames_context = vad_frames_context
         self.vad_proportion_threshold = vad_proportion_threshold
 
 
-    def __call__(self, tensor: torch.Tensor):
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
         T = tensor.size(0)
         output_voiced = torch.zeros(T)
 
@@ -701,11 +704,11 @@ class Crop(Augmentation):
     >>> out_tensor.shape
     torch.Size([50, 80])
     """
-    def __init__(self, duration: int, random = True):
+    def __init__(self, duration: int, random:bool = True) -> None:
         self.duration = duration
         self.random = random
 
-    def __call__(self, tensor: torch.Tensor):
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
         if self.random == True:
             if tensor.shape[0] < self.duration:
                 n = math.ceil( self.duration / tensor.shape[0]  )
@@ -759,14 +762,14 @@ class SpecAugment(Augmentation):
     >>> augmented.shape
     torch.Size([100, 80])
     """
-    def __init__(self,  num_t_mask=1, num_f_mask=1, max_t=10, max_f=8, prob=0.6):
+    def __init__(self,  num_t_mask:int = 1, num_f_mask:int = 1, max_t:int = 10, max_f:int = 8, prob:float = 0.6) -> None:
         self.num_t_mask = num_t_mask
         self.num_f_mask = num_f_mask
         self.max_t = max_t
         self.max_f = max_f
         self.prob = prob
 
-    def __call__(self, tensor: torch.Tensor):
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
         if random.random() < self.prob:
                 max_frames, max_freq = tensor.shape
 
