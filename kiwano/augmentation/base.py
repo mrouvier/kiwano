@@ -21,8 +21,69 @@ class Augmentation:
 
 
 class Pipeline:
-    def __init__(self, transforms: List[Augmentation]):
+    def __init__(self, transforms: List[Augmentation]) -> None:
         self.transforms = transforms
+
+
+
+class SomeOf(Pipeline):
+    """
+    This class implements a randomized transformation pipeline that applies
+    a subset of the provided augmentations.
+
+    At each call, a random number of transformations (specified by an integer
+    or a range) is applied to the input data. The transformations are chosen
+    randomly from the list without replacement.
+
+    Arguments
+    ---------
+    num_transforms : int or tuple
+        If an integer, exactly that many transforms are applied.
+        If a tuple of (min, max), a random number between min and max (inclusive)
+        is used to select how many transforms to apply.
+    transforms : list of Augmentation
+        A list of callable augmentation objects to be sampled and applied.
+
+    Example
+    -------
+    >>> transform1 = Normal()
+    >>> transform2 = Normal()
+    >>> aug = SomeOf(num_transforms=(1, 2), transforms=[transform1, transform2])
+    >>> x = torch.randn(40, 100)
+    >>> x_aug = aug(x)
+
+    >>> # If transforms require sample rate as well
+    >>> x = torch.randn(1, 16000)
+    >>> sr = 16000
+    >>> x_aug, sr_aug = aug(x, sr)
+    """
+    def __init__(self, num_transforms: int or Tuple, transforms: List[Augmentation]) -> None:
+        self.num_transforms = num_transforms
+        self.transforms = transforms
+
+    def __call__(self, *args):
+        if type(self.num_transforms) == tuple:
+            if len(self.num_transforms) == 1:
+                num_transforms_to_apply = random.randint( self.num_transforms[0], len(self.transforms) )
+            else:
+                num_transforms_to_apply = random.randint( self.num_transforms[0], self.num_transforms[1] )
+        else:
+            num_transforms_to_apply = self.num_transforms
+
+        all_transforms_indexes = list(range(len(self.transforms)))
+        transform_indexes = sorted( random.sample(all_transforms_indexes, num_transforms_to_apply) )
+
+        if len(args) == 1: 
+            tensor = args[0]
+            for transform_index in transform_indexes:
+                tensor = self.transforms[transform_index](tensor)
+            return tensor
+        else:
+            tensor = args[0]
+            sample_rate = args[1]
+            for transform_index in transform_indexes:
+                tensor, sample_rate = self.transforms[transform_index](tensor, sample_rate)
+            return tensor, sample_rate
 
 
 
