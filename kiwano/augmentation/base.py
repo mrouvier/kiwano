@@ -27,6 +27,26 @@ class Pipeline:
 
 
 class OneOf(Pipeline):
+    """
+    This class implements a pipeline that randomly selects one transform from a list
+    and applies it to the input.
+
+    This is useful in data augmentation scenarios where you want to apply one of
+    several possible transformations to the input data with equal probability.
+
+    Arguments
+    ---------
+    transforms : list
+        A list of Augementation transforms. Each transform should accept either one or two arguments,
+        depending on the context (e.g., with or without sample rate).
+
+    Example
+    -------
+    >>> transform1 = SpeedPerturb()
+    >>> transform2 = Normal()
+    >>> pipeline = OneOf(transforms=[transform1, transform2])
+    >>> result = pipeline(torch.tensor([1.0]))
+    """
     def __call__(self, *args):
         transform = random.choice(self.transforms)
         if len(args) == 1:
@@ -39,6 +59,35 @@ class OneOf(Pipeline):
 
 
 class Compose(Pipeline):
+    """
+    This class implements a transformation composition module for
+    audio or tensor data preprocessing.
+
+    It applies a sequence of transformations defined in the pipeline to the input.
+    This is typically used to build complex preprocessing steps by combining
+    multiple transform operations.
+
+    Arguments
+    ---------
+    transforms : list
+        A list of transformation functions or modules to apply sequentially.
+        Each transform should support either one or two arguments depending on the mode.
+
+    Usage
+    -----
+    If a single tensor is passed, each transform should accept and return a tensor.
+    If both tensor and sample rate are passed, each transform should accept and return
+    a tuple (tensor, sample_rate).
+
+    Example
+    -------
+    >>> transforms = [Normalize(), Resample(16000)]
+    >>> pipeline = Compose(transforms)
+    >>> waveform = torch.rand([1, 16000])
+    >>> output = pipeline(waveform)
+    >>> waveform, sample_rate = torch.rand([1, 16000]), 16000
+    >>> output_waveform, output_sr = pipeline(waveform, sample_rate)
+    """
     def __call__(self, *args):
         if len(args) == 1:
             tensor = args[0]
@@ -93,6 +142,34 @@ class SpeedPerturbV3(Augmentation):
 
 
 class SpeedPerturb(Augmentation):
+    """
+    This class implements speed perturbation as a data augmentation method
+    for audio processing tasks.
+
+    Speed perturbation modifies the playback speed of an audio signal,
+    thereby altering its temporal properties without affecting the pitch
+    when followed by a rate correction. This technique is commonly used
+    to improve robustness and generalization in speech models.
+
+    Reference: Speaker Augmentation and Bandwidth Extension for Deep Speaker Embedding,
+    Yamamoto et al., https://www.isca-archive.org/interspeech_2019/yamamoto19_interspeech.html
+
+    Arguments
+    ---------
+    factor : float
+        The factor by which the speed is perturbed. A value > 1.0 increases
+        speed (shorter duration), while a value < 1.0 decreases speed
+        (longer duration).
+
+    Example
+    -------
+    >>> audio_tensor = torch.rand([16000])  # 1 second of dummy audio at 16kHz
+    >>> sample_rate = 16000
+    >>> augmenter = SpeedPerturb(factor=1.1)
+    >>> augmented_tensor, new_sample_rate = augmenter(audio_tensor, sample_rate)
+    >>> augmented_tensor.shape
+    torch.Size([...])  # varies depending on speed factor
+    """
     def __init__(self, factor: float):
         self.factor = factor
 
@@ -101,13 +178,6 @@ class SpeedPerturb(Augmentation):
         return wav[0], sample_rate
 
 
-class SpeedPerturb(Augmentation):
-    def __init__(self, factor: float):
-        self.factor = factor
-
-    def __call__(self, tensor: torch.Tensor, sample_rate: int):
-        wav, _ = torchaudio.sox_effects.apply_effects_tensor(tensor.unsqueeze(0), sample_rate, [['speed', str(self.factor)], ["rate", str(sample_rate)]])
-        return wav[0], sample_rate
 
 class SpeedPerturbV2(Augmentation):
     def __init__(self, factor: float):
@@ -123,6 +193,36 @@ class SpeedPerturbV2(Augmentation):
 
 
 class Normal(Augmentation):
+    """
+    This class implements a no-op (identity) audio augmentation that returns 
+    the input tensor unchanged. It serves as a placeholder or default 
+    augmentation in audio processing pipelines.
+
+    Arguments
+    ---------
+    tensor : torch.Tensor
+        Input audio tensor to be returned as-is.
+    sample_rate : int
+        Sampling rate of the input audio (unused in this operation).
+
+    Returns
+    -------
+    tensor : torch.Tensor
+        The same input tensor.
+    sample_rate : int
+        The same input sample rate.
+
+    Example
+    -------
+    >>> aug = Normal()
+    >>> waveform = torch.rand([1, 16000])
+    >>> sr = 16000
+    >>> out_tensor, out_sr = aug(waveform, sr)
+    >>> torch.equal(waveform, out_tensor)
+    True
+    >>> sr == out_sr
+    True
+    """
     def __call__(self, tensor: torch.Tensor, sample_rate: int):
         return tensor, sample_rate
 
@@ -130,6 +230,34 @@ class Normal(Augmentation):
 
 
 class B12Attack(Augmentation):
+    """
+    This class implements the B12Attack augmentation technique, which 
+    randomly segments and shuffles parts of an audio signal.
+
+    This method retains only the segments with sufficient energy 
+    (based on an amplitude threshold), and then randomly permutes them 
+    to generate a new augmented version of the signal.
+
+    Reference: Data augmentations for audio deepfake detection for the ASVspoof5 closed condition,
+    Duroselle et al., https://hal.science/hal-04770832/
+
+    Arguments
+    ---------
+    mu : float
+        Mean duration (in seconds) of each audio segment (default: 8e-2).
+    sigma2 : float
+        Variance of the segment duration (default: 2.5e-5).
+    amplitude_threshold : float
+        Minimum average amplitude for a segment to be retained (default: 5e-2).
+
+    Example
+    -------
+    >>> audio = torch.randn(16000)  # 1 second of audio at 16 kHz
+    >>> aug = B12Attack(mu=0.08, sigma2=2.5e-5, amplitude_threshold=0.05)
+    >>> augmented_audio, sr = aug(audio, sample_rate=16000)
+    >>> augmented_audio.shape
+    torch.Size([...])
+    """
     def __init__(self, mu: float = 8e-2, sigma2: float = 2.5e-5, amplitude_threshold: float = 5e-2):
         self.mu = mu
         self.sigma2 = sigma2
@@ -164,6 +292,31 @@ class B12Attack(Augmentation):
 
 
 class Noise(Augmentation):
+    """
+    This class implements an additive noise augmentation for audio data,
+    simulating a desired Signal-to-Noise Ratio (SNR).
+
+    This augmentation randomly selects a noise segment from a predefined 
+    `SegmentSet`, and mixes it with the input audio at a random SNR level 
+    within the provided range. If necessary, the noise is repeated or 
+    trimmed to match the length of the input signal.
+
+    Arguments
+    ---------
+    segs : SegmentSet
+        A collection of noise audio segments to sample from.
+    snr_range : List[int]
+        A range of possible SNR values in dB (e.g., [5, 20]).
+
+    Example
+    -------
+    >>> segs = SegmentSet("/path/to/noise_segments")
+    >>> noise_aug = Noise(segs=segs, snr_range=[10, 20])
+    >>> waveform = torch.randn(16000)  # 1 second of dummy audio at 16kHz
+    >>> augmented, sr = noise_aug(waveform, 16000)
+    >>> augmented.shape
+    torch.Size([16000])
+    """
     def __init__(self, segs: SegmentSet, snr_range: List[int]):
         self.segs = segs
         # self.segs.load_audio()
@@ -363,6 +516,32 @@ class MediaMP3(Augmentation):
 
 
 class SignFlip(Augmentation):
+    """
+    This class implements a simple data augmentation technique that randomly 
+    flips the sign of a given tensor based on a specified probability.
+
+    It is commonly used in audio and signal processing tasks to improve 
+    the robustness of models by introducing variability in the training data.
+
+    Reference: CADDA: Class-wise Automatic Differentiable Data Augmentation for EEG Signals
+    Rommel et al., https://arxiv.org/abs/2106.13695
+
+    Arguments
+    ---------
+    flip_prob : float
+        Probability of flipping the sign of the input tensor (default: 0.5).
+
+    Example
+    -------
+    >>> tensor = torch.tensor([1.0, -2.0, 3.0])
+    >>> sample_rate = 16000
+    >>> aug = SignFlip(flip_prob=1.0)
+    >>> flipped_tensor, sr = aug(tensor, sample_rate)
+    >>> flipped_tensor
+    tensor([-1.0, 2.0, -3.0])
+    >>> sr
+    16000
+    """
     def __init__(self, flip_prob=0.5):
         self.flip_prob = flip_prob
 
@@ -375,6 +554,30 @@ class SignFlip(Augmentation):
 
 
 class Reverb(Augmentation):
+    """
+    This class applies reverberation-based audio augmentation using
+    Room Impulse Response (RIR) convolution.
+
+    The augmentation convolves input audio with a randomly selected
+    RIR from a provided segment set, simulating reverberant environments
+    for robust audio processing tasks.
+
+    Arguments
+    ---------
+    segs : SegmentSet
+        A set of audio segments (RIRs) from which one is randomly chosen
+        to apply reverberation.
+
+    Example
+    -------
+    >>> segs = SegmentSet(...)
+    >>> reverb_aug = Reverb(segs)
+    >>> audio_tensor = torch.rand(16000)
+    >>> sample_rate = 16000
+    >>> augmented_audio, new_sr = reverb_aug(audio_tensor, sample_rate)
+    >>> augmented_audio.shape
+    torch.Size([16000])
+    """
     def __init__(self, segs: SegmentSet):
         self.segs = segs
         self.rir_scaling_factor = 0.5**15
@@ -384,9 +587,6 @@ class Reverb(Augmentation):
         size = len(tensor)
 
         power_before = torch.dot(tensor, tensor) / len(tensor)
-
-        #tensor = convolve1d(tensor, reverb_tensor)
-        #tensor = torch.Tensor(signal.convolve(tensor, reverb_tensor, mode='full')[:len(tensor)])
 
         tensor = torch.Tensor(signal.convolve(tensor, reverb_tensor, mode='full')[:size])
         power_after = torch.dot(tensor, tensor) / size
@@ -413,6 +613,35 @@ class Filtering(Augmentation):
 
 
 class VAD(Augmentation):
+    """
+    This class implements a simple Voice Activity Detection (VAD) module
+    based on energy thresholding.
+
+    The algorithm determines which frames of an audio signal contain speech
+    by comparing the log energy to a dynamic threshold. The decision for each
+    frame is made using the energy of neighboring frames and a proportion
+    threshold.
+
+    Arguments
+    ---------
+    vad_energy_threshold : float
+        Base energy threshold below which a frame is considered silent (default: -12.0).
+    vad_energy_mean_scale : float
+        Factor to adjust threshold based on mean energy of the input (default: 0.3).
+    vad_frames_context : int
+        Number of frames before and after to consider in the local window (default: 2).
+    vad_proportion_threshold : float
+        Minimum proportion of frames in the window that must be below threshold
+        to classify a frame as non-speech (default: 0.3).
+
+    Example
+    -------
+    >>> tensor = torch.randn(100, 1)  # Simulated log-energy signal
+    >>> vad = VAD()
+    >>> voiced_tensor = vad(tensor)
+    >>> voiced_tensor.shape
+    torch.Size([N, 1])  # N <= 100, depending on detected speech frames
+    """
     def __init__(self, vad_energy_threshold=-12.0, vad_energy_mean_scale=0.3, vad_frames_context=2, vad_proportion_threshold=0.3):
         self.vad_energy_threshold = vad_energy_threshold
         self.vad_energy_mean_scale = vad_energy_mean_scale
@@ -449,6 +678,29 @@ class VAD(Augmentation):
 
 
 class Crop(Augmentation):
+    """
+    This class implements a time-based cropping augmentation for input tensors.
+
+    The augmentation extracts a segment of a fixed duration from the input tensor,
+    either randomly or deterministically from the beginning. If the input tensor is 
+    shorter than the desired duration, it is repeated to meet the required length.
+
+    Arguments
+    ---------
+    duration : int
+        Target duration (number of time steps) to crop from the input tensor.
+    random : bool, optional
+        If True, crop a random segment from the tensor. If False, crop from the beginning.
+        Default is True.
+
+    Example
+    -------
+    >>> tensor = torch.rand([100, 80])
+    >>> aug = Crop(duration=50)
+    >>> out_tensor = aug(tensor)
+    >>> out_tensor.shape
+    torch.Size([50, 80])
+    """
     def __init__(self, duration: int, random = True):
         self.duration = duration
         self.random = random
@@ -475,6 +727,38 @@ class Crop(Augmentation):
 
 
 class SpecAugment(Augmentation):
+    """
+    This class implements the SpecAugment data augmentation technique
+    for audio spectrograms.
+
+    SpecAugment applies random time and frequency masking to the input
+    spectrogram to improve model robustness and generalization, particularly
+    in speech recognition tasks.
+
+    Reference: SpecAugment: A Simple Data Augmentation Method for Automatic Speech Recognition,
+    Park et al., https://arxiv.org/abs/1904.08779
+
+    Arguments
+    ---------
+    num_t_mask : int
+        Number of time masks to apply.
+    num_f_mask : int
+        Number of frequency masks to apply.
+    max_t : int
+        Maximum width of each time mask (in frames).
+    max_f : int
+        Maximum width of each frequency mask (in bins).
+    prob : float
+        Probability of applying augmentation (default: 0.6).
+
+    Example
+    -------
+    >>> spectrogram = torch.randn([100, 80])  # [time, frequency]
+    >>> aug = SpecAugment(num_t_mask=2, num_f_mask=2, max_t=20, max_f=10, prob=1.0)
+    >>> augmented = aug(spectrogram)
+    >>> augmented.shape
+    torch.Size([100, 80])
+    """
     def __init__(self,  num_t_mask=1, num_f_mask=1, max_t=10, max_f=8, prob=0.6):
         self.num_t_mask = num_t_mask
         self.num_f_mask = num_f_mask
@@ -504,6 +788,29 @@ class SpecAugment(Augmentation):
 
 
 class CMVN(Augmentation):
+    """
+    This class implements Cepstral Mean and Variance Normalization (CMVN)
+    as an audio/data augmentation technique.
+
+    CMVN is commonly used to normalize features like Mel-spectrograms or
+    MFCCs by removing mean (and optionally variance) across time, which 
+    helps reduce speaker and channel variability.
+
+    Arguments
+    ---------
+    norm_means : bool
+        If True, subtracts the mean across time dimension (default: True).
+    norm_vars : bool
+        If True, normalizes by the standard deviation (not implemented here) (default: False).
+
+    Example
+    -------
+    >>> cmvn = CMVN(norm_means=True, norm_vars=False)
+    >>> input_tensor = torch.rand([100, 40])  # 100 time frames, 40 features
+    >>> output_tensor = cmvn(input_tensor)
+    >>> output_tensor.shape
+    torch.Size([100, 40])
+    """
     def __init__(self, norm_means=True, norm_vars=False):
         self.norm_means = norm_means
         self.norm_vars = norm_vars
