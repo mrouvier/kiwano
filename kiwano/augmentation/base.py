@@ -103,17 +103,6 @@ class Compose(Pipeline):
 
 
 
-class SpeedPerturbV3(Augmentation):
-    def __init__(self, factor: List[float]) -> None:
-        self.factor = factor
-
-    def __call__(self, tensor: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, int]:
-        r = random.choice(self.factor)
-        wav, _ = torchaudio.sox_effects.apply_effects_tensor(tensor.unsqueeze(0), sample_rate, [['speed', str(r)], ["rate", str(sample_rate)]])
-        return wav[0], sample_rate
-
-
-
 class SpeedPerturb(Augmentation):
     """
     This class implements speed perturbation as a data augmentation method
@@ -150,19 +139,6 @@ class SpeedPerturb(Augmentation):
         wav, _ = torchaudio.sox_effects.apply_effects_tensor(tensor.unsqueeze(0), sample_rate, [['speed', str(self.factor)], ["rate", str(sample_rate)]])
         return wav[0], sample_rate
 
-
-
-class SpeedPerturbV2(Augmentation):
-    def __init__(self, factor: float) -> None:
-        self.factor = factor
-
-    def __call__(self, tensor: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, int]:
-        old_length = tensor.shape[0]
-        new_length = int(old_length / self.factor)
-        old_indices = torch.arange(old_length)
-        new_indices = torch.linspace(0, old_length, new_length)
-        a = nn.functional.interpolate(tensor.flatten()[None,None,:], size=new_length, mode='linear', align_corners=True).flatten()
-        return a, sample_rate
 
 
 class Normal(Augmentation):
@@ -403,47 +379,6 @@ class Codec(Augmentation):
         speech = torchaudio.functional.apply_codec(tensor.unsqueeze(0), sample_rate, **param)
 
         return speech[0], sample_rate
-
-
-_NEXT_FAST_LEN = {}
-
-def next_fast_len(size):
-    try:
-        return _NEXT_FAST_LEN[size]
-    except KeyError:
-        pass
-
-    assert isinstance(size, int) and size > 0
-    next_size = size
-    while True:
-        remaining = next_size
-        for n in (2, 3, 5):
-            while remaining % n == 0:
-                remaining //= n
-        if remaining == 1:
-            _NEXT_FAST_LEN[size] = next_size
-            return next_size
-        next_size += 1
-
-
-
-def convolve1d(signal: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
-    assert (
-            signal.ndim == 1 and kernel.ndim == 1
-            ), "signal and kernel must be 1-dimensional"
-    m = signal.size(-1)
-    n = kernel.size(-1)
-
-    # Compute convolution using fft.
-    padded_size = m + n - 1
-    # Round up for cheaper fft.
-    fast_ftt_size = next_fast_len(padded_size)
-    f_signal = rfft(signal, n=fast_ftt_size)
-    f_kernel = rfft(kernel, n=fast_ftt_size)
-    f_result = f_signal * f_kernel
-    result = irfft(f_result, n=fast_ftt_size)
-
-    return result[:padded_size]
 
 
 class MediaG722(Augmentation):

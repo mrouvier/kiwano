@@ -33,7 +33,6 @@ class Segment():
 
     def perturb_speed(self, factor: float):
 
-        #self.augmentation = SpeedPerturbV2(factor)
         self.augmentation = factor
         self.duration /= factor
         self.spkid = "speed"+str(factor)+"_"+self.spkid
