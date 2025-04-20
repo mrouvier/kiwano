@@ -1,6 +1,8 @@
+# isort: skip_file
+
+from .resnet import *
 from .automodel import *
 from .loss import *
 from .MHFA import *
-from .resnet import *
 from .schedulers import *
 from .silerovad import *
