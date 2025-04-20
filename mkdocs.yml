@@ -2,3 +2,4 @@ site_name: Kiwano
 nav:
   - Home: index.md
   - Getting started: getting_started.md
+  - Managing Segments, Features \& Augmentation: notebook_segments.md
