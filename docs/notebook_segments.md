@@ -235,7 +235,7 @@ training_data = SpeakerTrainingSegmentSet(
         [
             AirAbsorption(),
             AddGaussianNoise(),
-			ClippingDistortion(),
+            ClippingDistortion(),
             Normal(),
         ]
     ),
