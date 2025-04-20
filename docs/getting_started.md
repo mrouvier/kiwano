@@ -10,25 +10,30 @@ New to _Kiwano_? You’re in the right place! This guide will walk you through i
 
 ### Main goals
 
+
 - Provide a **modular**, **extensible**, and **reproducible** framework for speaker verification research.
-- Support **cutting-edge speaker embedding architectures** including:
+- Support **cutting-edge speaker embedding models**, including:
   - ResNet
   - ECAPA-TDNN
   - ECAPA2
   - ReDimNet
   - WavLM + MHFA
-- Offer tools that streamline the **training, evaluation, and deployment** of verification systems.
+- Include robust preprocessing tools for:
+  - Normalization (AS-Norm, AD-Norm, etc.)
+  - Enhancement and augmentation of audio data
+- Enable quick prototyping and experimentation with **ready-to-use recipes**.
+
+
 
 
 ### Tutorials
 
-Kiwano aims to provide tutorials (coming soon) to guide you through:
+_Coming soon_ — A series of hands-on guides that will help you:
 
-- Setting up datasets
-- Running your first recipe
-- Customizing models and training parameters
-- Implementing your own backends or scoring mechanisms
-
+- Set up and preprocess speaker datasets
+- Run and modify training recipes
+- Customize model architectures and training parameters
+- Extend the framework with your own scoring/back-end logic
 
 
 ### Examples of use
@@ -43,11 +48,13 @@ Kiwano is designed for a variety of speaker verification use-cases, including:
 Whether you're building a baseline model or experimenting with novel architectures, Kiwano provides the tools to do it effectively.
 
 
+
 ## 🛠 Installation
 
-Kiwano requires Python 3.8+ and PyTorch (GPU support recommended for training).
+Kiwano requires **Python 3.8+** and **PyTorch** (GPU support is highly recommended for training).
 
-To install the lastest, Kiwano release, do:
+To install the latest Kiwano release:
+
 
 ### 1. Clone the repository
 
