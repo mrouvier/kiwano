@@ -49,20 +49,20 @@ Kiwano requires Python 3.8+ and PyTorch (GPU support recommended for training).
 
 To install the lastest, Kiwano release, do:
 
-### Clone the repository
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/mrouvier/kiwano
 ```
 
-### Install required dependencies
+### 2. Install required dependencies
 
 ```bash
 cd kiwano
 pip install -r requirements.txt
 ```
 
-### Install Kiwano in editable mode
+### 3. Install Kiwano in editable mode
 
 
 ```bash
@@ -70,3 +70,8 @@ pip install -e .
 ```
 
 This is an editable installation (-e option), meaning that your changes to the source code are automatically reflected when importing kiwano (no re-install needed).
+
+
+## 📄 License
+
+Kiwano is released under the **Apache License, version 2.0**. The Apache license is a popular BSD-like license. Kiwano can be redistributed for free, even for commercial purposes, although you can not take off the license headers (and under some circumstances, you may have to distribute a license document). Apache is not a viral license like the GPL, which forces you to release your modifications to the source code. Note that this project has no connection to the Apache Foundation, other than that we use the same license terms.
