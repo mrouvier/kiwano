@@ -10,41 +10,58 @@ This notebook will help you understand and use Kiwano’s segment management sys
 - Build a Dataset ready for training deep learning models
 
 
-## Segments and the SegmentSet
+## Dataset in Kiwano: Segment and SegmentSet
 
-### What is a Segment?
 
-A Segment is Kiwano’s fundamental unit of data. It represents a single audio file segment associated with a speaker.
+In Kiwano, datasets are described using manifest files in CSV format. These manifests are backed by a small set of Python classes that make it easy to manipulate, inspect, and augment the data programmatically. Kiwano's data representation is built around two core components:
+- **Segment**: Represents a single audio sample linked to a specific speaker. It includes metadata such as the speaker ID, duration, file path, and optional augmentation configuration.
+- **SegmentSet**: A collection of Segment objects. It acts as a high-level manifest that provides utilities for loading data from disk, accessing and filtering segments, and preparing data for training.
 
-Each Segment stores:
+Think of **SegmentSet** as the manifest for your entire dataset, and each **Segment** as a single entry in that manifest.
 
-- A unique ID (segmentid)
-- A speaker label (spkid)
-- Duration (in seconds)
-- The file path to the audio
-- An optional data augmentation
 
-When audio is loaded with load_audio(), the segment:
+### Segment: A Single Data Sample
 
+A _Segment_ is the fundamental unit of data in Kiwano. It represents one audio segment tied to a specific speaker and contains all the metadata required for processing and training.
+
+
+Each _Segment_ stores:
+- _segmentid_: A unique identifier for the segment
+- _spkid_: The speaker label (used as the training target)
+- _duration_: Length of the audio segment in seconds
+- _audio_path_: File path to the audio file
+- _augmentation_ (optional): Information about any audio transform applied to the segment
+
+
+Kiwano allows lazy loading of audio:
 - Reads the waveform using torchaudio
 - Applies SpeedPerturb if defined
 - Returns the waveform and sample rate
 
+
+Usage exemple:
 ```python
-segment = segments["id001"]
+from kiwano import Segment
+
+segment = Segment.from_file("meeting.wav")
 audio, sr = segment.load_audio()
 ```
 
-### What is a SegmentSet?
 
-SegmentSet is a dictionary-like container of Segment objects. It includes many utilities for managing your dataset.
+### SegmentSet: A Manifest of Segments
 
-Key Features:
+A _SegmentSet_ is a container that holds multiple Segment objects. It represents an entire dataset or corpus and provides high-level tools to manage it.
 
-- Load metadata from a text file (from_dict)
-- Access segments by index or ID
-- Generate speaker labels (get_labels)
-- Apply preprocessing like truncation, speaker selection, or augmentation
+Think of it as:
+- A manifest of your data
+- A dictionary mapping segment IDs to Segment objects
+- A toolkit for filtering, transforming, splitting, and inspecting your dataset
+
+Main Features:
+- Load data from a manifest file using from_dict()
+- Access segments by ID or index (segments["id123"])
+- Extract all speaker labels (segments.get_labels())
+- Filter by duration, speaker, or any custom logic
 
 Example usage:
 
@@ -55,6 +72,9 @@ segments.from_dict(Path("data/voxceleb1"))
 segment = segments["id001"]
 print(segment.spkid, segment.duration)
 ```
+
+Together, Segment and SegmentSet give you a clean and efficient way to manage speaker verification datasets — from raw audio to model-ready features. These classes are inspired by the design principles of the Lhotse toolkit.
+
 
 ## Data Augmentation and Composition classes in Kiwano
 
