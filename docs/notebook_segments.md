@@ -1,6 +1,6 @@
 # Kiwano Notebook: Dataset, Data Augmentation & Features Extractor
 
-## Objective of the Notebook
+## 🎯 Objective of the Notebook
 
 This notebook will help you understand and use Kiwano’s segment management system for speaker verification. By the end, you’ll know how to:
 
@@ -10,7 +10,7 @@ This notebook will help you understand and use Kiwano’s segment management sys
 - Build a Dataset ready for training deep learning models
 
 
-## Dataset in Kiwano: Segment and SegmentSet
+## 📁 Dataset in Kiwano: Segment and SegmentSet
 
 
 In Kiwano, datasets are described using manifest files in CSV format. These manifests are backed by a concise set of Python classes designed to facilitate the programmatic manipulatation, inspection, and augmentation of data. The data representation in Kiwano is structured around two fundamental components:
@@ -70,7 +70,7 @@ print(segment.spkid, segment.duration)
 Together, Segment and SegmentSet give you a clean and efficient way to manage speaker verification datasets — from raw audio to model-ready features. These classes are inspired by the design principles of the Lhotse toolkit.
 
 
-## Data Augmentation and Composition classes in Kiwano
+## 🎧 Data Augmentation and Composition classes in Kiwano
 
 Kiwano includes a modular data augmentation that supports both audio-level and feature-level transformations to increase the robustness and generalizability of speaker recognition models.
 
@@ -159,7 +159,7 @@ SomeOf((2, None), [transform1(), transform2(), transform3(), transform4()])
 ```
 
 
-## Feature Extraction
+## 🎛️ Feature Extraction
 
 Kiwano provides its own feature extractor class, such as Fbank, which computes filterbank energies from raw audio.
 
@@ -170,7 +170,7 @@ feature_extractor = Fbank()
 features = feature_extractor.extract(audio, sampling_rate=sr)
 ```
 
-## Putting It All Together
+## 🧠 Putting It All Together
 
 
 _SpeakerTrainingSegmentSet_ class combines segments, transforms, and feature extraction into a dataset suitable for model training:
@@ -190,9 +190,9 @@ from kiwano.augmentation import (
     OneOf,
     Reverb,
     SpecAugment,
-	AirAbsorption,
-	AddGaussianNoise,
-	ClippingDistortion
+    AirAbsorption,
+    AddGaussianNoise,
+    ClippingDistortion
 )
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.features import Fbank
@@ -255,7 +255,7 @@ features, label = training_data[0]
 
 
 
-## Dataset Description and Stats
+## 📊 Dataset Description and Stats
 
 You can inspect the dataset with .describe():
 
