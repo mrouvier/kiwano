@@ -1,28 +1,28 @@
 #!/usr/bin/python3
 
-import sys
-from kiwano.utils import Pathlike, get_all_files
-from pathlib import Path
-import torchaudio
-from tqdm import tqdm
-from concurrent.futures import ProcessPoolExecutor
-
-from subprocess import PIPE, run
-
 import argparse
 import os
+import sys
+from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
+from subprocess import PIPE, run
+
+import torchaudio
+from tqdm import tqdm
+
+from kiwano.utils import Pathlike, get_all_files
+
 
 def get_duration(file_path: str):
-   info = torchaudio.info(file_path)
-   return info.num_frames/info.sample_rate
+    info = torchaudio.info(file_path)
+    return info.num_frames / info.sample_rate
+
 
 def process_file(segment: Pathlike, spkid: str, in_data: Pathlike):
     name = str(segment).split("/")[-1]
-    duration = str(round(float(get_duration(segment)),2))
-
+    duration = str(round(float(get_duration(segment)), 2))
 
     return name, spkid, duration, segment
-
 
 
 def prepare_sre20_enrollment(in_data: Pathlike, out_data: Pathlike, jobs: int):
@@ -36,8 +36,7 @@ def prepare_sre20_enrollment(in_data: Pathlike, out_data: Pathlike, jobs: int):
         for line in f:
             line = line.rstrip()
             line = line.split("\t")
-            model[ line[1] ] = line[0]
-
+            model[line[1]] = line[0]
 
     nameListe = "liste"
 
@@ -50,7 +49,14 @@ def prepare_sre20_enrollment(in_data: Pathlike, out_data: Pathlike, jobs: int):
 
         for segment in wav_lst:
             if str(segment).split("/")[-1] in model:
-                futures.append(ex.submit(process_file, segment, model[ str(segment).split("/")[-1] ], in_data))
+                futures.append(
+                    ex.submit(
+                        process_file,
+                        segment,
+                        model[str(segment).split("/")[-1]],
+                        in_data,
+                    )
+                )
 
         for future in tqdm(futures, desc="Processing SRE20 Enrollment"):
             name, spkid, duration, segment = future.result()
@@ -58,17 +64,22 @@ def prepare_sre20_enrollment(in_data: Pathlike, out_data: Pathlike, jobs: int):
 
     liste.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--thread', type=int, default=10,
-                    help='Number of parallel jobs (default: 10)')
-    parser.add_argument('in_data', type=str,
-                    help='Path to the directory containing the "wav" directory')
-    parser.add_argument('out_data', type=str,
-                    help='Path to the target directory where the list will be stored')
+    parser.add_argument(
+        "--thread", type=int, default=10, help="Number of parallel jobs (default: 10)"
+    )
+    parser.add_argument(
+        "in_data", type=str, help='Path to the directory containing the "wav" directory'
+    )
+    parser.add_argument(
+        "out_data",
+        type=str,
+        help="Path to the target directory where the list will be stored",
+    )
 
     args = parser.parse_args()
 
     prepare_sre20_enrollment(args.in_data, args.out_data, args.thread)
-

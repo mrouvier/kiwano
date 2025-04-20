@@ -1,18 +1,18 @@
-'''
+"""
 Some utilized functions
 These functions are all copied from voxceleb_trainer: https://github.com/clovaai/voxceleb_trainer/blob/master/tuneThreshold.py
-'''
+"""
 
-import numpy
 import os
 from operator import itemgetter
 
+import numpy
 from sklearn import metrics
 
 
 def init_args(args):
-    args.score_save_path = os.path.join(args.save_path, 'score.txt')
-    args.model_save_path = os.path.join(args.save_path, 'model')
+    args.score_save_path = os.path.join(args.save_path, "score.txt")
+    args.model_save_path = os.path.join(args.save_path, "model")
     os.makedirs(args.model_save_path, exist_ok=True)
     return args
 
@@ -20,13 +20,15 @@ def init_args(args):
 def tuneThresholdfromScore(scores, labels, target_fa, target_fr=None):
     fpr, tpr, thresholds = metrics.roc_curve(labels, scores, pos_label=1)
     fnr = 1 - tpr
-    tunedThreshold = [];
+    tunedThreshold = []
     if target_fr:
         for tfr in target_fr:
             idx = numpy.nanargmin(numpy.absolute((tfr - fnr)))
             tunedThreshold.append([thresholds[idx], fpr[idx], fnr[idx]])
     for tfa in target_fa:
-        idx = numpy.nanargmin(numpy.absolute((tfa - fpr)))  # numpy.where(fpr<=tfa)[0][-1]
+        idx = numpy.nanargmin(
+            numpy.absolute((tfa - fpr))
+        )  # numpy.where(fpr<=tfa)[0][-1]
         tunedThreshold.append([thresholds[idx], fpr[idx], fnr[idx]])
     idxE = numpy.nanargmin(numpy.absolute((fnr - fpr)))
     eer = max(fpr[idxE], fnr[idxE]) * 100
@@ -40,9 +42,12 @@ def ComputeErrorRates(scores, labels):
     # Sort the scores from smallest to largest, and also get the corresponding
     # indexes of the sorted scores.  We will treat the sorted scores as the
     # thresholds at which the the error-rates are evaluated.
-    sorted_indexes, thresholds = zip(*sorted(
-        [(index, threshold) for index, threshold in enumerate(scores)],
-        key=itemgetter(1)))
+    sorted_indexes, thresholds = zip(
+        *sorted(
+            [(index, threshold) for index, threshold in enumerate(scores)],
+            key=itemgetter(1),
+        )
+    )
     sorted_labels = []
     labels = [labels[i] for i in sorted_indexes]
     fnrs = []

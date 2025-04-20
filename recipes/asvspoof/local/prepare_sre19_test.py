@@ -1,28 +1,29 @@
 #!/usr/bin/python3
 
-import sys
-from kiwano.utils import Pathlike, get_all_files
-from pathlib import Path
-import torchaudio
-from tqdm import tqdm
-from concurrent.futures import ProcessPoolExecutor
-
-from subprocess import PIPE, run
-
 import argparse
 import os
+import sys
+from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
+from subprocess import PIPE, run
+
+import torchaudio
+from tqdm import tqdm
+
+from kiwano.utils import Pathlike, get_all_files
+
 
 def get_duration(file_path: str):
-   info = torchaudio.info(file_path)
-   return info.num_frames/info.sample_rate
+    info = torchaudio.info(file_path)
+    return info.num_frames / info.sample_rate
+
 
 def process_file(segment: Pathlike, in_data: Pathlike):
     name = str(segment).split("/")[-1]
     spkid = name
-    duration = str(round(float(get_duration(segment)),2))
+    duration = str(round(float(get_duration(segment)), 2))
 
     return name, spkid, duration, segment
-
 
 
 def prepare_sre19_test(in_data: Pathlike, out_data: Pathlike, jobs: int):
@@ -49,7 +50,6 @@ def prepare_sre19_test(in_data: Pathlike, out_data: Pathlike, jobs: int):
 
     liste.close()
 
-
     trials = open(out_data / "trials", "w")
     counter = 0
 
@@ -67,18 +67,21 @@ def prepare_sre19_test(in_data: Pathlike, out_data: Pathlike, jobs: int):
     trials.close()
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--thread', type=int, default=10,
-                    help='Number of parallel jobs (default: 10)')
-    parser.add_argument('in_data', type=str,
-                    help='Path to the directory containing the "wav" directory')
-    parser.add_argument('out_data', type=str,
-                    help='Path to the target directory where the list will be stored')
+    parser.add_argument(
+        "--thread", type=int, default=10, help="Number of parallel jobs (default: 10)"
+    )
+    parser.add_argument(
+        "in_data", type=str, help='Path to the directory containing the "wav" directory'
+    )
+    parser.add_argument(
+        "out_data",
+        type=str,
+        help="Path to the target directory where the list will be stored",
+    )
 
     args = parser.parse_args()
 
     prepare_sre19_test(args.in_data, args.out_data, args.thread)
-

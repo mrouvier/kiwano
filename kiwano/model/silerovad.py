@@ -1,7 +1,8 @@
-import torch
-from torch import Tensor
 from typing import Tuple
+
+import torch
 import torch.nn as nn
+from torch import Tensor
 
 
 class SileroVadModel(torch.nn.Module):
@@ -9,8 +10,8 @@ class SileroVadModel(torch.nn.Module):
         super(SileroVadModel, self).__init__()
         forward_basis_buffer = torch.load("forward_basis_buffer.pt")
 
-        #hop_length = 128
-        #filter_length = 256
+        # hop_length = 128
+        # filter_length = 256
 
         hop_length = 64
         filter_length = 128
@@ -35,7 +36,7 @@ class SileroVadModel(torch.nn.Module):
             x = x.unsqueeze(0)
         if x.dim() > 2:
             raise ValueError(f"Too many dimensions for input audio chunk {x.dim()}")
-        '''
+        """
         if sr != 16000 and (sr % 16000 == 0):
             step = sr // 16000
             x = x[:,::step]
@@ -45,9 +46,8 @@ class SileroVadModel(torch.nn.Module):
             raise ValueError(f"Supported sampling rates: {self.sample_rates} (or multiply of 16000)")
         if sr / x.shape[1] > 31.25:
             raise ValueError("Input audio chunk is too short")
-        '''
+        """
         return x, sr
-
 
     def call(self, x, sr):
         x, sr = self._validate_input(x, sr)
@@ -79,7 +79,7 @@ class SileroVadModel(torch.nn.Module):
         self._last_sr = sr
         self._last_batch_size = batch_size
 
-        #out = torch.from_numpy(out)
+        # out = torch.from_numpy(out)
         return out
 
     def audio_forward(self, x, sr: int):
@@ -91,12 +91,12 @@ class SileroVadModel(torch.nn.Module):
 
         if x.shape[1] % num_samples:
             pad_num = num_samples - (x.shape[1] % num_samples)
-            x = torch.nn.functional.pad(x, (0, pad_num), 'constant', value=0.0)
+            x = torch.nn.functional.pad(x, (0, pad_num), "constant", value=0.0)
 
         for i in range(0, x.shape[1], num_samples):
-            wavs_batch = x[:, i:i+num_samples]
+            wavs_batch = x[:, i : i + num_samples]
             out = self.call(wavs_batch, sr)
-            outs.append( out.item() )
+            outs.append(out.item())
 
         return outs
 
@@ -115,16 +115,22 @@ class SileroVadBlock(torch.nn.Module):
         self.kernel_size = kernel_size
         self.stride = stride
 
-        #self.se = nn.Identity()
-        self.reparam_conv = nn.Conv1d(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=self.kernel_size, padding=1, stride=self.stride)
+        # self.se = nn.Identity()
+        self.reparam_conv = nn.Conv1d(
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            kernel_size=self.kernel_size,
+            padding=1,
+            stride=self.stride,
+        )
         self.batch_norm = nn.BatchNorm1d(self.out_channels)
         self.activation = nn.ReLU()
 
     def load(self, name):
-        self.reparam_conv.load_state_dict( torch.load(name) )
+        self.reparam_conv.load_state_dict(torch.load(name))
 
     def forward(self, x: Tensor):
-        #x = self.se(x)
+        # x = self.se(x)
         x = self.activation(self.batch_norm(self.reparam_conv(x)))
         return x
 
@@ -132,24 +138,22 @@ class SileroVadBlock(torch.nn.Module):
 class SileroVadEncoder(nn.Module):
     def __init__(self):
         super(SileroVadEncoder, self).__init__()
-        '''
+        """
         self.layers0 = SileroVadBlock(129, 128, 3, 1)
         self.layers1 = SileroVadBlock(128, 64, 3, 2)
         self.layers2 = SileroVadBlock(64, 64, 3, 2)
         self.layers3 = SileroVadBlock(64, 128, 3, 1)
-        '''
+        """
 
         self.layers0 = SileroVadBlock(65, 128, 3, 1)
         self.layers1 = SileroVadBlock(128, 64, 3, 2)
         self.layers2 = SileroVadBlock(64, 64, 3, 2)
         self.layers3 = SileroVadBlock(64, 128, 3, 1)
 
-
-        #self.layers0.load("conv0.pt")
-        #self.layers1.load("conv1.pt")
-        #self.layers2.load("conv2.pt")
-        #self.layers3.load("conv3.pt")
-
+        # self.layers0.load("conv0.pt")
+        # self.layers1.load("conv1.pt")
+        # self.layers2.load("conv2.pt")
+        # self.layers3.load("conv3.pt")
 
     def forward(self, x):
         x = self.layers0(x)
@@ -158,19 +162,18 @@ class SileroVadEncoder(nn.Module):
         x = self.layers3(x)
         return x
 
+
 class SileroVadDecoder(nn.Module):
     def __init__(self):
         super(SileroVadDecoder, self).__init__()
 
         self.rnn = nn.LSTMCell(128, 128)
-        self.decoder = nn.Sequential(nn.Dropout(0.1),
-                                     nn.ReLU(),
-                                     nn.Conv1d(128, 1, kernel_size=1),
-                                     nn.Sigmoid())
+        self.decoder = nn.Sequential(
+            nn.Dropout(0.1), nn.ReLU(), nn.Conv1d(128, 1, kernel_size=1), nn.Sigmoid()
+        )
 
-        #self.rnn.load_state_dict( torch.load("rnn.pt") )
-        #self.decoder.load_state_dict( torch.load("decoder.pt") )
-
+        # self.rnn.load_state_dict( torch.load("rnn.pt") )
+        # self.decoder.load_state_dict( torch.load("decoder.pt") )
 
     def forward(self, x, state=torch.zeros(0)):
         x = x.squeeze(-1)
@@ -195,10 +198,16 @@ class SileroVadSTFT(torch.nn.Module):
         self.filter_length = filter_length
 
     def forward(self, input_data: Tensor) -> Tuple[Tensor, Tensor]:
-        padded_input = F.pad(input_data, [0, 64], mode="reflect")
+        padded_input = torch.nn.functional.pad(input_data, [0, 64], mode="reflect")
         input_data0 = torch.unsqueeze(padded_input, 1)
 
-        forward_transform = torch.conv1d(input_data0, self.forward_basis_buffer, bias=None, stride=[self.hop_length], padding=[0])
+        forward_transform = torch.conv1d(
+            input_data0,
+            self.forward_basis_buffer,
+            bias=None,
+            stride=[self.hop_length],
+            padding=[0],
+        )
 
         cutoff = int((self.filter_length / 2) + 1)
 
@@ -209,8 +218,4 @@ class SileroVadSTFT(torch.nn.Module):
 
         phase = torch.atan2(imag_part, real_part)
 
-        return magnitude#, phase
-
-
-
-
+        return magnitude  # , phase

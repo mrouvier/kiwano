@@ -1,20 +1,35 @@
-from pathlib import Path
-
 import sys
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
+from transformers import (
+    AutoFeatureExtractor,
+    AutoModelForCTC,
+    AutoProcessor,
+    AutoTokenizer,
+    Wav2Vec2ForCTC,
+    Wav2Vec2Model,
+    Wav2Vec2Processor,
+)
 
-from kiwano.augmentation import Noise, Codec, Filtering, Normal, OneOf, Compose, CMVN, Crop
+from kiwano.augmentation import (
+    CMVN,
+    Codec,
+    Compose,
+    Crop,
+    Filtering,
+    Noise,
+    Normal,
+    OneOf,
+)
 from kiwano.dataset import SegmentSet
 from kiwano.features import Fbank
 from kiwano.model import ECAPAModel
 from kiwano.model.wav2vec2 import CustomWav2Vec2Model
 from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor, AutoModelForCTC, AutoTokenizer, AutoFeatureExtractor, \
-    AutoProcessor, Wav2Vec2Model
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     musan = SegmentSet()
     musan.from_dict(Path("data/musan/"))
 
@@ -25,20 +40,24 @@ if __name__ == '__main__':
     model_name = "facebook/wav2vec2-base-960h"
     model = CustomWav2Vec2Model(model_name)
     training_data = SpeakerTrainingSegmentSet(
-        audio_transforms=OneOf([
-            Noise(musan_music, snr_range=[5, 15]),
-            Noise(musan_speech, snr_range=[13, 20]),
-            Noise(musan_noise, snr_range=[0, 15]),
-            Codec(),
-            Filtering(),
-            Normal()
-        ]),
+        audio_transforms=OneOf(
+            [
+                Noise(musan_music, snr_range=[5, 15]),
+                Noise(musan_speech, snr_range=[13, 20]),
+                Noise(musan_noise, snr_range=[0, 15]),
+                Codec(),
+                Filtering(),
+                Normal(),
+            ]
+        ),
         feature_extractor=model,
         # feature_extractor=Fbank(),
-        feature_transforms=Compose([
-            CMVN(),
-            # Crop(300)
-        ]),
+        feature_transforms=Compose(
+            [
+                CMVN(),
+                # Crop(300)
+            ]
+        ),
     )
 
     training_data.from_dict(Path("data/voxceleb1/"))

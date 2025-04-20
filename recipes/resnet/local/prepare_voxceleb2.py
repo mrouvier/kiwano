@@ -1,26 +1,39 @@
 #!/usr/bin/env python3
 
-import sys
-import glob
-from kiwano.utils import Pathlike, get_all_files
-from pathlib import Path
-import torch
-import torchaudio
 import argparse
+import glob
+import os
+import sys
 from concurrent.futures import as_completed
 from concurrent.futures.process import ProcessPoolExecutor
-from tqdm import tqdm
+from pathlib import Path
 from subprocess import PIPE, run
+
 import numpy as np
 import soundfile as sf
-import os
+import torch
+import torchaudio
+from silero_vad import (
+    collect_chunks,
+    get_speech_timestamps,
+    load_silero_vad,
+    read_audio,
+)
+from tqdm import tqdm
 
-from silero_vad import load_silero_vad, read_audio, get_speech_timestamps, collect_chunks
+from kiwano.utils import Pathlike, get_all_files
 
 model = load_silero_vad()
 
+
 def ffmpeg(file_path: Pathlike, sampling_frequency: int):
-    cmd = "ffmpeg -y -threads 1 -i "+str(file_path)+" -acodec pcm_s16le -ac 1 -ar "+str(sampling_frequency)+" -ab 48 -threads 1 -f wav -"
+    cmd = (
+        "ffmpeg -y -threads 1 -i "
+        + str(file_path)
+        + " -acodec pcm_s16le -ac 1 -ar "
+        + str(sampling_frequency)
+        + " -ab 48 -threads 1 -f wav -"
+    )
     proc = run(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     raw_audio = proc.stdout
     audio_array = np.frombuffer(raw_audio, dtype=np.int16)
@@ -29,7 +42,9 @@ def ffmpeg(file_path: Pathlike, sampling_frequency: int):
     return wav
 
 
-def process_file(segment: Pathlike, out_data: Pathlike, sampling_frequency: int, vad: bool):
+def process_file(
+    segment: Pathlike, out_data: Pathlike, sampling_frequency: int, vad: bool
+):
     name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
     spkid = str(segment).split("/")[-3]
     emission = str(segment).split("/")[-2]
@@ -43,7 +58,9 @@ def process_file(segment: Pathlike, out_data: Pathlike, sampling_frequency: int,
     wav = ffmpeg(segment, sampling_frequency)
 
     if vad:
-        speech_timestamps = get_speech_timestamps(wav, model, sampling_rate=sampling_frequency, threshold=0.6)
+        speech_timestamps = get_speech_timestamps(
+            wav, model, sampling_rate=sampling_frequency, threshold=0.6
+        )
         if len(speech_timestamps) > 0:
             wav = collect_chunks(speech_timestamps, wav)
 
@@ -54,9 +71,14 @@ def process_file(segment: Pathlike, out_data: Pathlike, sampling_frequency: int,
     return name, spkid, duration, output
 
 
-
-
-def prepare_voxceleb2(in_data: Pathlike = ".", out_data: Pathlike = ".", sampling_frequency: int = 16000, delete_zip: bool = False, num_jobs: int = 30, vad: bool = False):
+def prepare_voxceleb2(
+    in_data: Pathlike = ".",
+    out_data: Pathlike = ".",
+    sampling_frequency: int = 16000,
+    delete_zip: bool = False,
+    num_jobs: int = 30,
+    vad: bool = False,
+):
     out_data = Path(out_data)
     out_data.mkdir(parents=True, exist_ok=True)
 
@@ -68,12 +90,15 @@ def prepare_voxceleb2(in_data: Pathlike = ".", out_data: Pathlike = ".", samplin
         futures = []
 
         for segment in wav_lst:
-            futures.append( ex.submit(process_file, segment, out_data, sampling_frequency, vad) )
+            futures.append(
+                ex.submit(process_file, segment, out_data, sampling_frequency, vad)
+            )
 
-        for future in tqdm( futures, total=len(futures), desc=f"Processing VoxCeleb2..."):
+        for future in tqdm(
+            futures, total=len(futures), desc=f"Processing VoxCeleb2..."
+        ):
             name, spkid, duration, segment = future.result()
             liste.write(f"{name} {spkid} {duration} {segment}\n")
-
 
     liste.close()
 
@@ -83,22 +108,46 @@ def prepare_voxceleb2(in_data: Pathlike = ".", out_data: Pathlike = ".", samplin
         os.remove(in_data / "vox2_aac.zip")
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('in_data', metavar='in_data', type=str,
-                        help='Path to the directory where the directory "dev" is stored')
-    parser.add_argument('out_data', metavar="out_data", type=str,
-                        help='Path to the target directory where the liste will be stored')
-    parser.add_argument('--num_jobs', type=int, default=30,
-                    help='Number of parallel jobs (default: 30)')
-    parser.add_argument('--vad', action='store_true', default=False,
-                    help='Apply VAD (default: False)')
-    parser.add_argument('--downsampling', type=int, default=16000,
-                        help='Downsampling frequency value (default: 16000)')
-    parser.add_argument('--delete_zip', action="store_true", default=False,
-                        help='Delete the already extracted ZIP files (default: False)')
+    parser.add_argument(
+        "in_data",
+        metavar="in_data",
+        type=str,
+        help='Path to the directory where the directory "dev" is stored',
+    )
+    parser.add_argument(
+        "out_data",
+        metavar="out_data",
+        type=str,
+        help="Path to the target directory where the liste will be stored",
+    )
+    parser.add_argument(
+        "--num_jobs", type=int, default=30, help="Number of parallel jobs (default: 30)"
+    )
+    parser.add_argument(
+        "--vad", action="store_true", default=False, help="Apply VAD (default: False)"
+    )
+    parser.add_argument(
+        "--downsampling",
+        type=int,
+        default=16000,
+        help="Downsampling frequency value (default: 16000)",
+    )
+    parser.add_argument(
+        "--delete_zip",
+        action="store_true",
+        default=False,
+        help="Delete the already extracted ZIP files (default: False)",
+    )
 
     args = parser.parse_args()
 
-    prepare_voxceleb2(Path(args.in_data), Path(args.out_data), args.downsampling, args.delete_zip, args.num_jobs, args.vad)
+    prepare_voxceleb2(
+        Path(args.in_data),
+        Path(args.out_data),
+        args.downsampling,
+        args.delete_zip,
+        args.num_jobs,
+        args.vad,
+    )

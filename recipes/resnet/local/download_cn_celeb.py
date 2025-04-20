@@ -1,27 +1,38 @@
 #!/usr/bin/env python3
 
+import argparse
 import logging
-import tarfile
 import shutil
 import sys
-from kiwano.utils import Pathlike, urlretrieve_progress, check_md5
+import tarfile
 from pathlib import Path
 from typing import Optional
 
-import argparse
-
-
+from kiwano.utils import Pathlike, check_md5, urlretrieve_progress
 
 CN_CELEB_PARTS_URL = [
-    ["https://www.openslr.org/resources/82/cn-celeb_v2.tar.gz", "7ab1b214028a7439e26608b2d5a0336c"],
-    ["https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzaa", "4cdf738cff565ce35ad34274848659c3"],
-    ["https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzab", "4ff59a7009b79ef7043498ad3882b81b"],
-    ["https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzac", "3aa8e6e7f7ec4382f9926b1b31498228"]
+    [
+        "https://www.openslr.org/resources/82/cn-celeb_v2.tar.gz",
+        "7ab1b214028a7439e26608b2d5a0336c",
+    ],
+    [
+        "https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzaa",
+        "4cdf738cff565ce35ad34274848659c3",
+    ],
+    [
+        "https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzab",
+        "4ff59a7009b79ef7043498ad3882b81b",
+    ],
+    [
+        "https://www.openslr.org/resources/82/cn-celeb2_v2.tar.gzac",
+        "3aa8e6e7f7ec4382f9926b1b31498228",
+    ],
 ]
 
 
-
-def download_cn_celeb(target_dir: Pathlike = ".", force_download: Optional[bool] = False):
+def download_cn_celeb(
+    target_dir: Pathlike = ".", force_download: Optional[bool] = False
+):
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -34,11 +45,19 @@ def download_cn_celeb(target_dir: Pathlike = ".", force_download: Optional[bool]
     else:
 
         for url in CN_CELEB_PARTS_URL:
-            fname=target_dir / url[0].split("/")[-1]
+            fname = target_dir / url[0].split("/")[-1]
             if not fname.exists() and not force_download:
-                urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
-            elif force_download :
-                urlretrieve_progress(url[0], filename=target_dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
+                urlretrieve_progress(
+                    url[0],
+                    filename=target_dir / url[0].split("/")[-1],
+                    desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}",
+                )
+            elif force_download:
+                urlretrieve_progress(
+                    url[0],
+                    filename=target_dir / url[0].split("/")[-1],
+                    desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}",
+                )
 
         check_md5(target_dir, CN_CELEB_PARTS_URL)
 
@@ -51,29 +70,27 @@ def download_cn_celeb(target_dir: Pathlike = ".", force_download: Optional[bool]
         with tarfile.open(tar_gz_path) as zf:
             zf.extractall(target_dir)
 
-
     logging.info(f"Unzipping test...")
     with tarfile.open(target_dir / "cn-celeb_v2.tar.gz") as zf:
-        zf.extractall(target_dir )
+        zf.extractall(target_dir)
 
 
-
-
-
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('target_dir', metavar='target_dir', type=str,
-                        help='the path to the target directory where the data will be stored')
-    parser.add_argument('--force_download', action="store_true", default=False,
-                        help='force the download, overwrites files (default: False)')
+    parser.add_argument(
+        "target_dir",
+        metavar="target_dir",
+        type=str,
+        help="the path to the target directory where the data will be stored",
+    )
+    parser.add_argument(
+        "--force_download",
+        action="store_true",
+        default=False,
+        help="force the download, overwrites files (default: False)",
+    )
 
     args = parser.parse_args()
 
     download_cn_celeb(args.target_dir, args.force_download)
-
-
-
-

@@ -1,7 +1,10 @@
 import argparse
-from kiwano.utils import read_keys
+
 import torch
+
 from kiwano.embedding import read_pkl
+from kiwano.utils import read_keys
+
 
 def scoring_xvector(keys, xvectors_enrollment, xvectors_test):
     """
@@ -13,7 +16,7 @@ def scoring_xvector(keys, xvectors_enrollment, xvectors_test):
 
     cos = torch.nn.CosineSimilarity(dim=0)
 
-    for names in keys :
+    for names in keys:
         enrollmentName = names[0]
         testName = names[1]
 
@@ -24,18 +27,27 @@ def scoring_xvector(keys, xvectors_enrollment, xvectors_test):
         print(enrollmentName + " " + testName + " " + str(score.item()))
 
 
-
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('keys', metavar='keys', type=str,
-                        help='the path to the file where the keys are stocked')
-    parser.add_argument('xvectorEnrollment', metavar='xvectorEnrollment', type=str,
-                        help='command to gather xvectors enrollment in pkl format')
-    parser.add_argument('xvectorTest', metavar='xvectorTest', type=str,
-                        help='command to gather xvectors test in pkl format')
+    parser.add_argument(
+        "keys",
+        metavar="keys",
+        type=str,
+        help="the path to the file where the keys are stocked",
+    )
+    parser.add_argument(
+        "xvectorEnrollment",
+        metavar="xvectorEnrollment",
+        type=str,
+        help="command to gather xvectors enrollment in pkl format",
+    )
+    parser.add_argument(
+        "xvectorTest",
+        metavar="xvectorTest",
+        type=str,
+        help="command to gather xvectors test in pkl format",
+    )
 
     args = parser.parse_args()
     trials = read_keys(args.keys)
@@ -43,5 +55,3 @@ if __name__ == '__main__':
     test = read_pkl(args.xvectorTest)
 
     scoring_xvector(trials, enrollment, test)
-
-

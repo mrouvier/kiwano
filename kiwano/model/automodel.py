@@ -1,10 +1,13 @@
 import torch
+
 from kiwano.model import ResNet, ResNetV2
 
 
 class AutoModel(torch.nn.Module):
     def __init__(self):
-        raise EnvironmentError("AutoModel is designed to be instantiated using the `AutoModel.from_pretrained(pretrained_model_name_or_path)` method.")
+        raise EnvironmentError(
+            "AutoModel is designed to be instantiated using the `AutoModel.from_pretrained(pretrained_model_name_or_path)` method."
+        )
 
     @classmethod
     def from_pretrained(cls, ckpt):
@@ -18,10 +21,16 @@ class AutoModel(torch.nn.Module):
         model = None
 
         if ckpt["name"] == "ResNet":
-            model = ResNet(num_classes=result_dict["num_classes"], embed_features=result_dict["embed_features"])
+            model = ResNet(
+                num_classes=result_dict["num_classes"],
+                embed_features=result_dict["embed_features"],
+            )
 
         if ckpt["name"] == "ResNetV2":
-            model = ResNetV2(num_classes=result_dict["num_classes"], embed_features=result_dict["embed_features"])
+            model = ResNetV2(
+                num_classes=result_dict["num_classes"],
+                embed_features=result_dict["embed_features"],
+            )
 
         model.load_state_dict(ckpt["model"])
 

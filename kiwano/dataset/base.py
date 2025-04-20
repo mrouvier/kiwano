@@ -1,14 +1,16 @@
-from typing import Union, TypeVar, List
+import copy
+
+# from kiwano.augmentation import Augmentation
+import random
+from typing import List, TypeVar, Union
+
+import numpy as np
+import torchaudio
 
 from kiwano.utils import Pathlike
-#from kiwano.augmentation import Augmentation
-import random
-import torchaudio
-import copy
-import numpy as np
 
 
-class Segment():
+class Segment:
     segmentid: str
     duration: float
     spkid: str
@@ -18,7 +20,6 @@ class Segment():
     audio_data: list
 
     augmentation: None
-
 
     def __init__(self, segmentid: str, spkid: str, duration: float, file_path: str):
         self.segmentid = segmentid
@@ -35,8 +36,8 @@ class Segment():
 
         self.augmentation = factor
         self.duration /= factor
-        self.spkid = "speed"+str(factor)+"_"+self.spkid
-        self.segmentid = "spped"+str(factor)+"_"+self.segmentid
+        self.spkid = "speed" + str(factor) + "_" + self.spkid
+        self.segmentid = "spped" + str(factor) + "_" + self.segmentid
 
     def load_audio(self, keep_memory: bool = False):
         from kiwano.augmentation import SpeedPerturb
@@ -55,7 +56,7 @@ class Segment():
         return audio_data, self.sample_rate
 
 
-class SegmentSet():
+class SegmentSet:
     def __init__(self):
         self.segments = {}
         self.labels = {}
@@ -66,7 +67,11 @@ class SegmentSet():
     def __getitem__(self, segment_id_or_index: Union[int, str]) -> Segment:
         if isinstance(segment_id_or_index, str):
             return self.segments[segment_id_or_index]
-        return next(val for idx, val in enumerate(self.segments.values()) if idx == segment_id_or_index)
+        return next(
+            val
+            for idx, val in enumerate(self.segments.values())
+            if idx == segment_id_or_index
+        )
 
     def load_audio(self):
         for key in self.segments:
@@ -85,7 +90,9 @@ class SegmentSet():
         with open(target_dir / "liste") as f:
             for line in f:
                 segmentid, spkid, duration, audio = line.strip().split(" ")
-                self.segments[segmentid] = Segment(segmentid, spkid, (float)(duration), audio)
+                self.segments[segmentid] = Segment(
+                    segmentid, spkid, (float)(duration), audio
+                )
         self.get_labels()
 
     def get_random(self):
@@ -95,7 +102,6 @@ class SegmentSet():
     def append(self, segment: Segment):
         self.segments[segment.segmentid] = segment
 
-
     def truncate(self, min_duration: float, max_duration: float):
         for key in list(self.segments):
             d = False
@@ -104,7 +110,7 @@ class SegmentSet():
 
             if self.segments[key].duration < min_duration:
                 d = True
-            
+
             if d == True:
                 del self.segments[key]
 
@@ -115,7 +121,7 @@ class SegmentSet():
 
         for key in self.segments:
             if self.segments[key].spkid == spkid:
-                s.append( self.segments[key] )
+                s.append(self.segments[key])
 
         self.get_labels()
 
@@ -125,16 +131,15 @@ class SegmentSet():
         c = SegmentSet()
 
         for key in self.segments:
-            sset = copy.copy( self.segments[ key ] )
+            sset = copy.copy(self.segments[key])
             sset.perturb_speed(factor)
-            c.append( sset )
+            c.append(sset)
         c.get_labels()
 
         return c
 
     def display(self):
         print(self.segments)
-
 
     def copy(self):
         return copy.deepcopy(self)
@@ -143,22 +148,19 @@ class SegmentSet():
         for key in self.segments:
             yield key
 
-
     def combine(self, l: List):
         for x in l:
-            #counter = 0
+            # counter = 0
             for s in x:
-                #print(str(counter)+" "+str(len(x)))
-                #counter += 1
-                self.segments[ s ] = x[ s ]
-                #self.append( s )
+                # print(str(counter)+" "+str(len(x)))
+                # counter += 1
+                self.segments[s] = x[s]
+                # self.append( s )
         self.get_labels()
 
-
     def describe(self):
-    #This function calculate and display several information about the segments
-    # (number of different speakers, the total duration, min, max, mean...)
-
+        # This function calculate and display several information about the segments
+        # (number of different speakers, the total duration, min, max, mean...)
 
         listDuration = []
         differentSpeakers = {}
@@ -169,8 +171,7 @@ class SegmentSet():
             totalDuration = totalDuration + duration
 
             listDuration.append(duration)
-            differentSpeakers[ self.segments[key].spkid ] = True
-
+            differentSpeakers[self.segments[key].spkid] = True
 
         mean = np.mean(listDuration)
         max = np.max(listDuration)
@@ -180,7 +181,7 @@ class SegmentSet():
 
         print("Speaker count: ", len(differentSpeakers))
         print("Number of segments : ", len(self.segments))
-        print("Total duration (hours): ", totalDuration/3600)
+        print("Total duration (hours): ", totalDuration / 3600)
         print("***")
         print("Duration statistics (seconds):")
         print("mean   ", mean)
@@ -190,6 +191,3 @@ class SegmentSet():
         print("25%    ", quartiles[0])
         print("50%    ", quartiles[1])
         print("75%    ", quartiles[2])
-
-
-

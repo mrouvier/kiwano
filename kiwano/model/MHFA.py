@@ -1,45 +1,47 @@
 import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import LayerNorm
-from transformers import Wav2Vec2Model, AutoModel, AutoFeatureExtractor
+from transformers import AutoFeatureExtractor, AutoModel, Wav2Vec2Model
+
 from .WavLM import *
 
-import torch
-import torch.nn as nn
 
 class ArcMarginProduct_intertopk_subcenter(nn.Module):
     r"""Implement of large margin arc distance with intertopk and subcenter:
-        Reference:
-            MULTI-QUERY MULTI-HEAD ATTENTION POOLING AND INTER-TOPK PENALTY
-            FOR SPEAKER VERIFICATION.
-            https://arxiv.org/pdf/2110.05042.pdf
-            Sub-center ArcFace: Boosting Face Recognition by
-            Large-Scale Noisy Web Faces.
-            https://ibug.doc.ic.ac.uk/media/uploads/documents/eccv_1445.pdf
-        Args:
-            in_features: size of each input sample
-            out_features: size of each output sample
-            scale: norm of input feature
-            margin: margin
-            cos(theta + margin)
-            K: number of sub-centers
-            k_top: number of hard samples
-            mp: margin penalty of hard samples
-            do_lm: whether do large margin finetune
-        """
+    Reference:
+        MULTI-QUERY MULTI-HEAD ATTENTION POOLING AND INTER-TOPK PENALTY
+        FOR SPEAKER VERIFICATION.
+        https://arxiv.org/pdf/2110.05042.pdf
+        Sub-center ArcFace: Boosting Face Recognition by
+        Large-Scale Noisy Web Faces.
+        https://ibug.doc.ic.ac.uk/media/uploads/documents/eccv_1445.pdf
+    Args:
+        in_features: size of each input sample
+        out_features: size of each output sample
+        scale: norm of input feature
+        margin: margin
+        cos(theta + margin)
+        K: number of sub-centers
+        k_top: number of hard samples
+        mp: margin penalty of hard samples
+        do_lm: whether do large margin finetune
+    """
 
-    def __init__(self,
-                 in_features,
-                 out_features,
-                 scale=32.0,
-                 margin=0.2,
-                 easy_margin=False,
-                 K=3,
-                 mp=0.06,
-                 k_top=0,
-                 do_lm=False):
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        scale=32.0,
+        margin=0.2,
+        easy_margin=False,
+        K=3,
+        mp=0.06,
+        k_top=0,
+        do_lm=False,
+    ):
         super(ArcMarginProduct_intertopk_subcenter, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -58,7 +60,8 @@ class ArcMarginProduct_intertopk_subcenter(nn.Module):
 
         # initial classifier
         self.weight = nn.Parameter(
-            torch.FloatTensor(self.K * out_features, in_features))
+            torch.FloatTensor(self.K * out_features, in_features)
+        )
         nn.init.xavier_uniform_(self.weight)
 
         self.easy_margin = easy_margin
@@ -67,7 +70,8 @@ class ArcMarginProduct_intertopk_subcenter(nn.Module):
         self.th = math.cos(math.pi - margin)
         self.mm = math.sin(math.pi - margin) * margin
         self.mmm = 1.0 + math.cos(
-            math.pi - margin)  # this can make the output more continuous
+            math.pi - margin
+        )  # this can make the output more continuous
         ########
         self.m = self.margin
         ########
@@ -91,11 +95,13 @@ class ArcMarginProduct_intertopk_subcenter(nn.Module):
         self.cos_mp = math.cos(mp)
         self.sin_mp = math.sin(mp)
 
-    def forward(self, input, label = None):
-        cosine = F.linear(F.normalize(input),
-                          F.normalize(self.weight))  # (batch, out_dim * k)
+    def forward(self, input, label=None):
+        cosine = F.linear(
+            F.normalize(input), F.normalize(self.weight)
+        )  # (batch, out_dim * k)
         cosine = torch.reshape(
-            cosine, (-1, self.out_features, self.K))  # (batch, out_dim, k)
+            cosine, (-1, self.out_features, self.K)
+        )  # (batch, out_dim, k)
         cosine, _ = torch.max(cosine, 2)  # (batch, out_dim)
 
         if label == None:
@@ -118,29 +124,37 @@ class ArcMarginProduct_intertopk_subcenter(nn.Module):
 
         if self.k_top > 0:
             # topk (j != y_i)
-            _, top_k_index = torch.topk(cosine - 2 * one_hot,
-                                        self.k_top)  # exclude j = y_i
-            top_k_one_hot = input.new_zeros(cosine.size()).scatter_(
-                1, top_k_index, 1)
+            _, top_k_index = torch.topk(
+                cosine - 2 * one_hot, self.k_top
+            )  # exclude j = y_i
+            top_k_one_hot = input.new_zeros(cosine.size()).scatter_(1, top_k_index, 1)
 
             # sum
-            output = (one_hot * phi) + (top_k_one_hot * phi_mp) + (
-                (1.0 - one_hot - top_k_one_hot) * cosine)
+            output = (
+                (one_hot * phi)
+                + (top_k_one_hot * phi_mp)
+                + ((1.0 - one_hot - top_k_one_hot) * cosine)
+            )
         else:
             output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
         output *= self.scale
         return output
 
     def extra_repr(self):
-        return 'in_features={}, out_features={}, scale={}, margin={}, easy_margin={},' \
-            'K={}, mp={}, k_top={}, do_lm={}'.format(
-                self.in_features, self.out_features, self.scale, self.margin,
-                self.easy_margin, self.K, self.mp, self.k_top, self.do_lm)
-
-
-
-
-
+        return (
+            "in_features={}, out_features={}, scale={}, margin={}, easy_margin={},"
+            "K={}, mp={}, k_top={}, do_lm={}".format(
+                self.in_features,
+                self.out_features,
+                self.scale,
+                self.margin,
+                self.easy_margin,
+                self.K,
+                self.mp,
+                self.k_top,
+                self.do_lm,
+            )
+        )
 
 
 class AMSMLoss(nn.Module):
@@ -170,8 +184,8 @@ class AMSMLoss(nn.Module):
 
     def get_w(self):
         return self.W
-    
-    def forward(self, input, label = None):
+
+    def forward(self, input, label=None):
         # normalize features
         x = F.normalize(input)
 
@@ -193,15 +207,24 @@ class AMSMLoss(nn.Module):
         return output
 
 
-
-
 class MHFATop(nn.Module):
-    def __init__(self, head_nb=8, inputs_dim=768, compression_dim=128, outputs_dim=256, number_layers=13):
+    def __init__(
+        self,
+        head_nb=8,
+        inputs_dim=768,
+        compression_dim=128,
+        outputs_dim=256,
+        number_layers=13,
+    ):
         super(MHFATop, self).__init__()
 
         # Define learnable weights for key and value computations across layers
-        self.weights_k = nn.Parameter(data=torch.ones(number_layers), requires_grad=True)
-        self.weights_v = nn.Parameter(data=torch.ones(number_layers), requires_grad=True)
+        self.weights_k = nn.Parameter(
+            data=torch.ones(number_layers), requires_grad=True
+        )
+        self.weights_v = nn.Parameter(
+            data=torch.ones(number_layers), requires_grad=True
+        )
 
         # Initialize given parameters
         self.head_nb = head_nb
@@ -224,10 +247,14 @@ class MHFATop(nn.Module):
         # Input x has shape: [Batch, Dim, Frame_len, Nb_Layer]
 
         # Compute the key by taking a weighted sum of input across layers
-        k = torch.sum(x.mul(nn.functional.softmax(self.weights_k, dim=-1)), dim=-1).transpose(1, 2)
+        k = torch.sum(
+            x.mul(nn.functional.softmax(self.weights_k, dim=-1)), dim=-1
+        ).transpose(1, 2)
 
         # Compute the value in a similar fashion
-        v = torch.sum(x.mul(nn.functional.softmax(self.weights_v, dim=-1)), dim=-1).transpose(1, 2)
+        v = torch.sum(
+            x.mul(nn.functional.softmax(self.weights_v, dim=-1)), dim=-1
+        ).transpose(1, 2)
 
         # Pass the keys and values through compression linear layers
         k = self.cmp_linear_k(k)
@@ -240,7 +267,9 @@ class MHFATop(nn.Module):
         v = v.unsqueeze(-2)
 
         # Compute attention output by taking weighted sum of values using softmaxed attention weights
-        pooling_outs = torch.sum(v.mul(nn.functional.softmax(att_k, dim=1).unsqueeze(-1)), dim=1)
+        pooling_outs = torch.sum(
+            v.mul(nn.functional.softmax(att_k, dim=1).unsqueeze(-1)), dim=1
+        )
 
         # Reshape the tensor before passing through the fully connected layer
         b, h, f = pooling_outs.shape
@@ -264,26 +293,24 @@ class GradMultiply(torch.autograd.Function):
         return grad * ctx.scale, None
 
 
-
 class MHFA_subcenter(nn.Module):
     def __init__(self, name, number_head=32):
         super(MHFA_subcenter, self).__init__()
         checkpoint = torch.load(name)
-        cfg = WavLMConfig(checkpoint['cfg'])
+        cfg = WavLMConfig(checkpoint["cfg"])
         self.model = WavLM(cfg)
-        self.loadParameters(checkpoint['model'])
+        self.loadParameters(checkpoint["model"])
         self.number_head = number_head
 
-        #self.model = AutoModel.from_pretrained(name)
+        # self.model = AutoModel.from_pretrained(name)
 
         self.backend = MHFATop(head_nb=self.number_head)
 
-        #self.output = AMSMLoss(256, 2, s=30, m=0.2)
+        # self.output = AMSMLoss(256, 2, s=30, m=0.2)
         self.output = ArcMarginProduct_intertopk_subcenter(256, 2)
 
-
-    def forward(self, wav_and_flag, iden = None):
-        '''
+    def forward(self, wav_and_flag, iden=None):
+        """
         out = self.model(wav_and_flag, output_hidden_states=True)
 
         hidden_states = out.hidden_states
@@ -292,15 +319,14 @@ class MHFA_subcenter(nn.Module):
 
         x = torch.stack(layer_reps)
         x = x.permute(1, 3, 2, 0)
-        '''
+        """
 
         x = wav_and_flag
-        cnn_outs, layer_results =  self.model.extract_features(x, output_layer=13)
+        cnn_outs, layer_results = self.model.extract_features(x, output_layer=13)
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
-        x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
+        x = torch.stack(layer_reps).transpose(0, -1).transpose(0, 1)
 
         out = self.backend(x)
-
 
         if iden == None:
             return self.output(out)
@@ -311,49 +337,50 @@ class MHFA_subcenter(nn.Module):
     def get_m(self):
         return 0
 
-
     def loadParameters(self, param):
 
-        self_state = self.model.state_dict();
+        self_state = self.model.state_dict()
         loaded_state = param
 
         for name, param in loaded_state.items():
-            origname = name;
-            
+            origname = name
 
             if name not in self_state:
                 # print("%s is not in the model."%origname);
-                continue;
+                continue
 
             if self_state[name].size() != loaded_state[origname].size():
-                print("Wrong parameter length: %s, model: %s, loaded: %s"%(origname, self_state[name].size(), loaded_state[origname].size()));
-                continue;
+                print(
+                    "Wrong parameter length: %s, model: %s, loaded: %s"
+                    % (origname, self_state[name].size(), loaded_state[origname].size())
+                )
+                continue
 
-            self_state[name].copy_(param);
-
+            self_state[name].copy_(param)
 
 
 class MHFALarge(nn.Module):
     def __init__(self, name, number_head=32):
         super(MHFALarge, self).__init__()
         checkpoint = torch.load(name)
-        cfg = WavLMConfig(checkpoint['cfg'])
+        cfg = WavLMConfig(checkpoint["cfg"])
         self.model = WavLM(cfg)
-        self.loadParameters(checkpoint['model'])
+        self.loadParameters(checkpoint["model"])
         self.number_head = number_head
 
-        #self.model = AutoModel.from_pretrained(name)
+        # self.model = AutoModel.from_pretrained(name)
 
-        self.backend = MHFATop(head_nb=self.number_head, inputs_dim=1024, number_layers=14)
+        self.backend = MHFATop(
+            head_nb=self.number_head, inputs_dim=1024, number_layers=14
+        )
 
         self.output = AMSMLoss(256, 2, s=30, m=0.2)
-
 
     def get_w(self):
         return self.output.get_w()
 
-    def forward(self, wav_and_flag, iden = None):
-        '''
+    def forward(self, wav_and_flag, iden=None):
+        """
         out = self.model(wav_and_flag, output_hidden_states=True)
 
         hidden_states = out.hidden_states
@@ -362,15 +389,14 @@ class MHFALarge(nn.Module):
 
         x = torch.stack(layer_reps)
         x = x.permute(1, 3, 2, 0)
-        '''
+        """
 
         x = wav_and_flag
-        cnn_outs, layer_results =  self.model.extract_features(x, output_layer=13)
+        cnn_outs, layer_results = self.model.extract_features(x, output_layer=13)
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
-        x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
+        x = torch.stack(layer_reps).transpose(0, -1).transpose(0, 1)
 
         out = self.backend(x)
-
 
         if iden == None:
             return self.output(out)
@@ -378,8 +404,8 @@ class MHFALarge(nn.Module):
         out = self.output(out, iden)
         return out
 
-    def emb(self, wav_and_flag, iden = None):
-        '''
+    def emb(self, wav_and_flag, iden=None):
+        """
         out = self.model(wav_and_flag, output_hidden_states=True)
 
         hidden_states = out.hidden_states
@@ -388,67 +414,62 @@ class MHFALarge(nn.Module):
 
         x = torch.stack(layer_reps)
         x = x.permute(1, 3, 2, 0)
-        '''
+        """
 
         x = wav_and_flag
-        cnn_outs, layer_results =  self.model.extract_features(x, output_layer=13)
+        cnn_outs, layer_results = self.model.extract_features(x, output_layer=13)
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
-        x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
+        x = torch.stack(layer_reps).transpose(0, -1).transpose(0, 1)
 
         out = self.backend(x)
 
         return out
 
-
     def get_m(self):
         return 0
 
-
     def loadParameters(self, param):
 
-        self_state = self.model.state_dict();
+        self_state = self.model.state_dict()
         loaded_state = param
 
         for name, param in loaded_state.items():
-            origname = name;
-            
+            origname = name
 
             if name not in self_state:
                 # print("%s is not in the model."%origname);
-                continue;
+                continue
 
             if self_state[name].size() != loaded_state[origname].size():
-                print("Wrong parameter length: %s, model: %s, loaded: %s"%(origname, self_state[name].size(), loaded_state[origname].size()));
-                continue;
+                print(
+                    "Wrong parameter length: %s, model: %s, loaded: %s"
+                    % (origname, self_state[name].size(), loaded_state[origname].size())
+                )
+                continue
 
-            self_state[name].copy_(param);
-
-
-
-
+            self_state[name].copy_(param)
 
 
 class MHFA(nn.Module):
     def __init__(self, name, number_head=32):
         super(MHFA, self).__init__()
         checkpoint = torch.load(name)
-        cfg = WavLMConfig(checkpoint['cfg'])
+        cfg = WavLMConfig(checkpoint["cfg"])
         self.model = WavLM(cfg)
-        self.loadParameters(checkpoint['model'])
+        self.loadParameters(checkpoint["model"])
         self.number_head = number_head
 
-        #self.model = AutoModel.from_pretrained(name)
+        # self.model = AutoModel.from_pretrained(name)
 
         self.backend = MHFATop(head_nb=self.number_head)
 
         self.output = AMSMLoss(256, 2, s=30, m=0.2)
 
-
     def get_w(self):
         return self.output.get_w()
 
-    def forward(self, wav_and_flag, iden = None):
-        '''
+    def forward(self, wav_and_flag, iden=None):
+        """
         out = self.model(wav_and_flag, output_hidden_states=True)
 
         hidden_states = out.hidden_states
@@ -457,15 +478,14 @@ class MHFA(nn.Module):
 
         x = torch.stack(layer_reps)
         x = x.permute(1, 3, 2, 0)
-        '''
+        """
 
         x = wav_and_flag
-        cnn_outs, layer_results =  self.model.extract_features(x, output_layer=13)
+        cnn_outs, layer_results = self.model.extract_features(x, output_layer=13)
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
-        x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
+        x = torch.stack(layer_reps).transpose(0, -1).transpose(0, 1)
 
         out = self.backend(x)
-
 
         if iden == None:
             return self.output(out)
@@ -473,8 +493,8 @@ class MHFA(nn.Module):
         out = self.output(out, iden)
         return out
 
-    def emb(self, wav_and_flag, iden = None):
-        '''
+    def emb(self, wav_and_flag, iden=None):
+        """
         out = self.model(wav_and_flag, output_hidden_states=True)
 
         hidden_states = out.hidden_states
@@ -483,41 +503,40 @@ class MHFA(nn.Module):
 
         x = torch.stack(layer_reps)
         x = x.permute(1, 3, 2, 0)
-        '''
+        """
 
         x = wav_and_flag
-        cnn_outs, layer_results =  self.model.extract_features(x, output_layer=13)
+        cnn_outs, layer_results = self.model.extract_features(x, output_layer=13)
         layer_reps = [x.transpose(0, 1) for x, _ in layer_results]
-        x = torch.stack(layer_reps).transpose(0,-1).transpose(0,1)
+        x = torch.stack(layer_reps).transpose(0, -1).transpose(0, 1)
 
         out = self.backend(x)
 
         return out
 
-
     def get_m(self):
         return 0
 
-
     def loadParameters(self, param):
 
-        self_state = self.model.state_dict();
+        self_state = self.model.state_dict()
         loaded_state = param
 
         for name, param in loaded_state.items():
-            origname = name;
-            
+            origname = name
 
             if name not in self_state:
                 # print("%s is not in the model."%origname);
-                continue;
+                continue
 
             if self_state[name].size() != loaded_state[origname].size():
-                print("Wrong parameter length: %s, model: %s, loaded: %s"%(origname, self_state[name].size(), loaded_state[origname].size()));
-                continue;
+                print(
+                    "Wrong parameter length: %s, model: %s, loaded: %s"
+                    % (origname, self_state[name].size(), loaded_state[origname].size())
+                )
+                continue
 
-            self_state[name].copy_(param);
-
+            self_state[name].copy_(param)
 
 
 class MHFA_HF(nn.Module):
@@ -525,12 +544,15 @@ class MHFA_HF(nn.Module):
         super(MHFA_HF, self).__init__()
         self.model = AutoModel.from_pretrained(name)
 
-        self.backend = MHFATop(head_nb=32, number_layers=self.model.config.num_hidden_layers+1, inputs_dim=self.model.config.hidden_size)
+        self.backend = MHFATop(
+            head_nb=32,
+            number_layers=self.model.config.num_hidden_layers + 1,
+            inputs_dim=self.model.config.hidden_size,
+        )
 
         self.output = AMSMLoss(256, 2, s=30, m=0.2)
 
-
-    def forward(self, wav_and_flag, iden = None):
+    def forward(self, wav_and_flag, iden=None):
         out = self.model(wav_and_flag, output_hidden_states=True)
 
         hidden_states = out.hidden_states
@@ -550,6 +572,3 @@ class MHFA_HF(nn.Module):
 
     def get_m(self):
         return 0
-
-
-

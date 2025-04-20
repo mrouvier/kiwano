@@ -1,17 +1,21 @@
 import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
 def conv3x3(in_planes, out_planes, stride=1):
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
+    )
+
 
 def conv1x1(in_planes, out_planes, stride=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
-'''
+"""
 class SEStoDepthBasicBlock(nn.Module):
     def __init__(self, inplanes, planes, features_per_frames, reduction=1, stride=1, downsample=None, prob=0.5):
         super(SEStoDepthBasicBlock, self).__init__()
@@ -94,13 +98,13 @@ class SEStoDepthBasicBlock(nn.Module):
 
                 return out
 
-'''
-
-
+"""
 
 
 class SEBasicBlockX(nn.Module):
-    def __init__(self, inplanes, planes, feature_dim, reduction=1, stride=1, downsample=None):
+    def __init__(
+        self, inplanes, planes, feature_dim, reduction=1, stride=1, downsample=None
+    ):
         super(SEBasicBlockX, self).__init__()
 
         self.pos = nn.Parameter(torch.rand(feature_dim))
@@ -130,7 +134,7 @@ class SEBasicBlockX(nn.Module):
         out = self.conv1(out)
 
         out = self.bn2(out)
-        #out = self.activation(out)
+        # out = self.activation(out)
         out = self.conv2(out)
 
         out = self.bn3(out)
@@ -141,12 +145,10 @@ class SEBasicBlockX(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
-        
+
         out += residual
-        
+
         return out
-
-
 
 
 class BasicBlockX(nn.Module):
@@ -179,7 +181,7 @@ class BasicBlockX(nn.Module):
         out = self.conv1(out)
 
         out = self.bn2(out)
-        #out = self.activation(out)
+        # out = self.activation(out)
         out = self.conv2(out)
 
         out = self.bn3(out)
@@ -188,13 +190,10 @@ class BasicBlockX(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
-        
+
         out += residual
-        
+
         return out
-
-
-
 
 
 class SELayer(nn.Module):
@@ -205,7 +204,7 @@ class SELayer(nn.Module):
             nn.Linear(channel, channel // reduction),
             nn.SiLU(),
             nn.Linear(channel // reduction, channel),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
     def forward(self, x):
@@ -213,9 +212,6 @@ class SELayer(nn.Module):
         y = self.avg_pool(x).view(b, c)
         y = self.fc(y).view(b, c, 1, 1)
         return x * y
-
-
-
 
 
 class SEBasicBlockPosition(nn.Module):
@@ -262,7 +258,6 @@ class SEBasicBlockPosition(nn.Module):
         return out
 
 
-
 class BasicBlockPosition(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlockPosition, self).__init__()
@@ -298,13 +293,10 @@ class BasicBlockPosition(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
-        
+
         out += residual
-        
+
         return out
-
-
-
 
 
 class SEBasicBlock(nn.Module):
@@ -367,7 +359,6 @@ class MiniSEBasicBlock(nn.Module):
         self.stride = stride
         self.se = SELayer(planes, 1)
 
-
     def forward(self, x):
         residual = x
 
@@ -382,15 +373,11 @@ class MiniSEBasicBlock(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
-        
+
         out += residual
         out = self.activation(out)
-        
+
         return out
-
-
-
-
 
 
 class ShakeShake(torch.autograd.Function):
@@ -406,17 +393,17 @@ class ShakeShake(torch.autograd.Function):
         grad_input1 = beta * grad_output
         grad_input2 = (1 - beta) * grad_output
         return grad_input1, grad_input2, None, None
-                                                                                    
-                                                                                    
+
+
 class ShakeBasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(ShakeBasicBlock, self).__init__()
-        
+
         self.residual_branch1 = ResidualBlock(inplanes, planes, stride)
         self.residual_branch2 = ResidualBlock(inplanes, planes, stride)
 
         self.activation = nn.ReLU(inplace=True)
-        
+
         self.shake_shake = ShakeShake.apply
 
         self.downsample = downsample
@@ -437,20 +424,18 @@ class ShakeBasicBlock(nn.Module):
             beta = torch.rand(batch_size).to(device)
             beta = beta.fill_(0.5)
             beta = beta.view(batch_size, 1, 1, 1)
-            
+
             out = self.shake_shake(out1, out2, alpha, beta)
         else:
             alpha = torch.Tensor([0.5]).to(device)
             out = self.shake_shake(out1, out2, alpha)
 
-        
         if self.downsample is not None:
             residual = self.downsample(x)
-        
+
         out = out + residual
         out = self.activation(out)
         return out
-
 
 
 class ResidualBlock(nn.Module):
@@ -473,12 +458,6 @@ class ResidualBlock(nn.Module):
         out = self.bn2(out)
 
         return out
-
-
-
-
-
-
 
 
 class MiniBasicBlock(nn.Module):
@@ -508,14 +487,11 @@ class MiniBasicBlock(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
-        
+
         out += residual
         out = self.activation(out)
-        
+
         return out
-
-
-
 
 
 class BasicBlock(nn.Module):
@@ -553,11 +529,10 @@ class BasicBlock(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
-        
-        out += residual
-        
-        return out
 
+        out += residual
+
+        return out
 
 
 class SubCenterAMSMLoss(nn.Module):
@@ -565,7 +540,7 @@ class SubCenterAMSMLoss(nn.Module):
         super(SubCenterAMSMLoss, self).__init__()
         self.num_features = num_features
         self.n_classes = num_classes
-        
+
         self.s = s
         self.m = m
         self.k = k
@@ -605,7 +580,6 @@ class SubCenterAMSMLoss(nn.Module):
         return output
 
 
-
 class AMSMLoss(nn.Module):
     def __init__(self, num_features, num_classes, s=30.0, m=0.4):
         super(AMSMLoss, self).__init__()
@@ -633,8 +607,8 @@ class AMSMLoss(nn.Module):
 
     def get_w(self):
         return self.W
-    
-    def forward(self, input, label = None):
+
+    def forward(self, input, label=None):
         # normalize features
         x = F.normalize(input)
 
@@ -656,9 +630,15 @@ class AMSMLoss(nn.Module):
         return output
 
 
-
 class ResNetShakeShakeASVSpoof(nn.Module):
-    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[32, 64, 128, 256], num_blocks=[3,4,6,3]):
+    def __init__(
+        self,
+        input_features=81,
+        embed_features=256,
+        num_classes=6000,
+        channels=[32, 64, 128, 256],
+        num_blocks=[3, 4, 6, 3],
+    ):
         super(ResNetShakeShakeASVSpoof, self).__init__()
 
         self.embed_features = embed_features
@@ -670,10 +650,18 @@ class ResNetShakeShakeASVSpoof(nn.Module):
         self.pre_bn1 = nn.BatchNorm2d(channels[0])
         self.pre_activation1 = nn.ReLU(inplace=True)
 
-        self.layer1 = self._make_layer(channels[0], channels[0], num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(channels[0], channels[1], num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(channels[1], channels[2], num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(channels[2], channels[3], num_blocks[3], stride=2)
+        self.layer1 = self._make_layer(
+            channels[0], channels[0], num_blocks[0], stride=1
+        )
+        self.layer2 = self._make_layer(
+            channels[0], channels[1], num_blocks[1], stride=2
+        )
+        self.layer3 = self._make_layer(
+            channels[1], channels[2], num_blocks[2], stride=2
+        )
+        self.layer4 = self._make_layer(
+            channels[2], channels[3], num_blocks[3], stride=2
+        )
 
         self.norm_stats = torch.nn.BatchNorm1d(2 * 11 * channels[3])
 
@@ -681,11 +669,11 @@ class ResNetShakeShakeASVSpoof(nn.Module):
         self.norm_embed = torch.nn.BatchNorm1d(self.embed_features)
 
         self.attention = nn.Sequential(
-            nn.Conv1d(channels[3] * 11, channels[3]//2, kernel_size=1),
-            #nn.SiLU(),
-            #nn.BatchNorm1d(channels[3]//2),
+            nn.Conv1d(channels[3] * 11, channels[3] // 2, kernel_size=1),
+            # nn.SiLU(),
+            # nn.BatchNorm1d(channels[3]//2),
             nn.Tanh(),
-            nn.Conv1d(channels[3]//2, channels[3] * 11, kernel_size=1),
+            nn.Conv1d(channels[3] // 2, channels[3] * 11, kernel_size=1),
             nn.Softmax(dim=2),
         )
 
@@ -693,13 +681,15 @@ class ResNetShakeShakeASVSpoof(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
     def extra_repr(self):
-        return 'embed_features={}, num_classes={}'.format(self.embed_features, self.num_classes)
+        return "embed_features={}, num_classes={}".format(
+            self.embed_features, self.num_classes
+        )
 
     def get_m(self):
         return self.output.get_m()
@@ -722,8 +712,10 @@ class ResNetShakeShakeASVSpoof(nn.Module):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
-                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
             )
 
         layers = []
@@ -733,7 +725,7 @@ class ResNetShakeShakeASVSpoof(nn.Module):
             layers.append(ShakeBasicBlock(outchannel, outchannel))
         return nn.Sequential(*layers)
 
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.pre_conv1(x)
         x = self.pre_bn1(x)
         x = self.pre_activation1(x)
@@ -749,7 +741,7 @@ class ResNetShakeShakeASVSpoof(nn.Module):
         w = self.attention(x)
 
         mu = torch.sum(x * w, dim=2)
-        sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-5))
+        sg = torch.sqrt((torch.sum((x**2) * w, dim=2) - mu**2).clamp(min=1e-5))
 
         x = torch.cat([mu, sg], dim=1)
 
@@ -766,11 +758,15 @@ class ResNetShakeShakeASVSpoof(nn.Module):
         return x
 
 
-
-
-
 class ResNetASVSpoof(nn.Module):
-    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[32, 64, 128, 256], num_blocks=[3,4,6,3]):
+    def __init__(
+        self,
+        input_features=81,
+        embed_features=256,
+        num_classes=6000,
+        channels=[32, 64, 128, 256],
+        num_blocks=[3, 4, 6, 3],
+    ):
         super(ResNetASVSpoof, self).__init__()
 
         self.embed_features = embed_features
@@ -782,10 +778,18 @@ class ResNetASVSpoof(nn.Module):
         self.pre_bn1 = nn.BatchNorm2d(channels[0])
         self.pre_activation1 = nn.ReLU(inplace=True)
 
-        self.layer1 = self._make_layer(channels[0], channels[0], num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(channels[0], channels[1], num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(channels[1], channels[2], num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(channels[2], channels[3], num_blocks[3], stride=2)
+        self.layer1 = self._make_layer(
+            channels[0], channels[0], num_blocks[0], stride=1
+        )
+        self.layer2 = self._make_layer(
+            channels[0], channels[1], num_blocks[1], stride=2
+        )
+        self.layer3 = self._make_layer(
+            channels[1], channels[2], num_blocks[2], stride=2
+        )
+        self.layer4 = self._make_layer(
+            channels[2], channels[3], num_blocks[3], stride=2
+        )
 
         self.norm_stats = torch.nn.BatchNorm1d(2 * 11 * channels[3])
 
@@ -793,11 +797,11 @@ class ResNetASVSpoof(nn.Module):
         self.norm_embed = torch.nn.BatchNorm1d(self.embed_features)
 
         self.attention = nn.Sequential(
-            nn.Conv1d(channels[3] * 11, channels[3]//2, kernel_size=1),
-            #nn.SiLU(),
-            #nn.BatchNorm1d(channels[3]//2),
+            nn.Conv1d(channels[3] * 11, channels[3] // 2, kernel_size=1),
+            # nn.SiLU(),
+            # nn.BatchNorm1d(channels[3]//2),
             nn.Tanh(),
-            nn.Conv1d(channels[3]//2, channels[3] * 11, kernel_size=1),
+            nn.Conv1d(channels[3] // 2, channels[3] * 11, kernel_size=1),
             nn.Softmax(dim=2),
         )
 
@@ -805,13 +809,15 @@ class ResNetASVSpoof(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
     def extra_repr(self):
-        return 'embed_features={}, num_classes={}'.format(self.embed_features, self.num_classes)
+        return "embed_features={}, num_classes={}".format(
+            self.embed_features, self.num_classes
+        )
 
     def get_m(self):
         return self.output.get_m()
@@ -834,8 +840,10 @@ class ResNetASVSpoof(nn.Module):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
-                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
             )
 
         layers = []
@@ -845,7 +853,7 @@ class ResNetASVSpoof(nn.Module):
             layers.append(MiniBasicBlock(outchannel, outchannel))
         return nn.Sequential(*layers)
 
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.pre_conv1(x)
         x = self.pre_bn1(x)
         x = self.pre_activation1(x)
@@ -861,7 +869,7 @@ class ResNetASVSpoof(nn.Module):
         w = self.attention(x)
 
         mu = torch.sum(x * w, dim=2)
-        sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-5))
+        sg = torch.sqrt((torch.sum((x**2) * w, dim=2) - mu**2).clamp(min=1e-5))
 
         x = torch.cat([mu, sg], dim=1)
 
@@ -878,10 +886,15 @@ class ResNetASVSpoof(nn.Module):
         return x
 
 
-
-
 class ResNet(nn.Module):
-    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[128, 128, 256, 256], num_blocks=[3,8,18,3]):
+    def __init__(
+        self,
+        input_features=81,
+        embed_features=256,
+        num_classes=6000,
+        channels=[128, 128, 256, 256],
+        num_blocks=[3, 8, 18, 3],
+    ):
         super(ResNet, self).__init__()
 
         self.embed_features = embed_features
@@ -893,10 +906,18 @@ class ResNet(nn.Module):
         self.pre_bn1 = nn.BatchNorm2d(channels[0])
         self.pre_activation1 = nn.SiLU()
 
-        self.layer1 = self._make_layer_se(channels[0], channels[0], num_blocks[0], stride=1)
-        self.layer2 = self._make_layer_se(channels[0], channels[1], num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(channels[1], channels[2], num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(channels[2], channels[3], num_blocks[3], stride=2)
+        self.layer1 = self._make_layer_se(
+            channels[0], channels[0], num_blocks[0], stride=1
+        )
+        self.layer2 = self._make_layer_se(
+            channels[0], channels[1], num_blocks[1], stride=2
+        )
+        self.layer3 = self._make_layer(
+            channels[1], channels[2], num_blocks[2], stride=2
+        )
+        self.layer4 = self._make_layer(
+            channels[2], channels[3], num_blocks[3], stride=2
+        )
 
         self.norm_stats = torch.nn.BatchNorm1d(2 * 11 * channels[3])
 
@@ -904,11 +925,11 @@ class ResNet(nn.Module):
         self.norm_embed = torch.nn.BatchNorm1d(self.embed_features)
 
         self.attention = nn.Sequential(
-            nn.Conv1d(channels[3] * 11, channels[3]//2, kernel_size=1),
-            #nn.SiLU(),
-            #nn.BatchNorm1d(channels[3]//2),
+            nn.Conv1d(channels[3] * 11, channels[3] // 2, kernel_size=1),
+            # nn.SiLU(),
+            # nn.BatchNorm1d(channels[3]//2),
             nn.Tanh(),
-            nn.Conv1d(channels[3]//2, channels[3] * 11, kernel_size=1),
+            nn.Conv1d(channels[3] // 2, channels[3] * 11, kernel_size=1),
             nn.Softmax(dim=2),
         )
 
@@ -916,13 +937,15 @@ class ResNet(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
     def extra_repr(self):
-        return 'embed_features={}, num_classes={}'.format(self.embed_features, self.num_classes)
+        return "embed_features={}, num_classes={}".format(
+            self.embed_features, self.num_classes
+        )
 
     def get_m(self):
         return self.output.get_m()
@@ -945,8 +968,10 @@ class ResNet(nn.Module):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
-                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
             )
 
         layers = []
@@ -956,13 +981,14 @@ class ResNet(nn.Module):
             layers.append(SEBasicBlock(outchannel, outchannel, 1))
         return nn.Sequential(*layers)
 
-
     def _make_layer(self, inchannel, outchannel, block_num, stride=1):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
-                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
             )
 
         layers = []
@@ -972,7 +998,7 @@ class ResNet(nn.Module):
             layers.append(BasicBlock(outchannel, outchannel))
         return nn.Sequential(*layers)
 
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.pre_conv1(x)
         x = self.pre_bn1(x)
         x = self.pre_activation1(x)
@@ -988,7 +1014,7 @@ class ResNet(nn.Module):
         w = self.attention(x)
 
         mu = torch.sum(x * w, dim=2)
-        sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-5))
+        sg = torch.sqrt((torch.sum((x**2) * w, dim=2) - mu**2).clamp(min=1e-5))
 
         x = torch.cat([mu, sg], dim=1)
 
@@ -1003,7 +1029,6 @@ class ResNet(nn.Module):
         x = self.output(x, iden)
 
         return x
-
 
 
 class ASTP(nn.Module):
@@ -1029,14 +1054,18 @@ class ASTP(nn.Module):
         w = self.attention(x)
 
         mu = torch.sum(x * w, dim=2)
-        sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-5))
+        sg = torch.sqrt((torch.sum((x**2) * w, dim=2) - mu**2).clamp(min=1e-5))
 
         return torch.cat([mu, sg], dim=1)
 
 
-
 class PreResNetV2(nn.Module):
-    def __init__(self, input_features=[81, 41, 21, 11], channels=[128, 128, 256, 256], num_blocks=[3,8,18,3]):
+    def __init__(
+        self,
+        input_features=[81, 41, 21, 11],
+        channels=[128, 128, 256, 256],
+        num_blocks=[3, 8, 18, 3],
+    ):
         super(PreResNetV2, self).__init__()
 
         self.channels = channels
@@ -1047,53 +1076,89 @@ class PreResNetV2(nn.Module):
         self.pre_bn1 = nn.BatchNorm2d(channels[0])
         self.pre_activation1 = nn.SiLU()
 
-        self.layer1 = self._make_layer_se(self.channels[0], self.channels[0], self.input_features[0], self.input_features[0], self.num_blocks[0], stride=1)
-        self.layer2 = self._make_layer_se(self.channels[0], self.channels[1], self.input_features[0], self.input_features[1], self.num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(self.channels[1], self.channels[2], self.input_features[1], self.input_features[2], self.num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(self.channels[2], self.channels[3], self.input_features[2], self.input_features[3], self.num_blocks[3], stride=2)
+        self.layer1 = self._make_layer_se(
+            self.channels[0],
+            self.channels[0],
+            self.input_features[0],
+            self.input_features[0],
+            self.num_blocks[0],
+            stride=1,
+        )
+        self.layer2 = self._make_layer_se(
+            self.channels[0],
+            self.channels[1],
+            self.input_features[0],
+            self.input_features[1],
+            self.num_blocks[1],
+            stride=2,
+        )
+        self.layer3 = self._make_layer(
+            self.channels[1],
+            self.channels[2],
+            self.input_features[1],
+            self.input_features[2],
+            self.num_blocks[2],
+            stride=2,
+        )
+        self.layer4 = self._make_layer(
+            self.channels[2],
+            self.channels[3],
+            self.input_features[2],
+            self.input_features[3],
+            self.num_blocks[3],
+            stride=2,
+        )
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
-
-    def _make_layer_se(self, inchannel, outchannel, feature_in, feature_out, block_num, stride=1):
+    def _make_layer_se(
+        self, inchannel, outchannel, feature_in, feature_out, block_num, stride=1
+    ):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
-                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
             )
 
         layers = []
-        layers.append(SEBasicBlockX(inchannel, outchannel, feature_in, 1, stride, downsample))
+        layers.append(
+            SEBasicBlockX(inchannel, outchannel, feature_in, 1, stride, downsample)
+        )
 
         for i in range(1, block_num):
             layers.append(SEBasicBlockX(outchannel, outchannel, feature_out, 1))
         return nn.Sequential(*layers)
 
-
-    def _make_layer(self, inchannel, outchannel, feature_in, feature_out, block_num, stride=1):
+    def _make_layer(
+        self, inchannel, outchannel, feature_in, feature_out, block_num, stride=1
+    ):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
-                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
             )
 
         layers = []
-        layers.append(BasicBlockX(inchannel, outchannel, feature_in, stride, downsample))
+        layers.append(
+            BasicBlockX(inchannel, outchannel, feature_in, stride, downsample)
+        )
 
         for i in range(1, block_num):
             layers.append(BasicBlockX(outchannel, outchannel, feature_out))
         return nn.Sequential(*layers)
 
-
-
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.pre_conv1(x)
         x = self.pre_bn1(x)
         x = self.pre_activation1(x)
@@ -1109,10 +1174,8 @@ class PreResNetV2(nn.Module):
         return x
 
 
-
-
 class PreResNetV3(nn.Module):
-    def __init__(self, channels=[128, 128, 256, 256], num_blocks=[3,8,18,3]):
+    def __init__(self, channels=[128, 128, 256, 256], num_blocks=[3, 8, 18, 3]):
         super(PreResNetV3, self).__init__()
 
         self.channels = channels
@@ -1122,14 +1185,22 @@ class PreResNetV3(nn.Module):
         self.pre_bn1 = nn.BatchNorm2d(channels[0])
         self.pre_activation1 = nn.SiLU()
 
-        self.layer1 = self._make_layer_se(channels[0], channels[0], num_blocks[0], stride=1)
-        self.layer2 = self._make_layer_se(channels[0], channels[1], num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(channels[1], channels[2], num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(channels[2], channels[3], num_blocks[3], stride=2)
+        self.layer1 = self._make_layer_se(
+            channels[0], channels[0], num_blocks[0], stride=1
+        )
+        self.layer2 = self._make_layer_se(
+            channels[0], channels[1], num_blocks[1], stride=2
+        )
+        self.layer3 = self._make_layer(
+            channels[1], channels[2], num_blocks[2], stride=2
+        )
+        self.layer4 = self._make_layer(
+            channels[2], channels[3], num_blocks[3], stride=2
+        )
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -1138,24 +1209,29 @@ class PreResNetV3(nn.Module):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
-                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
             )
 
         layers = []
-        layers.append(SEBasicBlockPosition(inchannel, outchannel, 1, stride, downsample))
+        layers.append(
+            SEBasicBlockPosition(inchannel, outchannel, 1, stride, downsample)
+        )
 
         for i in range(1, block_num):
             layers.append(SEBasicBlockPosition(outchannel, outchannel, 1))
         return nn.Sequential(*layers)
 
-
     def _make_layer(self, inchannel, outchannel, block_num, stride=1):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
-                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
             )
 
         layers = []
@@ -1165,7 +1241,7 @@ class PreResNetV3(nn.Module):
             layers.append(BasicBlockPosition(outchannel, outchannel))
         return nn.Sequential(*layers)
 
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.pre_conv1(x)
         x = self.pre_bn1(x)
         x = self.pre_activation1(x)
@@ -1181,11 +1257,8 @@ class PreResNetV3(nn.Module):
         return x
 
 
-
-
-
 class PreResNet(nn.Module):
-    def __init__(self, channels=[128, 128, 256, 256], num_blocks=[3,8,18,3]):
+    def __init__(self, channels=[128, 128, 256, 256], num_blocks=[3, 8, 18, 3]):
         super(PreResNet, self).__init__()
 
         self.channels = channels
@@ -1195,14 +1268,22 @@ class PreResNet(nn.Module):
         self.pre_bn1 = nn.BatchNorm2d(channels[0])
         self.pre_activation1 = nn.SiLU()
 
-        self.layer1 = self._make_layer_se(channels[0], channels[0], num_blocks[0], stride=1)
-        self.layer2 = self._make_layer_se(channels[0], channels[1], num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(channels[1], channels[2], num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(channels[2], channels[3], num_blocks[3], stride=2)
+        self.layer1 = self._make_layer_se(
+            channels[0], channels[0], num_blocks[0], stride=1
+        )
+        self.layer2 = self._make_layer_se(
+            channels[0], channels[1], num_blocks[1], stride=2
+        )
+        self.layer3 = self._make_layer(
+            channels[1], channels[2], num_blocks[2], stride=2
+        )
+        self.layer4 = self._make_layer(
+            channels[2], channels[3], num_blocks[3], stride=2
+        )
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -1211,8 +1292,10 @@ class PreResNet(nn.Module):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
-                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
             )
 
         layers = []
@@ -1222,13 +1305,14 @@ class PreResNet(nn.Module):
             layers.append(SEBasicBlock(outchannel, outchannel, 1))
         return nn.Sequential(*layers)
 
-
     def _make_layer(self, inchannel, outchannel, block_num, stride=1):
         downsample = None
         if stride != 1 or inchannel != outchannel:
             downsample = nn.Sequential(
-                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outchannel)
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
             )
 
         layers = []
@@ -1238,7 +1322,7 @@ class PreResNet(nn.Module):
             layers.append(BasicBlock(outchannel, outchannel))
         return nn.Sequential(*layers)
 
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.pre_conv1(x)
         x = self.pre_bn1(x)
         x = self.pre_activation1(x)
@@ -1272,9 +1356,16 @@ class SpeakerEmbedding(nn.Module):
         return x
 
 
-
 class ResNetV3(nn.Module):
-    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[128, 128, 256, 256], num_blocks=[3,8,18,3], k=3):
+    def __init__(
+        self,
+        input_features=81,
+        embed_features=256,
+        num_classes=6000,
+        channels=[128, 128, 256, 256],
+        num_blocks=[3, 8, 18, 3],
+        k=3,
+    ):
         super(ResNetV3, self).__init__()
 
         self.embed_features = embed_features
@@ -1285,14 +1376,16 @@ class ResNetV3(nn.Module):
 
         self.preresnet = PreResNet(self.channels, self.num_blocks)
 
-        self.temporal_pooling = ASTP(channels[3] * 11, channels[3]//2)
+        self.temporal_pooling = ASTP(channels[3] * 11, channels[3] // 2)
 
-        self.embedding = SpeakerEmbedding(2*11*channels[3], self.embed_features)
+        self.embedding = SpeakerEmbedding(2 * 11 * channels[3], self.embed_features)
 
         self.output = SubCenterAMSMLoss(self.embed_features, self.num_classes, k=self.k)
 
     def extra_repr(self):
-        return 'embed_features={}, num_classes={}, k={}'.format(self.embed_features, self.num_classes, self.k)
+        return "embed_features={}, num_classes={}, k={}".format(
+            self.embed_features, self.num_classes, self.k
+        )
 
     def get_m(self):
         return self.output.get_m()
@@ -1306,7 +1399,7 @@ class ResNetV3(nn.Module):
     def set_s(self, s):
         self.output.set_s(s)
 
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.preresnet(x)
 
         x = self.temporal_pooling(x)
@@ -1322,7 +1415,14 @@ class ResNetV3(nn.Module):
 
 
 class ResNetV4b(nn.Module):
-    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[128, 128, 256, 256], num_blocks=[3,8,18,3]):
+    def __init__(
+        self,
+        input_features=81,
+        embed_features=256,
+        num_classes=6000,
+        channels=[128, 128, 256, 256],
+        num_blocks=[3, 8, 18, 3],
+    ):
         super(ResNetV4, self).__init__()
 
         self.input_features = input_features
@@ -1331,18 +1431,29 @@ class ResNetV4b(nn.Module):
         self.channels = channels
         self.num_blocks = num_blocks
 
-        features = [self.input_features, math.ceil(self.input_features/2), math.ceil(self.input_features/4), math.ceil(self.input_features/8)]
+        features = [
+            self.input_features,
+            math.ceil(self.input_features / 2),
+            math.ceil(self.input_features / 4),
+            math.ceil(self.input_features / 8),
+        ]
 
         self.preresnet = PreResNetV3(features, self.channels, self.num_blocks)
 
-        self.temporal_pooling = ASTP(channels[3] * 11, channels[3]//2)
+        self.temporal_pooling = ASTP(channels[3] * 11, channels[3] // 2)
 
-        self.embedding = SpeakerEmbedding(2*11*channels[3], self.embed_features)
+        self.embedding = SpeakerEmbedding(2 * 11 * channels[3], self.embed_features)
 
         self.output = AMSMLoss(self.embed_features, self.num_classes)
 
     def extra_repr(self):
-        return 'input_features={}, embed_features={}, num_classes={}, channels={}, num_blocks={}'.format(self.input_features, self.embed_features, self.num_classes, " ".join(map(lambda x: str(x), self.channels)), " ".join(map(lambda x: str(x), self.num_blocks))  )
+        return "input_features={}, embed_features={}, num_classes={}, channels={}, num_blocks={}".format(
+            self.input_features,
+            self.embed_features,
+            self.num_classes,
+            " ".join(map(lambda x: str(x), self.channels)),
+            " ".join(map(lambda x: str(x), self.num_blocks)),
+        )
 
     def get_m(self):
         return self.output.get_m()
@@ -1356,7 +1467,7 @@ class ResNetV4b(nn.Module):
     def set_s(self, s):
         self.output.set_s(s)
 
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.preresnet(x)
 
         x = self.temporal_pooling(x)
@@ -1371,11 +1482,15 @@ class ResNetV4b(nn.Module):
         return x
 
 
-
-
-
 class ResNetV4(nn.Module):
-    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[128, 128, 256, 256], num_blocks=[3,8,18,3]):
+    def __init__(
+        self,
+        input_features=81,
+        embed_features=256,
+        num_classes=6000,
+        channels=[128, 128, 256, 256],
+        num_blocks=[3, 8, 18, 3],
+    ):
         super(ResNetV4, self).__init__()
 
         self.input_features = input_features
@@ -1384,18 +1499,29 @@ class ResNetV4(nn.Module):
         self.channels = channels
         self.num_blocks = num_blocks
 
-        features = [self.input_features, math.ceil(self.input_features/2), math.ceil(self.input_features/4), math.ceil(self.input_features/8)]
+        features = [
+            self.input_features,
+            math.ceil(self.input_features / 2),
+            math.ceil(self.input_features / 4),
+            math.ceil(self.input_features / 8),
+        ]
 
         self.preresnet = PreResNetV2(features, self.channels, self.num_blocks)
 
-        self.temporal_pooling = ASTP(channels[3] * 11, channels[3]//2)
+        self.temporal_pooling = ASTP(channels[3] * 11, channels[3] // 2)
 
-        self.embedding = SpeakerEmbedding(2*11*channels[3], self.embed_features)
+        self.embedding = SpeakerEmbedding(2 * 11 * channels[3], self.embed_features)
 
         self.output = AMSMLoss(self.embed_features, self.num_classes)
 
     def extra_repr(self):
-        return 'input_features={}, embed_features={}, num_classes={}, channels={}, num_blocks={}'.format(self.input_features, self.embed_features, self.num_classes, " ".join(map(lambda x: str(x), self.channels)), " ".join(map(lambda x: str(x), self.num_blocks))  )
+        return "input_features={}, embed_features={}, num_classes={}, channels={}, num_blocks={}".format(
+            self.input_features,
+            self.embed_features,
+            self.num_classes,
+            " ".join(map(lambda x: str(x), self.channels)),
+            " ".join(map(lambda x: str(x), self.num_blocks)),
+        )
 
     def get_m(self):
         return self.output.get_m()
@@ -1409,7 +1535,7 @@ class ResNetV4(nn.Module):
     def set_s(self, s):
         self.output.set_s(s)
 
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.preresnet(x)
 
         x = self.temporal_pooling(x)
@@ -1424,9 +1550,15 @@ class ResNetV4(nn.Module):
         return x
 
 
-
 class ResNetV5(nn.Module):
-    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[128, 128, 256, 256], num_blocks=[3,8,18,3]):
+    def __init__(
+        self,
+        input_features=81,
+        embed_features=256,
+        num_classes=6000,
+        channels=[128, 128, 256, 256],
+        num_blocks=[3, 8, 18, 3],
+    ):
         super(ResNetV5, self).__init__()
 
         self.embed_features = embed_features
@@ -1436,14 +1568,16 @@ class ResNetV5(nn.Module):
 
         self.preresnet = PreResNet(self.channels, self.num_blocks)
 
-        self.temporal_pooling = ASTP(channels[3] * 12, channels[3]//2)
+        self.temporal_pooling = ASTP(channels[3] * 12, channels[3] // 2)
 
-        self.embedding = SpeakerEmbedding(2*12*channels[3], self.embed_features)
+        self.embedding = SpeakerEmbedding(2 * 12 * channels[3], self.embed_features)
 
         self.output = AMSMLoss(self.embed_features, self.num_classes)
 
     def extra_repr(self):
-        return 'embed_features={}, num_classes={}'.format(self.embed_features, self.num_classes)
+        return "embed_features={}, num_classes={}".format(
+            self.embed_features, self.num_classes
+        )
 
     def get_m(self):
         return self.output.get_m()
@@ -1457,7 +1591,7 @@ class ResNetV5(nn.Module):
     def set_s(self, s):
         self.output.set_s(s)
 
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.preresnet(x)
 
         x = self.temporal_pooling(x)
@@ -1472,13 +1606,15 @@ class ResNetV5(nn.Module):
         return x
 
 
-
-
-
-
-
 class ResNetV2(nn.Module):
-    def __init__(self, input_features=81, embed_features=256, num_classes=6000, channels=[128, 128, 256, 256], num_blocks=[3,8,18,3]):
+    def __init__(
+        self,
+        input_features=81,
+        embed_features=256,
+        num_classes=6000,
+        channels=[128, 128, 256, 256],
+        num_blocks=[3, 8, 18, 3],
+    ):
         super(ResNetV2, self).__init__()
 
         self.embed_features = embed_features
@@ -1488,14 +1624,16 @@ class ResNetV2(nn.Module):
 
         self.preresnet = PreResNet(self.channels, self.num_blocks)
 
-        self.temporal_pooling = ASTP(channels[3] * 11, channels[3]//2)
+        self.temporal_pooling = ASTP(channels[3] * 11, channels[3] // 2)
 
-        self.embedding = SpeakerEmbedding(2*11*channels[3], self.embed_features)
+        self.embedding = SpeakerEmbedding(2 * 11 * channels[3], self.embed_features)
 
         self.output = AMSMLoss(self.embed_features, self.num_classes)
 
     def extra_repr(self):
-        return 'embed_features={}, num_classes={}'.format(self.embed_features, self.num_classes)
+        return "embed_features={}, num_classes={}".format(
+            self.embed_features, self.num_classes
+        )
 
     def get_m(self):
         return self.output.get_m()
@@ -1522,7 +1660,7 @@ class ResNetV2(nn.Module):
 
         logits = F.linear(x, W)
 
-        softmax_tensor = torch.nn.functional.softmax(tensor, dim=1)
+        softmax_tensor = torch.nn.functional.softmax(logits, dim=1)
 
         sorted_tensor, _ = torch.sort(softmax_tensor, descending=True)
 
@@ -1530,9 +1668,9 @@ class ResNetV2(nn.Module):
 
         counts = x.shape[1] - (cumulative_sum > 0.8).float().argmax(dim=1) + 1
 
-        return count
+        return counts
 
-    def forward(self, x, iden = None):
+    def forward(self, x, iden=None):
         x = self.preresnet(x)
 
         x = self.temporal_pooling(x)
@@ -1545,5 +1683,3 @@ class ResNetV2(nn.Module):
         x = self.output(x, iden)
 
         return x
-
-

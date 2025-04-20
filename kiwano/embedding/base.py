@@ -1,19 +1,20 @@
-import torch
-import sympy
 import pickle
 import subprocess
 import sys
 
+import sympy
+import torch
 
-class EmbeddingSet():
+
+class EmbeddingSet:
     def __init__(self):
         self.h = {}
 
     def __getitem__(self, name: str):
-        return self.h[ name ]
+        return self.h[name]
 
     def __setitem__(self, name: str, tensor: torch.Tensor):
-        self.h[ name ] = tensor
+        self.h[name] = tensor
 
     def __iter__(self):
         return iter(self.h)
@@ -30,7 +31,6 @@ class EmbeddingSet():
         return len(self.h)
 
 
-
 def write_pkl(arg: str, arr: EmbeddingSet):
     arg = arg.strip()
 
@@ -45,13 +45,12 @@ def write_pkl(arg: str, arr: EmbeddingSet):
     if arg[0:6] == "pkl,t:":
         if arg[6] == "-":
             for v in arr:
-                print(v+" "+" ".join(map(str, arr[v].numpy())))
+                print(v + " " + " ".join(map(str, arr[v].numpy())))
         else:
             file = open(arg[6:], "w")
             for v in arr:
-                file.write(v+" "+" ".join(map(str, arr[v].numpy()))+"\n")
+                file.write(v + " " + " ".join(map(str, arr[v].numpy())) + "\n")
             file.close
-
 
 
 def read_pkl(arg: str):
@@ -59,44 +58,44 @@ def read_pkl(arg: str):
 
     if arg[0:4] == "pkl:":
         if arg[4] == "-":
-            delimiter = b'usb.'
+            delimiter = b"usb."
             output = sys.stdin.buffer.read()
-            my_list = [x+delimiter for x in output.split(delimiter) if x]
+            my_list = [x + delimiter for x in output.split(delimiter) if x]
             if len(my_list) == 1:
-                arr = pickle.loads( output )
+                arr = pickle.loads(output)
                 return arr
             else:
                 emb = EmbeddingSet()
                 for x in my_list:
-                    tmp = pickle.loads( x )
+                    tmp = pickle.loads(x)
                     for k in tmp:
-                        emb[ k ] = tmp[k]
+                        emb[k] = tmp[k]
                 return emb
 
-            #arr = pickle.load(  sys.stdin.buffer )
-            #return arr
+            # arr = pickle.load(  sys.stdin.buffer )
+            # return arr
 
         elif arg[-1] == "|":
             cmd = arg[4:-1]
             proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
             output, error = proc.communicate()
 
-            delimiter = b'usb.'
-            my_list = [x+delimiter for x in output.split(delimiter) if x]
+            delimiter = b"usb."
+            my_list = [x + delimiter for x in output.split(delimiter) if x]
             if len(my_list) == 1:
-                arr = pickle.loads( output )
+                arr = pickle.loads(output)
                 return arr
             else:
                 emb = EmbeddingSet()
                 for x in my_list:
-                    tmp = pickle.loads( x )
+                    tmp = pickle.loads(x)
                     for k in tmp:
-                        emb[ k ] = tmp[k]
+                        emb[k] = tmp[k]
                 return emb
 
         else:
             file = open(arg[4:], "rb")
-            arr = pickle.load( file )
+            arr = pickle.load(file)
             file.close()
             return arr
 
@@ -105,11 +104,11 @@ def read_pkl(arg: str):
             cmd = arg[6:-1]
             proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
             output, error = proc.communicate()
-            arr = pickle.loads(  output )
+            arr = pickle.loads(output)
             return arr
         else:
             f = open(arg[6:], "r")
-            #arr = pickle.load( file )
+            # arr = pickle.load( file )
             emb = EmbeddingSet()
             for line in f:
                 parts = line.split()
@@ -119,9 +118,7 @@ def read_pkl(arg: str):
 
                 tensor_values = torch.tensor(values)
 
-                emb[ key ] = tensor_values
+                emb[key] = tensor_values
 
             f.close()
             return emb
-
-

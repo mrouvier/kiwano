@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class CMVN:
     """
     Apply cepstral mean and (optionnaly) variance normalization
@@ -8,5 +9,6 @@ class CMVN:
     CMVN(arr)
 
     """
+
     def __new__(self, arr: np.ndarray):
         return arr - np.mean(arr, axis=0)

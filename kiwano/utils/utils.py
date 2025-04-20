@@ -1,27 +1,29 @@
-from typing import Union
-from pathlib import Path
-from tqdm.auto import tqdm
-
-import hashlib
-import zipfile
-import tarfile
-import os
 import concurrent.futures
+import hashlib
+import os
+import tarfile
+import zipfile
+from pathlib import Path
+from typing import Union
+
+from tqdm.auto import tqdm
 
 Pathlike = Union[Path, str]
 
+
 def extract_file_zip(zip_file, member, output_dir):
-    if member.endswith('/'):
-        return  
+    if member.endswith("/"):
+        return
     member_path = os.path.join(output_dir, member)
     os.makedirs(os.path.dirname(member_path), exist_ok=True)
-    with zip_file.open(member) as source, open(os.path.join(output_dir, member), 'wb') as target:
+    with zip_file.open(member) as source, open(
+        os.path.join(output_dir, member), "wb"
+    ) as target:
         target.write(source.read())
 
 
-
 def parallel_unzip(zip_path, output_dir, jobs):
-    with zipfile.ZipFile(zip_path, 'r') as zip_file:
+    with zipfile.ZipFile(zip_path, "r") as zip_file:
         members = zip_file.namelist()
 
         os.makedirs(output_dir, exist_ok=True)
@@ -30,17 +32,19 @@ def parallel_unzip(zip_path, output_dir, jobs):
             futures = []
 
             for member in members:
-                futures.append(ex.submit(extract_file_zip, zip_file, member, output_dir))
+                futures.append(
+                    ex.submit(extract_file_zip, zip_file, member, output_dir)
+                )
 
             for future in tqdm(futures, desc="Unzipping files"):
                 future.result()
 
-def extract_tar(tar_gz_path, extract_path='.'):
-    with tarfile.open(tar_gz_path, 'r:gz') as tar:
+
+def extract_tar(tar_gz_path, extract_path="."):
+    with tarfile.open(tar_gz_path, "r:gz") as tar:
         total_members = len(tar.getmembers())
         for member in tqdm(tar.getmembers(), total=total_members, desc="Extracting"):
             tar.extract(member, path=extract_path)
-
 
 
 def copy_files(zip_path, target_dir, part):
@@ -49,7 +53,12 @@ def copy_files(zip_path, target_dir, part):
     total_size = sum(file.stat().st_size for file in files)
 
     with open(zip_path, "wb") as outFile:
-        with tqdm(total=total_size, unit='B', unit_scale=True, desc="Concatenating different file parts") as pbar:
+        with tqdm(
+            total=total_size,
+            unit="B",
+            unit_scale=True,
+            desc="Concatenating different file parts",
+        ) as pbar:
             for file in files:
                 with open(file, "rb") as inFile:
                     while True:
@@ -60,7 +69,9 @@ def copy_files(zip_path, target_dir, part):
                         pbar.update(len(buf))
 
 
-def get_all_files(dirName, match_and=None, match_or=None, exclude_and=None, exclude_or=None):
+def get_all_files(
+    dirName, match_and=None, match_or=None, exclude_and=None, exclude_or=None
+):
     """
     https://github.com/speechbrain/speechbrain/blob/develop/speechbrain/utils/data_utils.py#L61C2-L170C1
 
@@ -186,13 +197,13 @@ def tqdm_urlretrieve_hook(t):
 
     return update_to
 
+
 def urlretrieve_progress(url, filename=None, data=None, desc=None):
     from urllib.request import urlretrieve
 
     with tqdm(unit="B", unit_scale=True, unit_divisor=1024, miniters=1, desc=desc) as t:
         reporthook = tqdm_urlretrieve_hook(t)
         return urlretrieve(url=url, filename=filename, reporthook=reporthook, data=data)
-
 
 
 def check_md5(dir, liste):
@@ -208,7 +219,7 @@ def check_md5(dir, liste):
 
         for i in range(3):
             try:
-                with open(fname, 'rb') as file:
+                with open(fname, "rb") as file:
                     hash = hashlib.md5()
                     while True:
                         chunk = file.read(8096)
@@ -224,11 +235,15 @@ def check_md5(dir, liste):
                     break
             except ValueError:
                 print("error downloading file ", fname)
-                urlretrieve_progress(url[0], filename=dir / url[0].split("/")[-1], desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}")
+                urlretrieve_progress(
+                    url[0],
+                    filename=dir / url[0].split("/")[-1],
+                    desc=f"Downloading VoxCeleb1 {url[0].split('/')[-1]}",
+                )
 
         else:
             if hashlib.md5(fname.read_bytes()).hexdigest() != url[1]:
                 print("Download failed for file ", fname)
                 os.remove(fname)
             else:
-                print("File ", fname," finally correctly downloaded")
+                print("File ", fname, " finally correctly downloaded")

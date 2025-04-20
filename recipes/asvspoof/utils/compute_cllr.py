@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import numpy as np
-from scipy.special import logit, expit
+import argparse
 import copy
 
-from kiwano.utils import read_scores, read_keys
-import argparse
+import numpy as np
+from scipy.special import expit, logit
+
+from kiwano.utils import read_keys, read_scores
 
 
 def read_targets_and_nontargets(keys, scores):
@@ -18,13 +19,14 @@ def read_targets_and_nontargets(keys, scores):
     targets = []
     nontargets = []
 
-    for vectors in keys :
+    for vectors in keys:
         if keys[vectors] == "1":
             targets.append(float(scores[vectors]))
-        else :
+        else:
             nontargets.append(float(scores[vectors]))
 
     return np.array(targets), np.array(nontargets)
+
 
 def pavx(y):
     """
@@ -32,8 +34,8 @@ def pavx(y):
     This function implements the PAV : Pool Adjacent Violators algorithm. With respect to an input vector y, it computes ghat, a nondecreasing vector such as sum((y - ghat).^2) is minimal
     This code is taken from : https://github.com/DigitalPhonetics/VoicePAT/blob/4b86f44d6e4dc4cb529892e6a51d10519a2273b4/evaluation/privacy/asv/metrics/helpers.py#L122
     """
-    assert y.ndim == 1, 'Argument should be a 1-D array'
-    assert y.shape[0] > 0, 'Input array is empty'
+    assert y.ndim == 1, "Argument should be a 1-D array"
+    assert y.shape[0] > 0, "Input array is empty"
     n = y.shape[0]
 
     index = np.zeros(n, dtype=int)
@@ -57,8 +59,8 @@ def pavx(y):
             length[ci - 1] = nw
             ci -= 1
 
-    height = copy.deepcopy(ghat[:ci + 1])
-    width = copy.deepcopy(length[:ci + 1])
+    height = copy.deepcopy(ghat[: ci + 1])
+    width = copy.deepcopy(length[: ci + 1])
 
     while n >= 0:
         for j in range(index[ci], n + 1):
@@ -67,6 +69,7 @@ def pavx(y):
         ci -= 1
 
     return ghat, width, height
+
 
 def optimal_llr(tar, non, laplace=False, monotonicity_epsilon=1e-6):
     """
@@ -81,7 +84,7 @@ def optimal_llr(tar, non, laplace=False, monotonicity_epsilon=1e-6):
     scores = np.concatenate([non, tar])
     Pideal = np.concatenate([np.zeros(len(non)), np.ones(len(tar))])
 
-    perturb = np.argsort(scores, kind='mergesort')
+    perturb = np.argsort(scores, kind="mergesort")
     Pideal = Pideal[perturb]
 
     if laplace:
@@ -90,7 +93,7 @@ def optimal_llr(tar, non, laplace=False, monotonicity_epsilon=1e-6):
     Popt, width, foo = pavx(Pideal)
 
     if laplace:
-        Popt = Popt[2:len(Popt) - 2]
+        Popt = Popt[2 : len(Popt) - 2]
 
     posterior_log_odds = logit(Popt)
     log_prior_odds = np.log(len(tar) / len(non))
@@ -100,9 +103,8 @@ def optimal_llr(tar, non, laplace=False, monotonicity_epsilon=1e-6):
 
     idx_reverse = np.zeros(len(scores), dtype=int)
     idx_reverse[perturb] = np.arange(len(scores))
-    tar_llrs = llrs[idx_reverse][len(non):]
-    nontar_llrs = llrs[idx_reverse][:len(non)]
-
+    tar_llrs = llrs[idx_reverse][len(non) :]
+    nontar_llrs = llrs[idx_reverse][: len(non)]
 
     return tar_llrs, nontar_llrs
 
@@ -125,12 +127,13 @@ def compute_cllr(tar_llrs, nontar_llrs):
     cllr = (c1 + c2) / 2
     return cllr
 
+
 def compute_score(keys, scores):
     """
-     arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value : labels (0 : not the same speaker, 1 : same speaker)
-     arg2 scores: dictionary with key : tuple with the names of the pairs of audio files, value : the similarity between their two xvectors
-     This function calculates the cllr from all the scores
-     """
+    arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value : labels (0 : not the same speaker, 1 : same speaker)
+    arg2 scores: dictionary with key : tuple with the names of the pairs of audio files, value : the similarity between their two xvectors
+    This function calculates the cllr from all the scores
+    """
 
     targets, nontargets = read_targets_and_nontargets(keys, scores)
     targets, nontargets = optimal_llr(targets, nontargets)
@@ -138,13 +141,21 @@ def compute_score(keys, scores):
     return compute_cllr(targets, nontargets)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('keys', metavar='keys', type=str,
-                        help='the path to the the file where the keys are stocked')
-    parser.add_argument('scores', metavar='scores', type=str,
-                        help='the path to the file where the scores are stocked')
+    parser.add_argument(
+        "keys",
+        metavar="keys",
+        type=str,
+        help="the path to the the file where the keys are stocked",
+    )
+    parser.add_argument(
+        "scores",
+        metavar="scores",
+        type=str,
+        help="the path to the file where the scores are stocked",
+    )
 
     args = parser.parse_args()
 
@@ -154,7 +165,3 @@ if __name__ == '__main__':
 
     cllr = compute_score(trials, scores)
     print(cllr)
-
-
-
-

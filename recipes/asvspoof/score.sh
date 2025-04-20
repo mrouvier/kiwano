@@ -56,5 +56,3 @@ python utils/compute_auc.py data/all_airbus/trials $1/score_$2.txt
 #echo "DEFI"
 #t=$1/defi.$2/
 #python utils/embedding_copy.py "pkl:cat $1/defi.$2/xvector.*.pkl |" pkl,t:- | cut -f1,2 -d" " | awk '{print $1" "$1" "$2}' | sort  > $t/score.txt
-
-

@@ -1,11 +1,11 @@
-'''
+"""
 This is the ECAPA-TDNN model.
 This model is modified and combined based on the following three projects:
   1. https://github.com/clovaai/voxceleb_trainer/issues/86
   2. https://github.com/lawlict/ECAPA-TDNN/blob/master/ecapa_tdnn.py
   3. https://github.com/speechbrain/speechbrain/blob/96077e9a1afff89d3f5ff47cab4bca0202770e4f/speechbrain/lobes/models/ECAPA_TDNN.py
 
-'''
+"""
 
 import math
 
@@ -31,7 +31,6 @@ class SEModule(nn.Module):
 
 
 class Bottle2neck(nn.Module):
-
     def __init__(self, inplanes, planes, kernel_size=None, dilation=None, scale=8):
         super(Bottle2neck, self).__init__()
         width = int(math.floor(planes / scale))
@@ -42,7 +41,15 @@ class Bottle2neck(nn.Module):
         bns = []
         num_pad = math.floor(kernel_size / 2) * dilation
         for i in range(self.nums):
-            convs.append(nn.Conv1d(width, width, kernel_size=kernel_size, dilation=dilation, padding=num_pad))
+            convs.append(
+                nn.Conv1d(
+                    width,
+                    width,
+                    kernel_size=kernel_size,
+                    dilation=dilation,
+                    padding=num_pad,
+                )
+            )
             bns.append(nn.BatchNorm1d(width))
         self.convs = nn.ModuleList(convs)
         self.bns = nn.ModuleList(bns)
@@ -83,17 +90,24 @@ class Bottle2neck(nn.Module):
 
 
 class ECAPA_TDNN(nn.Module):
-
     def __init__(self, in_channels=81, out_channels=1024):
         super(ECAPA_TDNN, self).__init__()
 
         # self.conv1 = nn.Conv1d(80, c, kernel_size=5, stride=1, padding=2)
-        self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size=5, stride=1, padding=2)
+        self.conv1 = nn.Conv1d(
+            in_channels, out_channels, kernel_size=5, stride=1, padding=2
+        )
         self.relu = nn.ReLU()
         self.bn1 = nn.BatchNorm1d(out_channels)
-        self.layer1 = Bottle2neck(out_channels, out_channels, kernel_size=3, dilation=2, scale=8)
-        self.layer2 = Bottle2neck(out_channels, out_channels, kernel_size=3, dilation=3, scale=8)
-        self.layer3 = Bottle2neck(out_channels, out_channels, kernel_size=3, dilation=4, scale=8)
+        self.layer1 = Bottle2neck(
+            out_channels, out_channels, kernel_size=3, dilation=2, scale=8
+        )
+        self.layer2 = Bottle2neck(
+            out_channels, out_channels, kernel_size=3, dilation=3, scale=8
+        )
+        self.layer3 = Bottle2neck(
+            out_channels, out_channels, kernel_size=3, dilation=4, scale=8
+        )
         # I fixed the shape of the output from MFA layer, that is close to the setting from ECAPA paper.
         self.layer4 = nn.Conv1d(3 * out_channels, 1536, kernel_size=1)
         self.attention = nn.Sequential(
@@ -122,13 +136,21 @@ class ECAPA_TDNN(nn.Module):
 
         t = x.size()[-1]
 
-        global_x = torch.cat((x, torch.mean(x, dim=2, keepdim=True).repeat(1, 1, t),
-                              torch.sqrt(torch.var(x, dim=2, keepdim=True).clamp(min=1e-4)).repeat(1, 1, t)), dim=1)
+        global_x = torch.cat(
+            (
+                x,
+                torch.mean(x, dim=2, keepdim=True).repeat(1, 1, t),
+                torch.sqrt(torch.var(x, dim=2, keepdim=True).clamp(min=1e-4)).repeat(
+                    1, 1, t
+                ),
+            ),
+            dim=1,
+        )
 
         w = self.attention(global_x)
 
         mu = torch.sum(x * w, dim=2)
-        sg = torch.sqrt((torch.sum((x ** 2) * w, dim=2) - mu ** 2).clamp(min=1e-4))
+        sg = torch.sqrt((torch.sum((x**2) * w, dim=2) - mu**2).clamp(min=1e-4))
 
         x = torch.cat((mu, sg), 1)
         x = self.bn5(x)

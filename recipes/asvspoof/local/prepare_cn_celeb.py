@@ -1,23 +1,29 @@
 #!/usr/bin/python3
 
-from kiwano.utils import Pathlike
-from pathlib import Path
-import torchaudio
-from tqdm import tqdm
-from concurrent.futures.process import ProcessPoolExecutor
-
 import argparse
+import os
+from concurrent.futures.process import ProcessPoolExecutor
+from pathlib import Path
 from subprocess import PIPE, run
 
-import os
+import torchaudio
+from tqdm import tqdm
+
+from kiwano.utils import Pathlike
+
 
 def get_duration(file_path: str):
-   info = torchaudio.info(file_path)
-   return info.num_frames/info.sample_rate
+    info = torchaudio.info(file_path)
+    return info.num_frames / info.sample_rate
 
 
 def _process_file(file_path: Pathlike, output: Pathlike):
-    cmd = "ffmpeg -threads 1 -i " + str(file_path) + " -acodec pcm_s16le -ac 1 -ar 16000 -ab 48 -threads 1 " + str(output)
+    cmd = (
+        "ffmpeg -threads 1 -i "
+        + str(file_path)
+        + " -acodec pcm_s16le -ac 1 -ar 16000 -ab 48 -threads 1 "
+        + str(output)
+    )
     proc = run(cmd, shell=True, stdout=PIPE, stderr=PIPE)
 
 
@@ -26,10 +32,10 @@ def process_file_test(segment: Pathlike, in_data: Pathlike):
     spkid = str(segment).split("/")[-1].split("-")[0]
     n = str(segment).split("/")[-1].split(".")[0]
 
-    out = Path(in_data/ "CN-Celeb_flac" / "eval" / "wav")
+    out = Path(in_data / "CN-Celeb_flac" / "eval" / "wav")
     out.mkdir(parents=True, exist_ok=True)
 
-    output = str(Path(in_data/ "CN-Celeb_flac" / "eval" / "wav"/ n)) + ".wav"
+    output = str(Path(in_data / "CN-Celeb_flac" / "eval" / "wav" / n)) + ".wav"
 
     if not Path(output).exists():
         _process_file(segment, Path(output))
@@ -45,10 +51,10 @@ def process_file_dev(segment: Pathlike, in_data: Pathlike):
     spkid = str(segment).split("/")[4]
     n = str(segment).split("/")[-1].split(".")[0]
 
-    out = Path(in_data/ "CN-Celeb_flac" / "dev" / "wav" / spkid)
+    out = Path(in_data / "CN-Celeb_flac" / "dev" / "wav" / spkid)
     out.mkdir(parents=True, exist_ok=True)
 
-    output = str(Path(in_data/ "CN-Celeb_flac" / "dev" / "wav"/ spkid / n)) + ".wav"
+    output = str(Path(in_data / "CN-Celeb_flac" / "dev" / "wav" / spkid / n)) + ".wav"
 
     if not Path(output).exists():
         _process_file(segment, Path(output))
@@ -58,6 +64,7 @@ def process_file_dev(segment: Pathlike, in_data: Pathlike):
 
     return name, spkid, duration, toolkitPath
 
+
 def process_file_train(segment: Pathlike, in_data: Pathlike):
     name = "_".join(str(segment).split("/")[-3:]).split(".")[0]
     spkid = str(segment).split("/")[-2]
@@ -66,7 +73,7 @@ def process_file_train(segment: Pathlike, in_data: Pathlike):
     out = Path(in_data / "CN-Celeb2_flac" / "wav" / spkid)
     out.mkdir(parents=True, exist_ok=True)
 
-    output = str(Path(in_data / "CN-Celeb2_flac" / "wav" /spkid / n)) + ".wav"
+    output = str(Path(in_data / "CN-Celeb2_flac" / "wav" / spkid / n)) + ".wav"
 
     if not Path(output).exists():
         _process_file(segment, Path(output))
@@ -82,15 +89,21 @@ def prepare_trials(in_data: Pathlike):
 
     dictEnroll = {}
 
-    with open(in_data / "CN-Celeb_flac" / "eval" / "lists" / "enroll.lst", 'r') as enroll:
+    with open(
+        in_data / "CN-Celeb_flac" / "eval" / "lists" / "enroll.lst", "r"
+    ) as enroll:
         for line in enroll:
-            col1, col2 = line.strip().split(' ')
+            col1, col2 = line.strip().split(" ")
             dictEnroll[col1] = col2
 
-    with open(in_data / "CN-Celeb_flac" / "eval" / "lists" / "trials.lst", 'r') as trials:
-        with open(in_data / "CN-Celeb_flac" / "eval" / "lists" / "new_trials.txt", 'w') as new_trials:
+    with open(
+        in_data / "CN-Celeb_flac" / "eval" / "lists" / "trials.lst", "r"
+    ) as trials:
+        with open(
+            in_data / "CN-Celeb_flac" / "eval" / "lists" / "new_trials.txt", "w"
+        ) as new_trials:
             for line in trials:
-                col1, col2, col3 = line.strip().split(' ')
+                col1, col2, col3 = line.strip().split(" ")
                 if col3 == "0":
                     col3 = "nontarget"
                 else:
@@ -99,6 +112,7 @@ def prepare_trials(in_data: Pathlike):
                 col1 = "eval_enroll_" + col1[7:-4]
                 col2 = "eval_test_" + col2[5:-4]
                 new_trials.write(col1 + " " + col2 + " " + col3 + "\n")
+
 
 def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike):
     in_data = Path(in_data)
@@ -110,8 +124,6 @@ def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike):
     listeDev = open(out_data / "listeDev", "w")
     listeTest = open(out_data / "listeTest", "w")
 
-
-
     with ProcessPoolExecutor(20) as ex:
         futuresTrain = []
         futuresDev = []
@@ -120,7 +132,7 @@ def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike):
         for segment in (in_data / "CN-Celeb2_flac" / "data").rglob("*.flac"):
             futuresTrain.append(ex.submit(process_file_train, segment, out_data))
         for segment in (in_data / "CN-Celeb_flac" / "data").rglob("*.flac"):
-            if int(segment.parts[4][2:]) < 800 :
+            if int(segment.parts[4][2:]) < 800:
                 futuresDev.append(ex.submit(process_file_dev, segment, out_data))
 
         for segment in (in_data / "CN-Celeb_flac" / "eval").rglob("*.flac"):
@@ -138,14 +150,13 @@ def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike):
             name, spkid, duration, segment = future.result()
             listeTest.write(f"{name} {spkid} {duration} {segment}\n")
 
-
     listeTrain.close()
     listeDev.close()
     listeTest.close()
 
     prepare_trials(in_data)
 
-    if canDeleteZIP :
+    if canDeleteZIP:
         for file in sorted(in_data.glob("cn-celeb2_v2.tar*")):
 
             os.remove(file)
@@ -154,17 +165,28 @@ def prepare_cn_celeb(canDeleteZIP: bool, in_data: Pathlike, out_data: Pathlike):
         os.remove(in_data / "cn-celeb_v2.tar.gz")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('in_data', metavar='in_data', type=str,
-                        help='the path to the directory where CN-Celeb2_flac and CN-Celeb_flac are stored')
-    parser.add_argument('out_data', metavar="out_data", type=str,
-                        help='the path to the target directory where the liste will be stored')
-    parser.add_argument('--deleteZIP', action="store_true", default=False,
-                        help='to delete the ZIP files already extracted (default: False)')
+    parser.add_argument(
+        "in_data",
+        metavar="in_data",
+        type=str,
+        help="the path to the directory where CN-Celeb2_flac and CN-Celeb_flac are stored",
+    )
+    parser.add_argument(
+        "out_data",
+        metavar="out_data",
+        type=str,
+        help="the path to the target directory where the liste will be stored",
+    )
+    parser.add_argument(
+        "--deleteZIP",
+        action="store_true",
+        default=False,
+        help="to delete the ZIP files already extracted (default: False)",
+    )
 
     args = parser.parse_args()
 
     prepare_cn_celeb(args.deleteZIP, args.in_data, args.out_data)
-

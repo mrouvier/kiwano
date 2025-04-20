@@ -1,20 +1,19 @@
 import argparse
 import cProfile
 
+import numpy as np
+import torch
+
 from kiwano.embedding import EmbeddingSet, read_pkl
 from recipes.resnet.utils.compute_asnorm import ASNorm
-from recipes.resnet.utils.compute_snorm import DotProductStrategy, CosineStrategy
+from recipes.resnet.utils.compute_snorm import CosineStrategy, DotProductStrategy
 from recipes.resnet.utils.scoring import read_keys
-import torch
-import numpy as np
 
 
 class ADNorm(ASNorm):
-
     def __init__(self, trials, enrollment, test, impostors, computeStrategy, k):
         super().__init__(trials, enrollment, test, impostors, computeStrategy, k)
-        #cohorts is here a dictionary which contains keys : the name of the embedding and value : the normalized vector
-
+        # cohorts is here a dictionary which contains keys : the name of the embedding and value : the normalized vector
 
     def compute_score(self, xvectorEnrollment, xvectorTest, enrollmentName, testName):
 
@@ -23,7 +22,9 @@ class ADNorm(ASNorm):
             ve = self.compute_v(xvectorEnrollment)
             cohort_ve = self.select_impostors(ve)
             cohort_ve = [self.impostors[i] for i in cohort_ve]
-            normalized_ve = xvectorEnrollment - torch.mean(torch.stack(cohort_ve), dim=0)
+            normalized_ve = xvectorEnrollment - torch.mean(
+                torch.stack(cohort_ve), dim=0
+            )
             self.cohorts[enrollmentName] = normalized_ve
 
         normalized_vt = self.cohorts.get(testName)
@@ -37,21 +38,36 @@ class ADNorm(ASNorm):
         return self.computeStrategy.scoring_xvector(normalized_ve, normalized_vt)
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('keys', metavar='keys', type=str,
-                        help='the path to the file where the keys are stocked')
-    parser.add_argument('xvectorEnrollment', metavar='xvectorEnrollment', type=str,
-                        help='command to gather xvectors enrollment in pkl format')
-    parser.add_argument('xvectorTest', metavar='xvectorTest', type=str,
-                        help='command to gather xvectors test in pkl format')
-    parser.add_argument('impostors', metavar='impostors', type=str,
-                        help='command to gather xvectors for the impostor set in pkl format ')
-    parser.add_argument('k', metavar='k', type=int,
-                        help='numbers of impostors in the cohort')
+    parser.add_argument(
+        "keys",
+        metavar="keys",
+        type=str,
+        help="the path to the file where the keys are stocked",
+    )
+    parser.add_argument(
+        "xvectorEnrollment",
+        metavar="xvectorEnrollment",
+        type=str,
+        help="command to gather xvectors enrollment in pkl format",
+    )
+    parser.add_argument(
+        "xvectorTest",
+        metavar="xvectorTest",
+        type=str,
+        help="command to gather xvectors test in pkl format",
+    )
+    parser.add_argument(
+        "impostors",
+        metavar="impostors",
+        type=str,
+        help="command to gather xvectors for the impostor set in pkl format ",
+    )
+    parser.add_argument(
+        "k", metavar="k", type=int, help="numbers of impostors in the cohort"
+    )
 
     args = parser.parse_args()
     trials = read_keys(args.keys)
@@ -63,6 +79,4 @@ if __name__ == '__main__':
 
     adnorm = ADNorm(trials, enrollment, test, impostors, computeStrategy, args.k)
     adnorm.compute_norm()
-    #cProfile.run('adnorm.compute_norm()')
-
-
+    # cProfile.run('adnorm.compute_norm()')

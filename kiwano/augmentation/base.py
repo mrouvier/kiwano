@@ -1,18 +1,16 @@
-import torchaudio
-import torch
-import torch.nn as nn
-import numpy as np
-import random
-import math
 import copy
-
-from kiwano.dataset import SegmentSet
-
+import math
+import random
 from typing import List, Tuple
 
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchaudio
 from scipy import signal
 
-import torch.nn.functional as F
+from kiwano.dataset import SegmentSet
 
 
 class Augmentation:
@@ -825,16 +823,16 @@ class Codec16kHzWithEffector(Augmentation):
         """
         effector = torchaudio.io.AudioEffector()
         effector.set_output_format(param["format"])  # Set the output format (e.g., 'mp3', 'aac')
-        
+
         if "bitrate" in param:
             effector.set_codec_bitrate(param["bitrate"])
-        
+
         if "compression" in param:
             effector.set_codec_compression(param["compression"])
-        
+
         if "bits_per_sample" in param:
             ffector.set_bits_per_sample(param["bits_per_sample"])
-        
+
         speech = effector.apply(tensor.unsqueeze(0), sample_rate)
         """
 
