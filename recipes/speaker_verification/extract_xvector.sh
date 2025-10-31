@@ -23,4 +23,4 @@ dir=$1
 
 mkdir -p ${dir}/voxceleb1.${2}/
 
-python3 utils/extract_resnet.py --world_size=$SLURM_ARRAY_TASK_COUNT  --rank=$SLURM_ARRAY_TASK_ID data/voxceleb1/ ${dir}/model${2}.ckpt pkl:${dir}/voxceleb1.${2}/xvector.$SLURM_ARRAY_TASK_ID.pkl
+python3 utils/extract_resnet.py --world_size=$slurm_array_task_count  --rank=$slurm_array_task_id data/voxceleb1/ ${dir}/model${2}.ckpt pkl:${dir}/voxceleb1.${2}/xvector.$slurm_array_task_id.pkl
