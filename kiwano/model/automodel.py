@@ -1,4 +1,4 @@
-kiwano/model/automodel.py import torch
+import torch
 
 from kiwano.model import KiwanoResNet, ResNet, XIKiwanoResNet
 
