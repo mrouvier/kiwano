@@ -28,7 +28,7 @@ from kiwano.augmentation import (
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.embedding import EmbeddingSet, write_pkl
 from kiwano.features import Fbank, FbankV2
-from kiwano.model import ResNet, ResNetV2, ResNetV3, ResNetV4, ResNetV5
+from kiwano.model import ResNetV2
 from kiwano.utils import Pathlike
 
 
