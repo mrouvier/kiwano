@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-
 def conv3x3(in_planes, out_planes, stride=1):
     """
     3×3 convolution with padding.
@@ -55,8 +54,6 @@ def conv1x1(in_planes, out_planes, stride=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
-
-
 class SELayer(nn.Module):
     """
     Squeeze-and-Excitation (SE) channel attention.
@@ -84,6 +81,7 @@ class SELayer(nn.Module):
     >>> y = se(x); y.shape
     torch.Size([2, 256, 100, 20])
     """
+
     def __init__(self, channel, reduction=1):
         super(SELayer, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
@@ -128,6 +126,7 @@ class SEBasicBlockPosition(nn.Module):
     >>> y = blk(x); y.shape
     torch.Size([8, 128, 150, 81])
     """
+
     def __init__(self, inplanes, planes, reduction=1, stride=1, downsample=None):
         super(SEBasicBlockPosition, self).__init__()
 
@@ -196,6 +195,7 @@ class BasicBlockPosition(nn.Module):
     >>> blk(x).shape
     torch.Size([4, 256, 120, 81])
     """
+
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlockPosition, self).__init__()
 
@@ -259,6 +259,7 @@ class SEBasicBlock(nn.Module):
     >>> blk(x).shape
     torch.Size([2, 256, 100, 41])
     """
+
     def __init__(self, inplanes, planes, reduction=1, stride=1, downsample=None):
         super(SEBasicBlock, self).__init__()
 
@@ -301,6 +302,7 @@ class SEBasicBlock(nn.Module):
 
         return out
 
+
 class BasicBlock(nn.Module):
     """
     Pre-activation residual block (no SE).
@@ -319,6 +321,7 @@ class BasicBlock(nn.Module):
     >>> blk(x).shape
     torch.Size([2, 256, 80, 41])
     """
+
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
 
@@ -389,6 +392,7 @@ class SubCenterAMSMLoss(nn.Module):
     >>> logits.shape
     torch.Size([32, 6000])
     """
+
     def __init__(self, num_features, num_classes, s=30.0, m=0.4, k=3):
         super(SubCenterAMSMLoss, self).__init__()
         self.num_features = num_features
@@ -462,6 +466,7 @@ class AMSMLoss(nn.Module):
     >>> logits = head(x, y)
     >>> loss = torch.nn.CrossEntropyLoss()(logits, y)
     """
+
     def __init__(self, num_features, num_classes, s=30.0, m=0.4):
         super(AMSMLoss, self).__init__()
         self.num_features = num_features
@@ -509,7 +514,6 @@ class AMSMLoss(nn.Module):
         # feature re-scale
         output *= self.s
         return output
-
 
 
 class ASTP(nn.Module):
@@ -572,7 +576,6 @@ class ASTP(nn.Module):
         return torch.cat([mu, sg], dim=1)
 
 
-
 class PreResNet(nn.Module):
     """
     PreResNet: Residual convolutional feature extractor for speaker embedding backbones.
@@ -610,6 +613,7 @@ class PreResNet(nn.Module):
     >>> features.shape
     torch.Size([16, 256 * 11, time'])  # Example: depends on downsampling
     """
+
     def __init__(self, channels=[128, 128, 256, 256], num_blocks=[3, 8, 18, 3]):
         super(PreResNet, self).__init__()
 
@@ -728,6 +732,7 @@ class SpeakerEmbedding(nn.Module):
     >>> # Normalize embeddings for cosine scoring
     >>> emb = torch.nn.functional.normalize(emb)
     """
+
     def __init__(self, in_dim, embed_dim):
         super(SpeakerEmbedding, self).__init__()
 
@@ -791,6 +796,7 @@ class ResNetV2(nn.Module):
     >>> # Cosine similarity for verification
     >>> score = torch.matmul(emb[0], emb[1].T)
     """
+
     def __init__(
         self,
         input_features=81,

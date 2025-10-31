@@ -32,5 +32,3 @@ then
   python local/download_rirs_noises.py db/rirs_noises/
   python local/prepare_rirs_noises.py db/rirs_noises/ data/rirs_noises
 fi
-
-

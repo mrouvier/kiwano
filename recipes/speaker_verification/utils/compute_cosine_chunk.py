@@ -2,9 +2,9 @@ import argparse
 from pathlib import Path
 
 import torch
+from recipes.resnet.utils.scoring import read_keys, read_xvector
 
 from kiwano.embedding import EmbeddingSet, read_pkl
-from recipes.resnet.utils.scoring import read_keys, read_xvector
 
 
 def scoring_xvector(keys, xvectors_enrollment, xvectors_test):

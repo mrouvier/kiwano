@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import torch
+from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 from torch.utils.data import DataLoader
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
@@ -20,7 +21,6 @@ from kiwano.augmentation import (
 from kiwano.dataset import SegmentSet
 from kiwano.features import Fbank
 from kiwano.model import ECAPAModel
-from recipes.resnet.utils.train_resnet import SpeakerTrainingSegmentSet
 
 if __name__ == "__main__":
     musan = SegmentSet()

@@ -3,9 +3,9 @@ import cProfile
 
 import numpy as np
 import torch
+from recipes.resnet.utils.scoring import read_keys
 
 from kiwano.embedding import EmbeddingSet, read_pkl
-from recipes.resnet.utils.scoring import read_keys
 
 
 class ComputeStrategy:

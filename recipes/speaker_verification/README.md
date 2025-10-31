@@ -90,6 +90,3 @@ We report performance using the Equal Error Rate (EER) metric.
 | WavLM-MHFA | 1.29 | 1.42 | 2.71 | 19.88 | 25.93 | 8.18 |
 | ECAPA2 | 0.53 | 0.69 | 1.33 | 13.04 | 6.07 | 4.09 |
 | Xi-Vector | 0.64 | 0.66 | 1.17 | 12.32 | 3.69 | 2.97 |
-
-
-

@@ -1,9 +1,9 @@
 import argparse
 
 import torch
+from recipes.resnet.utils.scoring import read_keys
 
 from kiwano.embedding import read_pkl
-from recipes.resnet.utils.scoring import read_keys
 
 
 def scoring_xvector(keys, xvectors_enrollment, xvectors_test):

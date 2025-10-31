@@ -5,14 +5,13 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import sklearn.metrics
-from scipy.stats import norm
-
 from recipes.resnet.utils.compute_eer import compute_eer
 from recipes.resnet.utils.scoring import (
     compute_fpr_fnr_threshold,
     read_keys,
     read_scores,
 )
+from scipy.stats import norm
 
 
 def plot_det_curve(keys, scores, systems, output_dir, nameOutputFile):

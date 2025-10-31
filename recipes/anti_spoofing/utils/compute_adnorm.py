@@ -3,11 +3,11 @@ import cProfile
 
 import numpy as np
 import torch
-
-from kiwano.embedding import EmbeddingSet, read_pkl
 from recipes.resnet.utils.compute_asnorm import ASNorm
 from recipes.resnet.utils.compute_snorm import CosineStrategy, DotProductStrategy
 from recipes.resnet.utils.scoring import read_keys
+
+from kiwano.embedding import EmbeddingSet, read_pkl
 
 
 class ADNorm(ASNorm):

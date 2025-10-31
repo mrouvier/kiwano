@@ -1,5 +1,4 @@
 import copy
-
 import random
 from typing import List, TypeVar, Union
 
@@ -122,6 +121,7 @@ class SegmentSet:
     >>> min(s.duration for s in sset.segments.values()) >= 2.0
     True
     """
+
     def __init__(self):
         self.segments = {}
         self.labels = {}

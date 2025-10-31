@@ -3,10 +3,10 @@ import cProfile
 import math
 
 import numpy as np
-
-from kiwano.embedding import EmbeddingSet, read_pkl
 from recipes.resnet.utils.compute_snorm import CosineStrategy, DotProductStrategy, SNorm
 from recipes.resnet.utils.scoring import read_keys
+
+from kiwano.embedding import EmbeddingSet, read_pkl
 
 
 class ASNorm(SNorm):
