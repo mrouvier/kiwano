@@ -12,6 +12,26 @@ Pathlike = Union[Path, str]
 
 
 def extract_file_zip(zip_file, member, output_dir):
+    """
+    Extract a single member from an open `ZipFile` into `output_dir`.
+
+    Skips directory entries (names ending with `/`). Creates parent
+    directories as needed.
+
+    Parameters
+    ----------
+    zip_file : zipfile.ZipFile
+        An already opened ZipFile handle (read mode).
+    member : str
+        Member path inside the zip archive.
+    output_dir : str
+        Destination directory on disk.
+
+    Examples
+    --------
+    >>> with zipfile.ZipFile("data.zip", "r") as zf:  # doctest: +SKIP
+    ...     extract_file_zip(zf, "subset/a.wav", "out")  # doctest: +SKIP
+    """
     if member.endswith("/"):
         return
     member_path = os.path.join(output_dir, member)
@@ -23,6 +43,24 @@ def extract_file_zip(zip_file, member, output_dir):
 
 
 def parallel_unzip(zip_path, output_dir, jobs):
+    """
+    Parallel unzip using a thread pool.
+
+    Extracts all archive members with `jobs` worker threads and a progress bar.
+
+    Parameters
+    ----------
+    zip_path : str
+        Path to the .zip archive.
+    output_dir : str
+        Destination directory (created if missing).
+    jobs : int
+        Number of threads for extraction.
+
+    Examples
+    --------
+    >>> parallel_unzip("vox1.zip", "vox1", jobs=8)  # doctest: +SKIP
+    """
     with zipfile.ZipFile(zip_path, "r") as zip_file:
         members = zip_file.namelist()
 
@@ -41,6 +79,20 @@ def parallel_unzip(zip_path, output_dir, jobs):
 
 
 def extract_tar(tar_gz_path, extract_path="."):
+    """
+    Extract a `.tar.gz` archive with a progress bar.
+
+    Parameters
+    ----------
+    tar_gz_path : str
+        Path to the `.tar.gz` file.
+    extract_path : str, default='.'
+        Destination directory.
+
+    Examples
+    --------
+    >>> extract_tar("vox2_dev.tar.gz", "vox2_dev")  # doctest: +SKIP
+    """
     with tarfile.open(tar_gz_path, "r:gz") as tar:
         total_members = len(tar.getmembers())
         for member in tqdm(tar.getmembers(), total=total_members, desc="Extracting"):
@@ -48,6 +100,24 @@ def extract_tar(tar_gz_path, extract_path="."):
 
 
 def copy_files(zip_path, target_dir, part):
+    """
+    Concatenate multiple file parts (matched by glob) into a single output file.
+
+    Useful for rejoining split archives, with a byte counter progress bar.
+
+    Parameters
+    ----------
+    zip_path : str
+        Output file path to write the concatenation to.
+    target_dir : pathlib.Path
+        Directory containing file parts.
+    part : str
+        Glob pattern (e.g., 'archive.zip.part*').
+
+    Examples
+    --------
+    >>> copy_files("joined.zip", Path("./parts"), "vox1.zip.part*")  # doctest: +SKIP
+    """
     files = sorted(target_dir.glob(part))
 
     total_size = sum(file.stat().st_size for file in files)
@@ -73,7 +143,7 @@ def get_all_files(
     dirName, match_and=None, match_or=None, exclude_and=None, exclude_or=None
 ):
     """
-    https://github.com/speechbrain/speechbrain/blob/develop/speechbrain/utils/data_utils.py#L61C2-L170C1
+    This code is take here : https://github.com/speechbrain/speechbrain/blob/develop/speechbrain/utils/data_utils.py#L61C2-L170C1
 
     Returns a list of files found within a folder.
 
@@ -186,6 +256,23 @@ def get_all_files(
 
 
 def tqdm_urlretrieve_hook(t):
+    """
+    Wrap a tqdm instance into a `reporthook` compatible with `urllib.request.urlretrieve`.
+
+    Parameters
+    ----------
+    t : tqdm.tqdm
+        Progress bar instance.
+
+    Returns
+    -------
+    callable
+        A hook function `(b, bsize, tsize)` suitable for `urlretrieve`.
+
+    Examples
+    --------
+    >>> # Typically used via `urlretrieve_progress` below.
+    """
     last_b = [0]
 
     def update_to(b=1, bsize=1, tsize=None):
@@ -199,6 +286,29 @@ def tqdm_urlretrieve_hook(t):
 
 
 def urlretrieve_progress(url, filename=None, data=None, desc=None):
+    """
+    Download a URL with a tqdm progress bar.
+
+    Parameters
+    ----------
+    url : str
+        Remote URL.
+    filename : str | None
+        Destination file path. If None, `urlretrieve` determines the name.
+    data : Any
+        `urlretrieve` POST data (rarely used).
+    desc : str | None
+        Progress bar description.
+
+    Returns
+    -------
+    tuple
+        `(local_filename, headers)` as returned by `urllib.request.urlretrieve`.
+
+    Examples
+    --------
+    >>> urlretrieve_progress("https://example.com/file.zip", "file.zip", desc="Downloading")  # doctest: +SKIP
+    """
     from urllib.request import urlretrieve
 
     with tqdm(unit="B", unit_scale=True, unit_divisor=1024, miniters=1, desc=desc) as t:
@@ -208,12 +318,25 @@ def urlretrieve_progress(url, filename=None, data=None, desc=None):
 
 def check_md5(dir, liste):
     """
-    arg1 dir: the directory where the files in the liste are stocked
-    arg2 liste: the name of the liste
-    This function check if all the files in the list are downloaded correctly,
-    if not, there are 3 attempts to re-download the file
-    """
+    Verify MD5 checksums and (re)download files up to 3 times if mismatched.
 
+    For each `(url, md5hex)` tuple in `liste`, this function:
+      1. Computes the MD5 of `dir / basename(url)`.
+      2. If it mismatches, retries download up to 3 times via `urlretrieve_progress`.
+      3. On persistent mismatch after retries, deletes the file and reports failure.
+
+    Parameters
+    ----------
+    dir : pathlib.Path
+        Target directory containing (or to contain) the files.
+    liste : Iterable[Tuple[str, str]]
+        Iterable of `(url, md5_hex)`.
+
+    Examples
+    --------
+    >>> entries = [("https://example.com/a.zip","<md5hex>")]  # doctest: +SKIP
+    >>> check_md5(Path("./data"), entries)  # doctest: +SKIP
+    """
     for url in liste:
         fname = dir / url[0].split("/")[-1]
 

@@ -7,6 +7,35 @@ import torch
 
 
 class EmbeddingSet:
+    """
+    Minimal mapping-like container for named speaker embeddings.
+
+    Behaves like a dict `{key: torch.Tensor}` with lightweight iteration and
+    containment. Intended as an interchange object for piping serialized
+    embeddings via stdin/stdout using custom `pkl:`/`pkl,t:` URL-like schemes.
+
+    Examples
+    --------
+    Create and index:
+
+    >>> E = EmbeddingSet()
+    >>> import torch
+    >>> E["utt1"] = torch.randn(192)
+    >>> "utt1" in E
+    True
+    >>> E["utt1"].shape[0]
+    192
+
+    Iterate keys:
+
+    >>> for k in E:
+    ...     _ = E[k]  # torch.Tensor
+
+    Count entries:
+
+    >>> E.len()
+    1
+    """
     def __init__(self):
         self.h = {}
 
@@ -32,6 +61,39 @@ class EmbeddingSet:
 
 
 def write_pkl(arg: str, arr: EmbeddingSet):
+    """
+    Serialize an `EmbeddingSet` to pickle or text according to a URL-like spec.
+
+    Formats
+    -------
+    - Pickle stream:
+        * `pkl:-`    → write a single pickle to **stdout** (binary).
+        * `pkl:<fp>` → write a single pickle to file `<fp>` (binary).
+    - Text (space-separated, human-readable):
+        * `pkl,t:-`    → write to **stdout** as lines:
+                         `<key> <v0> <v1> ...`
+        * `pkl,t:<fp>` → write to text file `<fp>` with same format.
+
+    Parameters
+    ----------
+    arg : str
+        Output target spec as above.
+    arr : EmbeddingSet
+        Container to serialize.
+
+    Examples
+    --------
+    Write pickle to file:
+
+    >>> E = EmbeddingSet()
+    >>> E["utt1"] = torch.arange(3, dtype=torch.float)
+    >>> write_pkl("pkl:/tmp/emb.pkl", E)  # doctest: +SKIP
+
+    Write text to stdout:
+
+    >>> write_pkl("pkl,t:-", E)  # doctest: +ELLIPSIS
+    utt1 0.0 1.0 2.0
+    """
     arg = arg.strip()
 
     if arg[0:4] == "pkl:":
@@ -54,6 +116,54 @@ def write_pkl(arg: str, arr: EmbeddingSet):
 
 
 def read_pkl(arg: str):
+    """
+    Deserialize an `EmbeddingSet` from pickle or text, including piped input.
+
+    Formats
+    -------
+    - Pickle input:
+        * `pkl:-`     → read a pickle from **stdin** (binary).
+                        Supports concatenated pickles delimited by `b"usb."`:
+                        multiple pickles are merged into a single `EmbeddingSet`.
+        * `pkl:<fp>`  → read from file `<fp>` (binary).
+        * `pkl:<cmd>|`→ execute `<cmd>` in shell, read binary stdout as pickle.
+                        Also supports the same `b"usb."` multi-pickle merge.
+    - Text input:
+        * `pkl,t:<fp>`  → read text file with lines:
+                          `<key> <v0> <v1> ...`
+        * `pkl,t:<cmd>|`→ execute `<cmd>`; interpret stdout as a **pickle**
+                          (note: this branch assumes pickled output).
+
+    Parameters
+    ----------
+    arg : str
+        Input spec as above.
+
+    Returns
+    -------
+    EmbeddingSet
+        The deserialized container.
+
+    Examples
+    --------
+    Read from pickle file:
+
+    >>> # write_pkl("pkl:/tmp/emb.pkl", E)
+    >>> emb = read_pkl("pkl:/tmp/emb.pkl")  # doctest: +SKIP
+    >>> isinstance(emb, EmbeddingSet)
+    True
+
+    Read text embeddings:
+
+    >>> # with open("/tmp/emb.txt","w") as f: f.write("utt1 0.0 1.0 2.0\\n")
+    >>> emb = read_pkl("pkl,t:/tmp/emb.txt")  # doctest: +SKIP
+    >>> torch.is_tensor(emb["utt1"])
+    True
+
+    Pipe a command producing a pickle:
+
+    >>> # read_pkl("pkl:cat /tmp/emb.pkl|")  # doctest: +SKIP
+    """
     arg = arg.strip()
 
     if arg[0:4] == "pkl:":

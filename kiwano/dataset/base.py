@@ -1,6 +1,5 @@
 import copy
 
-# from kiwano.augmentation import Augmentation
 import random
 from typing import List, TypeVar, Union
 
@@ -11,6 +10,36 @@ from kiwano.utils import Pathlike
 
 
 class Segment:
+    """
+    Atomic audio unit used by Kiwano recipes.
+
+    A `Segment` carries minimal metadata (segment id, speaker id, duration in
+    seconds, file path) and optionally the loaded waveform + sample rate.
+    Speed perturbation can be *logically* attached to the segment and will be
+    applied on-the-fly during `load_audio()`.
+
+    Examples
+    --------
+    Basic usage
+
+    >>> seg = Segment("id0001_00001", "spk0001", 3.20, "/path/to/utt.wav")
+    >>> x, sr = seg.load_audio()   # lazy load; applies augmentation if configured
+    >>> x.shape[0] / sr            # ~ actual duration in seconds
+
+    Attaching speed perturbation (1.1x faster)
+
+    >>> seg = Segment("id0002_00001", "spk0002", 2.75, "/p/utt.wav")
+    >>> seg.perturb_speed(1.1)     # mutates ids + scales duration
+    >>> x, sr = seg.load_audio()
+
+    Caching waveform in memory
+
+    >>> seg = Segment("id0003_00001", "spk0003", 4.0, "/p/utt.wav")
+    >>> _ = seg.load_audio(keep_memory=True)
+    >>> seg.audio_data is not None
+    True
+    """
+
     segmentid: str
     duration: float
     spkid: str
@@ -37,7 +66,7 @@ class Segment:
         self.augmentation = factor
         self.duration /= factor
         self.spkid = "speed" + str(factor) + "_" + self.spkid
-        self.segmentid = "spped" + str(factor) + "_" + self.segmentid
+        self.segmentid = "speed" + str(factor) + "_" + self.segmentid
 
     def load_audio(self, keep_memory: bool = False):
         from kiwano.augmentation import SpeedPerturb
@@ -57,6 +86,42 @@ class Segment:
 
 
 class SegmentSet:
+    """
+    In-memory container for `Segment` objects with utilities for
+    selection, augmentation, label mapping, and dataset statistics.
+
+    Attributes
+    ----------
+    segments : Dict[str, Segment]
+        Mapping from `segmentid` to `Segment`.
+    labels : Dict[str, int]
+        Mapping from `spkid` to contiguous class index.
+
+    Examples
+    --------
+    Build from a manifest
+
+    >>> # 'liste' file with lines: "<segmentid> <spkid> <duration_sec> <audio_path>"
+    >>> sset = SegmentSet()
+    >>> sset.from_dict("data/voxceleb2/")   # expects data/voxceleb2/liste
+    >>> len(sset), list(sset.labels)[:3]
+
+    Sampling and loading waveforms
+
+    >>> seg = sset.get_random()
+    >>> wav, sr = seg.load_audio()
+
+    Speed perturb an entire set (1.1x)
+
+    >>> sp110 = sset.perturb_speed(1.1)     # new SegmentSet
+    >>> assert len(sp110) == len(sset)
+
+    Filter by duration and recompute labels
+
+    >>> sset.truncate(min_duration=2.0, max_duration=12.0)
+    >>> min(s.duration for s in sset.segments.values()) >= 2.0
+    True
+    """
     def __init__(self):
         self.segments = {}
         self.labels = {}
@@ -150,18 +215,11 @@ class SegmentSet:
 
     def combine(self, l: List):
         for x in l:
-            # counter = 0
             for s in x:
-                # print(str(counter)+" "+str(len(x)))
-                # counter += 1
                 self.segments[s] = x[s]
-                # self.append( s )
         self.get_labels()
 
     def describe(self):
-        # This function calculate and display several information about the segments
-        # (number of different speakers, the total duration, min, max, mean...)
-
         listDuration = []
         differentSpeakers = {}
         totalDuration = 0

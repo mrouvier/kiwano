@@ -3,6 +3,40 @@ import torch
 
 
 def read_xvector(file_path: str):
+    """
+    Read a text-based x-vector file into a Python dictionary.
+
+    Each line is expected to have the format:
+        <utt_id> <dim1> <dim2> ... <dimN>
+
+    where `<utt_id>` is a string (utterance ID) and the rest are floats forming
+    an embedding vector. The function converts each embedding to a
+    `torch.Tensor`.
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the text file containing embeddings.
+
+    Returns
+    -------
+    dict[str, torch.Tensor]
+        Mapping `{utt_id -> embedding_tensor}`.
+
+    Examples
+    --------
+    Example content of `xvector.txt`:
+    ```
+    spk1_utt1 0.12 0.33 -0.91
+    spk2_utt1 0.09 -0.05 0.88
+    ```
+
+    >>> h = read_xvector("xvector.txt")
+    >>> list(h.keys())[:1]
+    ['spk1_utt1']
+    >>> h['spk1_utt1'].shape
+    torch.Size([3])
+    """
     h = {}
     f = open(file_path, "r")
     for line in f:
@@ -15,6 +49,39 @@ def read_xvector(file_path: str):
 
 
 def read_keys(file_path: str):
+    """
+    Parse a key file defining trial pairs and their labels (target/non-target).
+
+    Each line is expected to have the format:
+        <enrollment_utt> <test_utt> <label>
+
+    where `<label>` is either `'target'` or `'nontarget'`. The function converts
+    them to binary strings `"1"` (same speaker) and `"0"` (different speaker).
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the trial key list (e.g., `voxceleb1_test_v2.txt`).
+
+    Returns
+    -------
+    dict[tuple[str, str], str]
+        Mapping `{(enrollment_utt, test_utt) -> label}`, where label is `'1'` or `'0'`.
+
+    Examples
+    --------
+    Example content of `keys.txt`:
+    ```
+    spk1_utt1 spk1_utt2 target
+    spk2_utt1 spk3_utt4 nontarget
+    ```
+
+    >>> keys = read_keys("keys.txt")
+    >>> list(keys.items())[0]
+    (('spk1_utt1', 'spk1_utt2'), '1')
+    >>> list(keys.items())[1][1]
+    '0'
+    """
     h = {}
     f = open(file_path, "r")
     for line in f:
@@ -40,6 +107,36 @@ def read_keys(file_path: str):
 
 
 def read_scores(file_path: str):
+    """
+    Read a scoring file mapping enrollment-test pairs to similarity scores.
+
+    Each line is expected to have the format:
+        <enrollment_utt> <test_utt> <score>
+
+    where `<score>` is a float (cosine similarity, PLDA, etc.).
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the score file.
+
+    Returns
+    -------
+    dict[tuple[str, str], str]
+        Mapping `{(enrollment_utt, test_utt) -> score}`.
+
+    Examples
+    --------
+    Example content of `scores.txt`:
+    ```
+    spk1_utt1 spk1_utt2 0.913
+    spk2_utt1 spk3_utt4 -0.087
+    ```
+
+    >>> scores = read_scores("scores.txt")
+    >>> list(scores.values())[:2]
+    ['0.913', '-0.087']
+    """
     h = {}
     f = open(file_path, "r")
     for line in f:
@@ -54,12 +151,42 @@ def read_scores(file_path: str):
 
 def compute_fpr_fnr_threshold(keys, scores):
     """
-    arg1 keys: dictionary with key : tuple with the names of the pairs of audio files, value : labels (0 : not the same speaker, 1 : same speaker)
-    arg2 scores: dictionary with key : tuple with the names of the pairs of audio files, value : the similarity between their two xvectors
-    This function calculates and returns the fpr and the fnr
-    A part of this code is taken from https://github.com/YuanGongND/python-compute-eer
-    """
+    Compute FPR, FNR, and threshold arrays for verification evaluation.
 
+    Given a trial list (`keys`) and similarity scores (`scores`), this function
+    aligns them by pair keys and computes the ROC curve via
+    `sklearn.metrics.roc_curve`. It outputs the corresponding **false positive
+    rates (FPR)**, **false negative rates (FNR)**, and thresholds.
+
+    Intended for fine-grained analysis or computing the EER threshold.
+
+    A part of this code is taken from https://github.com/YuanGongND/python-compute-eer
+
+    Parameters
+    ----------
+    keys : dict[tuple[str, str], str]
+        Mapping `{(enroll, test) -> label}`, where label is `'1'` (same speaker)
+        or `'0'` (different speaker).
+    scores : dict[tuple[str, str], str]
+        Mapping `{(enroll, test) -> score}` (float or string-cast float).
+
+    Returns
+    -------
+    fpr : numpy.ndarray
+        False positive rate for each threshold.
+    fnr : numpy.ndarray
+        False negative rate for each threshold.
+    threshold : numpy.ndarray
+        Score thresholds corresponding to each (fpr, fnr) pair.
+
+    Examples
+    --------
+    >>> keys = {('e1','t1'):'1', ('e2','t2'):'0'}
+    >>> scores = {('e1','t1'): '0.9', ('e2','t2'): '0.1'}
+    >>> fpr, fnr, thr = compute_fpr_fnr_threshold(keys, scores)
+    >>> round(fpr[0], 2), round(fnr[-1], 2)
+    (0.0, 0.0)
+    """
     labels = []
     distances = []
 
