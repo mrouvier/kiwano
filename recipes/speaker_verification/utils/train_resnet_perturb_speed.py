@@ -97,6 +97,7 @@ if __name__ == "__main__":
     parser.add_argument("--musan", type=str, default="data/musan/")
     parser.add_argument("--rirs_noises", type=str, default="data/rirs_noises/")
     parser.add_argument("--checkpoint", type=str)
+    parser.add_argument("--max_epochs", type=int, default=51)
     parser.add_argument("training_corpus", type=str, metavar="training_corpus")
     parser.add_argument("exp_dir", type=str, metavar="exp_dir")
 
@@ -231,7 +232,7 @@ if __name__ == "__main__":
 
     scheduler = IDRDScheduler(
         optimizer,
-        num_epochs=150,
+        num_epochs=args.max_epochs,
         initial_lr=0.2,
         warm_up_epoch=5,
         plateau_epoch=15,
@@ -244,7 +245,7 @@ if __name__ == "__main__":
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
 
-    for epochs in range(epochs_start, 150):
+    for epochs in range(epochs_start, args.max_epochs):
         iterations = 0
         train_sampler.set_epoch(epochs)
         resnet_model.module.set_m(scheduler.get_amsmloss())
