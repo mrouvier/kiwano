@@ -1,6 +1,6 @@
-import torch
+kiwano/model/automodel.py import torch
 
-from kiwano.model import KiwanoResNet, ResNet
+from kiwano.model import KiwanoResNet, ResNet, XIKiwanoResNet
 
 
 class AutoModel(torch.nn.Module):
@@ -28,6 +28,12 @@ class AutoModel(torch.nn.Module):
 
         if ckpt["name"] == "KiwanoResNet":
             model = KiwanoResNet(
+                num_classes=result_dict["num_classes"],
+                embed_features=result_dict["embed_features"],
+            )
+
+        if ckpt["name"] == "XIKiwanoResNet":
+            model = XIKiwanoResNet(
                 num_classes=result_dict["num_classes"],
                 embed_features=result_dict["embed_features"],
             )

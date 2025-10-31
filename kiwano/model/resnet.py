@@ -709,6 +709,165 @@ class ASTP(nn.Module):
         return torch.cat([mu, sg], dim=1)
 
 
+class XI(torch.nn.Module):
+    """
+    Probabilistic pooling layer for xi-vector embeddings.
+
+    This module implements the XI (xi-vector) pooling mechanism, which performs
+    Gaussian posterior inference over frame-level features to obtain utterance-level
+    statistics with uncertainty modeling. It extends standard statistical pooling
+    by learning a frame-dependent precision (inverse variance) and combining it
+    with a learnable Gaussian prior.
+
+    The XI layer computes the posterior mean (and optionally standard deviation)
+    of the latent speaker representation given frame-level inputs, using a form of
+    precision-weighted attention. This mechanism allows the network to estimate
+    not only the expected embedding but also its epistemic uncertainty.
+
+    This code was obtained from this GitHub repository: https://github.com/wenet-e2e/wespeaker/blob/67f0f4a8d472e6e2203d7baca38daba818af17f3/wespeaker/models/xi_vector.py
+
+    Args:
+        in_dim (int): Input feature dimension (number of frame-level channels).
+        hidden_size (int, optional): Hidden dimension used in the precision estimator.
+            Default is 256.
+        stddev (bool, optional): If True, the layer also returns the posterior standard
+            deviation along with the mean (doubling the output dimension). Default is False.
+        train_mean (bool, optional): If True, the prior mean is learnable. Default is True.
+        train_prec (bool, optional): If True, the prior precision (log-precision) is learnable.
+            Default is True.
+
+    Attributes:
+        input_dim (int): Dimensionality of the input feature vectors.
+        output_dim (int): Dimensionality of the output embedding (equal to `in_dim`
+            or `2 * in_dim` if `stddev=True`).
+        prior_mean (torch.nn.Parameter): Learnable prior mean (1 x D).
+        prior_logprec (torch.nn.Parameter): Learnable prior log-precision (1 x D).
+        lin1_relu_bn (nn.Sequential): Subnetwork estimating frame-level hidden
+            representations for precision modeling.
+        lin2 (nn.Conv1d): Final linear projection producing per-frame precision estimates.
+        softplus2 (torch.nn.Softplus): Activation ensuring positive precision values.
+        softmax (torch.nn.Softmax): Softmax normalization over frame- and prior-level
+            precisions for posterior weighting.
+
+    Example:
+        >>> import torch
+        >>> from torch import nn
+        >>> from xi_module import XI  # assuming this class is saved as xi_module.py
+        >>>
+        >>> # Suppose the TDNN outputs frame-level features of shape (batch, feat_dim, frames)
+        >>> batch_size, feat_dim, num_frames = 4, 512, 200
+        >>> tdnn_output = torch.randn(batch_size, feat_dim, num_frames)
+        >>>
+        >>> # Instantiate the XI pooling layer
+        >>> xi_pool = XI(in_dim=feat_dim, hidden_size=256, stddev=True)
+        >>>
+        >>> # Forward pass to get utterance-level xi-vectors
+        >>> xi_embedding = xi_pool(tdnn_output)
+        >>> print(xi_embedding.shape)
+        torch.Size([4, 1024, 1])  # mean + stddev for each of the 512 dims
+        >>>
+        >>> # Integrate into an end-to-end speaker encoder
+        >>> model = nn.Sequential(
+        ...     nn.Conv1d(80, 512, kernel_size=5, stride=1, padding=2),
+        ...     nn.ReLU(),
+        ...     XI(512, hidden_size=256, stddev=False),
+        ...     nn.Linear(512, 256)
+        ... )
+        >>> waveform_features = torch.randn(4, 80, 300)
+        >>> speaker_embedding = model(waveform_features)
+        >>> print(speaker_embedding.shape)
+        torch.Size([4, 256])
+    """
+
+    def __init__(
+        self, in_dim, hidden_size=256, stddev=False, train_mean=True, train_prec=True
+    ):
+        super(XI, self).__init__()
+        self.input_dim = in_dim
+        self.stddev = stddev
+        if self.stddev:
+            self.output_dim = 2 * self.input_dim
+        else:
+            self.output_dim = self.input_dim
+        self.prior_mean = torch.nn.Parameter(
+            torch.zeros(1, self.input_dim), requires_grad=train_mean
+        )
+        self.prior_logprec = torch.nn.Parameter(
+            torch.zeros(1, self.input_dim), requires_grad=train_prec
+        )
+        self.softmax = torch.nn.Softmax(dim=2)
+
+        self.lin1_relu_bn = nn.Sequential(
+            nn.Conv1d(self.input_dim, hidden_size, kernel_size=1, stride=1, bias=True),
+            nn.ReLU(inplace=False),
+            nn.BatchNorm1d(hidden_size),
+        )
+        self.lin2 = nn.Conv1d(
+            hidden_size, self.input_dim, kernel_size=1, stride=1, bias=True
+        )
+        self.softplus2 = torch.nn.Softplus(beta=1, threshold=20)
+
+    def forward(self, inputs):
+        assert len(inputs.shape) == 3
+        assert inputs.shape[1] == self.input_dim
+        feat = inputs
+        # Log-precision estimator
+        # frame precision estimate
+        logprec = self.softplus2(self.lin2(self.lin1_relu_bn(feat)))
+        # Square and take log before softmax
+        logprec = 2.0 * torch.log(torch.clamp(logprec, min=1e-8))
+        # Gaussian Posterior Inference
+        # Option 1: a_o (prior_mean-phi) included in variance
+        weight_attn = self.softmax(
+            torch.cat(
+                (
+                    logprec,
+                    self.prior_logprec.repeat(logprec.shape[0], 1).unsqueeze(dim=2),
+                ),
+                2,
+            )
+        )
+        # Posterior precision
+        Ls = torch.sum(
+            torch.exp(
+                torch.cat(
+                    (
+                        logprec,
+                        self.prior_logprec.repeat(logprec.shape[0], 1).unsqueeze(dim=2),
+                    ),
+                    2,
+                )
+            ),
+            dim=2,
+        )
+        # Posterior mean
+        phi = torch.sum(
+            torch.cat(
+                (feat, self.prior_mean.repeat(feat.shape[0], 1).unsqueeze(dim=2)), 2
+            )
+            * weight_attn,
+            dim=2,
+        )
+        if self.stddev:
+            sigma2 = torch.sum(
+                torch.cat(
+                    (feat, self.prior_mean.repeat(feat.shape[0], 1).unsqueeze(dim=2)), 2
+                ).pow(2)
+                * weight_attn,
+                dim=2,
+            )
+            sigma = torch.sqrt(torch.clamp(sigma2 - phi**2, min=1.0e-12))
+            return torch.cat((phi, sigma), dim=1).unsqueeze(dim=2)
+        else:
+            return phi
+
+        def get_out_dim(self):
+            return self.output_dim
+
+        def get_prior(self):
+            return self.prior_mean, self.prior_logprec
+
+
 class PreResNet(nn.Module):
     """
     PreResNet: Residual convolutional feature extractor for speaker embedding backbones.
@@ -1193,6 +1352,108 @@ class KiwanoResNet(nn.Module):
         self.temporal_pooling = ASTP(channels[3] * 11, channels[3] // 2)
 
         self.embedding = SpeakerEmbedding(2 * 11 * channels[3], self.embed_features)
+
+        self.output = AMSMLoss(self.embed_features, self.num_classes)
+
+    def extra_repr(self):
+        return "embed_features={}, num_classes={}".format(
+            self.embed_features, self.num_classes
+        )
+
+    def get_m(self):
+        return self.output.get_m()
+
+    def get_s(self):
+        return self.output.get_s()
+
+    def set_m(self, m):
+        self.output.set_m(m)
+
+    def set_s(self, s):
+        self.output.set_s(s)
+
+    def forward(self, x, iden=None):
+        x = self.preresnet(x)
+
+        x = self.temporal_pooling(x)
+
+        x = self.embedding(x)
+
+        if iden == None:
+            return x
+
+        x = self.output(x, iden)
+
+        return x
+
+
+class XIKiwanoResNet(nn.Module):
+    """
+    XIKiwanoResNet: A residual convolutional backbone with probabilistic pooling
+    layer (XI) and margin-based classification head for speaker verification.
+
+    This architecture follows a typical modern speaker embedding pipeline:
+    a convolutional front-end (PreResNet) extracts high-level time-frequency
+    representations, an attentive statistics pooling (ASTP) aggregates temporal
+    information, and a projection head (SpeakerEmbedding) maps to a fixed-dimensional
+    speaker embedding space. During training, an additive margin softmax (AMSMLoss)
+    is used for discriminative supervision over speaker identities.
+
+    Parameters
+    ----------
+    input_features : int, default=81
+        Number of input features per frame (e.g., filterbank or MFCC dimension).
+    embed_features : int, default=256
+        Dimensionality of the output speaker embedding vector.
+    num_classes : int, default=6000
+        Number of speaker identities in the training set (for classification loss).
+    channels : list[int], default=[128, 128, 256, 256]
+        Number of output channels for each residual stage in the backbone.
+    num_blocks : list[int], default=[3, 8, 18, 3]
+        Number of residual blocks in each stage.
+
+    Example
+    -------
+    >>> import torch
+    >>> from model import XIKiwanoResNet
+    >>>
+    >>> # Create model
+    >>> model = XIKiwanoResNet(input_features=81, embed_features=256, num_classes=6000)
+    >>>
+    >>> # Batch of log-mel spectrograms (batch=8, channels=1, time=300, freq=81)
+    >>> x = torch.randn(8, 1, 300, 81)
+    >>> speaker_ids = torch.randint(0, 6000, (8,))
+    >>>
+    >>> # ----- Inference / Enrollment -----
+    >>> model.eval()
+    >>> with torch.no_grad():
+    ...     emb = model(x)             # Returns embeddings (8, 256)
+    ...     emb = torch.nn.functional.normalize(emb)
+    >>>
+    >>> # Cosine similarity for verification
+    >>> score = torch.matmul(emb[0], emb[1].T)
+    """
+
+    def __init__(
+        self,
+        input_features=81,
+        embed_features=256,
+        num_classes=6000,
+        channels=[128, 128, 256, 256],
+        num_blocks=[3, 8, 18, 3],
+    ):
+        super(XIKiwanoResNet, self).__init__()
+
+        self.embed_features = embed_features
+        self.num_classes = num_classes
+        self.channels = channels
+        self.num_blocks = num_blocks
+
+        self.preresnet = KiwanoPreResNet(self.channels, self.num_blocks)
+
+        self.temporal_pooling = XI(in_dim=channels[3] * 11)
+
+        self.embedding = SpeakerEmbedding(channels[3] * 11, self.embed_features)
 
         self.output = AMSMLoss(self.embed_features, self.num_classes)
 
