@@ -18,11 +18,11 @@ sh prepare_data.sh
 ```
 
 
-## Training Speaker Embeddings
+## 🧠 Training Speaker Embeddings
 
 You can train a speaker embedding extractor (ResNet-based) in different ways depending on your environment. All training logs and checkpoints will be saved under the specified experiment directory (e.g., exp/resnet/).
 
-### ▶️ Local Training
+### Local Training
 
 
 Run the following command to train ResNet locally:
@@ -31,7 +31,7 @@ Run the following command to train ResNet locally:
 python  utils/train_resnet.py data/voxceleb2/ exp/resnet/
 ```
 
-### ⚡ Training with Hugging Face Accelerate
+### Training with Hugging Face Accelerate
 
 
 Run the following command to train ResNet using multi-GPU or distributed training, use the Accelerate toolkit:
@@ -40,7 +40,7 @@ Run the following command to train ResNet using multi-GPU or distributed trainin
 python  utils/train_resnet.py data/voxceleb2/ exp/resnet/
 ```
 
-### 🖥️ Training with SLURM
+### Training with SLURM
 
 Run the following command to train ResNet using SLURM:
 
