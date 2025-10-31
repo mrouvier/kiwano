@@ -750,9 +750,9 @@ class SpeakerEmbedding(nn.Module):
         return x
 
 
-class ResNetV2(nn.Module):
+class ResNet(nn.Module):
     """
-    ResNetV2: A residual convolutional backbone with attentive pooling and
+    ResNet: A residual convolutional backbone with attentive pooling and
     margin-based classification head for speaker verification.
 
     This architecture follows a typical modern speaker embedding pipeline:
@@ -778,10 +778,10 @@ class ResNetV2(nn.Module):
     Example
     -------
     >>> import torch
-    >>> from model import ResNetV2
+    >>> from model import ResNet
     >>>
     >>> # Create model
-    >>> model = ResNetV2(input_features=81, embed_features=256, num_classes=6000)
+    >>> model = ResNet(input_features=81, embed_features=256, num_classes=6000)
     >>>
     >>> # Batch of log-mel spectrograms (batch=8, channels=1, time=300, freq=81)
     >>> x = torch.randn(8, 1, 300, 81)
@@ -805,7 +805,7 @@ class ResNetV2(nn.Module):
         channels=[128, 128, 256, 256],
         num_blocks=[3, 8, 18, 3],
     ):
-        super(ResNetV2, self).__init__()
+        super(ResNet, self).__init__()
 
         self.embed_features = embed_features
         self.num_classes = num_classes

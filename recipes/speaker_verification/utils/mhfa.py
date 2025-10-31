@@ -34,7 +34,7 @@ from kiwano.augmentation import (
 )
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.features import Fbank
-from kiwano.model import IDRDScheduler, JeffreysLoss, ResNetV2
+from kiwano.model import IDRDScheduler, JeffreysLoss, ResNet
 from kiwano.utils import Pathlike
 
 logger = logging.getLogger(__name__)
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     )
     iterator = iter(train_dataloader)
 
-    resnet_model = ResNetV2(num_classes=18000)
+    resnet_model = ResNet(num_classes=18000)
     if args.checkpoint:
         resnet_model.load_state_dict(checkpoint["model"])
     resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)

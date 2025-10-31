@@ -28,7 +28,7 @@ from kiwano.augmentation import (
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.embedding import EmbeddingSet, write_pkl
 from kiwano.features import Fbank, FbankV2
-from kiwano.model import ResNetV2
+from kiwano.model import ResNet
 from kiwano.utils import Pathlike
 
 
@@ -139,12 +139,7 @@ if __name__ == "__main__":
     )
     iterator = iter(extracting_dataloader)
 
-    # resnet_model = ResNet(num_classes=18000)
-    # resnet_model = ResNetV2(num_classes=18000)
-    resnet_model = ResNetV2()
-    # resnet_model = ResNetV5()
-    # resnet_model = ResNetV3(k=3)
-    # resnet_model = ResNetV4()
+    resnet_model = ResNet()
     resnet_model.load_state_dict(torch.load(args.model)["model"])
     resnet_model.to(device)
 
