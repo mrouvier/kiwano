@@ -130,7 +130,7 @@ class SEBasicBlockPosition(nn.Module):
     def __init__(self, inplanes, planes, reduction=1, stride=1, downsample=None):
         super(SEBasicBlockPosition, self).__init__()
 
-        self.activation = nn.SiLU()
+        self.activation = nn.ReLU()
 
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = nn.BatchNorm2d(inplanes)
@@ -199,7 +199,7 @@ class BasicBlockPosition(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlockPosition, self).__init__()
 
-        self.activation = nn.SiLU()
+        self.activation = nn.ReLU()
 
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = nn.BatchNorm2d(inplanes)
@@ -263,7 +263,7 @@ class SEBasicBlock(nn.Module):
     def __init__(self, inplanes, planes, reduction=1, stride=1, downsample=None):
         super(SEBasicBlock, self).__init__()
 
-        self.activation = nn.SiLU()
+        self.activation = nn.ReLU()
 
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = nn.BatchNorm2d(inplanes)
@@ -325,7 +325,7 @@ class BasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
 
-        self.activation = nn.SiLU()
+        self.activation = nn.ReLU()
 
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = nn.BatchNorm2d(inplanes)
@@ -334,6 +334,139 @@ class BasicBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes)
 
         self.conv3 = conv1x1(planes, planes)
+        self.bn3 = nn.BatchNorm2d(planes)
+
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        residual = x
+
+        out = self.bn1(x)
+        out = self.activation(out)
+        out = self.conv1(out)
+
+        out = self.bn2(out)
+        out = self.activation(out)
+        out = self.conv2(out)
+
+        out = self.bn3(out)
+        out = self.activation(out)
+        out = self.conv3(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+
+        return out
+
+
+class SEKiwanoBasicBlock(nn.Module):
+    """
+    Pre-activation residual block with SE attention.
+
+    Identical to `SEBasicBlock` in computation; named variant for
+    stacks that interleave SE and non-SE blocks.
+
+    Parameters
+    ----------
+    inplanes : int
+    planes : int
+    reduction : int, default=1
+    stride : int, default=1
+    downsample : nn.Module or None, default=None
+
+    Example
+    -------
+    >>> blk = SEKiwanoBasicBlock(128, 256, reduction=4, stride=2,
+    ...                    downsample=nn.Sequential(conv1x1(128, 256, 2), nn.BatchNorm2d(256)))
+    >>> x = torch.randn(2, 128, 200, 81)
+    >>> blk(x).shape
+    torch.Size([2, 256, 100, 41])
+    """
+
+    def __init__(self, inplanes, planes, reduction=1, stride=1, downsample=None):
+        super(SEKiwanoBasicBlock, self).__init__()
+
+        self.activation = nn.SiLU()
+
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(inplanes)
+
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = nn.BatchNorm2d(planes)
+
+        self.conv3 = conv3x3(planes, planes)
+        self.bn3 = nn.BatchNorm2d(planes)
+
+        self.downsample = downsample
+        self.stride = stride
+        self.se = SELayer(planes, reduction)
+
+    def forward(self, x):
+        residual = x
+
+        out = self.bn1(x)
+        out = self.activation(out)
+        out = self.conv1(out)
+
+        out = self.bn2(out)
+        out = self.activation(out)
+        out = self.conv2(out)
+
+        out = self.bn3(out)
+        out = self.activation(out)
+        out = self.conv3(out)
+
+        out = self.se(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+
+        return out
+
+
+class KiwanoBasicBlock(nn.Module):
+    """
+    Pre-activation residual block (no SE).
+
+    Same ordering as `SEKiwanoBasicBlock` (BN → SiLU → Conv) but without
+    the SE attention module.
+
+    Parameters
+    ----------
+    inplanes : int
+        Input channels.
+    planes : int
+        Output channels.
+    stride : int, default=1
+        Stride for the first 3×3 conv.
+    downsample : nn.Module or None, default=None
+        Optional residual projection.
+
+    Example
+    -------
+    >>> blk = KiwanoBasicBlock(256, 256)
+    >>> x = torch.randn(4, 256, 120, 81)
+    >>> blk(x).shape
+    torch.Size([4, 256, 120, 81])
+    """
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(KiwanoBasicBlock, self).__init__()
+
+        self.activation = nn.SiLU()
+
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(inplanes)
+
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = nn.BatchNorm2d(planes)
+
+        self.conv3 = conv3x3(planes, planes)
         self.bn3 = nn.BatchNorm2d(planes)
 
         self.downsample = downsample
@@ -694,6 +827,124 @@ class PreResNet(nn.Module):
         return x
 
 
+class KiwanoPreResNet(nn.Module):
+    """
+    KiwanoPreResNet: Residual convolutional feature extractor for speaker embedding backbones.
+
+    This module implements a ResNet-style convolutional front-end with Squeeze-and-Excitation (SE)
+    blocks in the early stages. It operates directly on time-frequency representations such as
+    log-mel spectrograms and produces a high-level feature map suitable for subsequent temporal
+    pooling (e.g., attentive statistics pooling).
+
+    The architecture uses a shallow stem convolution followed by four residual stages, where
+    the first two stages use SE-enhanced residual blocks (`SEKiwanoBasicBlock`) and the latter two
+    use standard residual blocks (`KiwanoBasicBlock`). Each stage can perform optional downsampling
+    via strided convolution to reduce temporal and frequency resolution progressively.
+
+    Parameters
+    ----------
+    channels : list[int], default=[128, 128, 256, 256]
+        Number of convolutional channels in each of the four residual stages.
+    num_blocks : list[int], default=[3, 8, 18, 3]
+        Number of residual blocks in each stage.
+
+    Example
+    -------
+    >>> import torch
+    >>> from model import KiwanoPreResNet
+    >>>
+    >>> # Create the model
+    >>> model = KiwanoPreResNet(channels=[128, 128, 256, 256], num_blocks=[3, 8, 18, 3])
+    >>>
+    >>> # Input: batch of log-mel spectrograms
+    >>> x = torch.randn(16, 1, 300, 81)  # (batch, channel, time, freq)
+    >>>
+    >>> # Forward pass
+    >>> features = model(x)
+    >>> features.shape
+    torch.Size([16, 256 * 11, time'])  # Example: depends on downsampling
+    """
+
+    def __init__(self, channels=[128, 128, 256, 256], num_blocks=[3, 8, 18, 3]):
+        super(KiwanoPreResNet, self).__init__()
+
+        self.channels = channels
+        self.num_blocks = num_blocks
+
+        self.pre_conv1 = nn.Conv2d(1, channels[0], 3, 1, 1, bias=False)
+        self.pre_bn1 = nn.BatchNorm2d(channels[0])
+        self.pre_activation1 = nn.SiLU()
+
+        self.layer1 = self._make_layer_se(
+            channels[0], channels[0], num_blocks[0], stride=1
+        )
+        self.layer2 = self._make_layer_se(
+            channels[0], channels[1], num_blocks[1], stride=2
+        )
+        self.layer3 = self._make_layer(
+            channels[1], channels[2], num_blocks[2], stride=2
+        )
+        self.layer4 = self._make_layer(
+            channels[2], channels[3], num_blocks[3], stride=2
+        )
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def _make_layer_se(self, inchannel, outchannel, block_num, stride=1):
+        downsample = None
+        if stride != 1 or inchannel != outchannel:
+            downsample = nn.Sequential(
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
+            )
+
+        layers = []
+        layers.append(SEKiwanoBasicBlock(inchannel, outchannel, 1, stride, downsample))
+
+        for i in range(1, block_num):
+            layers.append(SEKiwanoBasicBlock(outchannel, outchannel, 1))
+        return nn.Sequential(*layers)
+
+    def _make_layer(self, inchannel, outchannel, block_num, stride=1):
+        downsample = None
+        if stride != 1 or inchannel != outchannel:
+            downsample = nn.Sequential(
+                nn.Conv2d(
+                    inchannel, outchannel, kernel_size=1, stride=stride, bias=False
+                ),
+                nn.BatchNorm2d(outchannel),
+            )
+
+        layers = []
+        layers.append(KiwanoBasicBlock(inchannel, outchannel, stride, downsample))
+
+        for i in range(1, block_num):
+            layers.append(KiwanoBasicBlock(outchannel, outchannel))
+        return nn.Sequential(*layers)
+
+    def forward(self, x, iden=None):
+        x = self.pre_conv1(x)
+        x = self.pre_bn1(x)
+        x = self.pre_activation1(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = x.transpose(2, 3)
+        x = x.flatten(1, 2)
+
+        return x
+
+
 class SpeakerEmbedding(nn.Module):
     """
     SpeakerEmbedding: Projection head for speaker embedding extraction.
@@ -859,6 +1110,108 @@ class ResNet(nn.Module):
         counts = x.shape[1] - (cumulative_sum > 0.8).float().argmax(dim=1) + 1
 
         return counts
+
+    def forward(self, x, iden=None):
+        x = self.preresnet(x)
+
+        x = self.temporal_pooling(x)
+
+        x = self.embedding(x)
+
+        if iden == None:
+            return x
+
+        x = self.output(x, iden)
+
+        return x
+
+
+class KiwanoResNet(nn.Module):
+    """
+    KiwanoResNet: A residual convolutional backbone with attentive pooling and
+    margin-based classification head for speaker verification.
+
+    This architecture follows a typical modern speaker embedding pipeline:
+    a convolutional front-end (PreResNet) extracts high-level time-frequency
+    representations, an attentive statistics pooling (ASTP) aggregates temporal
+    information, and a projection head (SpeakerEmbedding) maps to a fixed-dimensional
+    speaker embedding space. During training, an additive margin softmax (AMSMLoss)
+    is used for discriminative supervision over speaker identities.
+
+    Parameters
+    ----------
+    input_features : int, default=81
+        Number of input features per frame (e.g., filterbank or MFCC dimension).
+    embed_features : int, default=256
+        Dimensionality of the output speaker embedding vector.
+    num_classes : int, default=6000
+        Number of speaker identities in the training set (for classification loss).
+    channels : list[int], default=[128, 128, 256, 256]
+        Number of output channels for each residual stage in the backbone.
+    num_blocks : list[int], default=[3, 8, 18, 3]
+        Number of residual blocks in each stage.
+
+    Example
+    -------
+    >>> import torch
+    >>> from model import KiwanoResNet
+    >>>
+    >>> # Create model
+    >>> model = KiwanoResNet(input_features=81, embed_features=256, num_classes=6000)
+    >>>
+    >>> # Batch of log-mel spectrograms (batch=8, channels=1, time=300, freq=81)
+    >>> x = torch.randn(8, 1, 300, 81)
+    >>> speaker_ids = torch.randint(0, 6000, (8,))
+    >>>
+    >>> # ----- Inference / Enrollment -----
+    >>> model.eval()
+    >>> with torch.no_grad():
+    ...     emb = model(x)             # Returns embeddings (8, 256)
+    ...     emb = torch.nn.functional.normalize(emb)
+    >>>
+    >>> # Cosine similarity for verification
+    >>> score = torch.matmul(emb[0], emb[1].T)
+    """
+
+    def __init__(
+        self,
+        input_features=81,
+        embed_features=256,
+        num_classes=6000,
+        channels=[128, 128, 256, 256],
+        num_blocks=[3, 8, 18, 3],
+    ):
+        super(KiwanoResNet, self).__init__()
+
+        self.embed_features = embed_features
+        self.num_classes = num_classes
+        self.channels = channels
+        self.num_blocks = num_blocks
+
+        self.preresnet = KiwanoPreResNet(self.channels, self.num_blocks)
+
+        self.temporal_pooling = ASTP(channels[3] * 11, channels[3] // 2)
+
+        self.embedding = SpeakerEmbedding(2 * 11 * channels[3], self.embed_features)
+
+        self.output = AMSMLoss(self.embed_features, self.num_classes)
+
+    def extra_repr(self):
+        return "embed_features={}, num_classes={}".format(
+            self.embed_features, self.num_classes
+        )
+
+    def get_m(self):
+        return self.output.get_m()
+
+    def get_s(self):
+        return self.output.get_s()
+
+    def set_m(self, m):
+        self.output.set_m(m)
+
+    def set_s(self, s):
+        self.output.set_s(s)
 
     def forward(self, x, iden=None):
         x = self.preresnet(x)

@@ -1,6 +1,6 @@
 import torch
 
-from kiwano.model import ResNet
+from kiwano.model import KiwanoResNet, ResNet
 
 
 class AutoModel(torch.nn.Module):
@@ -22,6 +22,12 @@ class AutoModel(torch.nn.Module):
 
         if ckpt["name"] == "ResNet":
             model = ResNet(
+                num_classes=result_dict["num_classes"],
+                embed_features=result_dict["embed_features"],
+            )
+
+        if ckpt["name"] == "KiwanoResNet":
+            model = KiwanoResNet(
                 num_classes=result_dict["num_classes"],
                 embed_features=result_dict["embed_features"],
             )
