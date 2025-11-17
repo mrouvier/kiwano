@@ -2,7 +2,7 @@ import argparse
 
 import torch
 
-from kiwano.embedding import read_pkl
+from kiwano.embedding import load_embeddings
 from kiwano.utils import read_keys
 
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     trials = read_keys(args.keys)
-    enrollment = read_pkl(args.xvectorEnrollment)
-    test = read_pkl(args.xvectorTest)
+    enrollment = load_embeddings(args.xvectorEnrollment)
+    test = load_embeddings(args.xvectorTest)
 
     scoring_xvector(trials, enrollment, test)
