@@ -1,41 +1,50 @@
-import argparse
-import cProfile
-
-import numpy as np
 import torch
-from recipes.resnet.utils.compute_asnorm import ASNorm
-from recipes.resnet.utils.compute_snorm import CosineStrategy, DotProductStrategy
-from recipes.resnet.utils.scoring import read_keys
 
-from kiwano.embedding import EmbeddingSet, read_pkl
+import argparse
+
+from kiwano.utils import read_keys
+from kiwano.embedding import load_embeddings
 
 
-class ADNorm(ASNorm):
-    def __init__(self, trials, enrollment, test, impostors, computeStrategy, k):
-        super().__init__(trials, enrollment, test, impostors, computeStrategy, k)
-        # cohorts is here a dictionary which contains keys : the name of the embedding and value : the normalized vector
+cosine = torch.nn.CosineSimilarity(dim=0)
+mean_std_cache = {}
 
-    def compute_score(self, xvectorEnrollment, xvectorTest, enrollmentName, testName):
 
-        normalized_ve = self.cohorts.get(enrollmentName)
-        if normalized_ve is None:
-            ve = self.compute_v(xvectorEnrollment)
-            cohort_ve = self.select_impostors(ve)
-            cohort_ve = [self.impostors[i] for i in cohort_ve]
-            normalized_ve = xvectorEnrollment - torch.mean(
-                torch.stack(cohort_ve), dim=0
-            )
-            self.cohorts[enrollmentName] = normalized_ve
+def compute_v(xvector, impostors):
+    """Compute cosine similarity between xvector and all impostors."""
+    return torch.stack([cosine(xvector, impostors[imp]) for imp in impostors])
 
-        normalized_vt = self.cohorts.get(testName)
-        if normalized_vt is None:
-            vt = self.compute_v(xvectorTest)
-            cohort_vt = self.select_impostors(vt)
-            cohort_vt = [self.impostors[i] for i in cohort_vt]
-            normalized_vt = xvectorTest - torch.mean(torch.stack(cohort_vt), dim=0)
-            self.cohorts[testName] = normalized_vt
 
-        return self.computeStrategy.scoring_xvector(normalized_ve, normalized_vt)
+def compute_score_adnorm(xvectorEnrollment, xvectorTest, enrollmentName, testName, impostors, k):
+    """
+    Compute S-Norm score between enrollment and test xvectors.
+    mean_std_cache: dict mapping embedding name -> (mean, std) of impostor scores.
+    """
+
+    impostor_keys = list(impostors.keys())
+
+    mean_std_ve = mean_std_cache.get(enrollmentName)
+    if mean_std_ve is None:
+        ve = compute_v(xvectorEnrollment, impostors)
+        top_vals, top_idx = torch.topk(ve, k)
+        mean_std_cache[enrollmentName] = torch.mean( torch.stack( [impostors[impostor_keys[i.item()]] for i in top_idx] ) )
+
+    mean_std_vt = mean_std_cache.get(testName)
+    if mean_std_vt is None:
+        vt = compute_v(xvectorTest, impostors)
+        top_vals, top_idx = torch.topk(vt, k)
+        mean_std_cache[testName] = torch.mean( torch.stack( [impostors[impostor_keys[i.item()]] for i in top_idx] ) )
+
+    score = cosine(xvectorEnrollment-mean_std_cache[enrollmentName], xvectorTest-mean_std_cache[testName])
+
+    return score
+
+
+def adnorm(trials, xvector_enrollment, xvector_test, xvector_impostor, k):
+
+    for enrollment_name, test_name in trials:
+        score = compute_score_adnorm(xvector_enrollment[enrollment_name], xvector_test[test_name], enrollment_name, test_name, xvector_impostor, k)
+        print(f"{enrollment_name} {test_name} {score}")
 
 
 if __name__ == "__main__":
@@ -48,20 +57,20 @@ if __name__ == "__main__":
         help="the path to the file where the keys are stocked",
     )
     parser.add_argument(
-        "xvectorEnrollment",
-        metavar="xvectorEnrollment",
+        "xvector_enrollment",
+        metavar="xvector_enrollment",
         type=str,
         help="command to gather xvectors enrollment in pkl format",
     )
     parser.add_argument(
-        "xvectorTest",
-        metavar="xvectorTest",
+        "xvector_test",
+        metavar="xvector_test",
         type=str,
         help="command to gather xvectors test in pkl format",
     )
     parser.add_argument(
-        "impostors",
-        metavar="impostors",
+        "xvector_impostor",
+        metavar="xvector_impostor",
         type=str,
         help="command to gather xvectors for the impostor set in pkl format ",
     )
@@ -69,14 +78,13 @@ if __name__ == "__main__":
         "k", metavar="k", type=int, help="numbers of impostors in the cohort"
     )
 
+
     args = parser.parse_args()
+
     trials = read_keys(args.keys)
-    enrollment = read_pkl(args.xvectorEnrollment)
-    test = read_pkl(args.xvectorTest)
-    impostors = read_pkl(args.impostors)
 
-    computeStrategy = DotProductStrategy()
+    enrollment = load_embeddings(args.xvector_enrollment)
+    test = load_embeddings(args.xvector_test)
+    impostor = load_embeddings(args.xvector_impostor)
 
-    adnorm = ADNorm(trials, enrollment, test, impostors, computeStrategy, args.k)
-    adnorm.compute_norm()
-    # cProfile.run('adnorm.compute_norm()')
+    adnorm(trials, enrollment, test, impostor, args.k)
