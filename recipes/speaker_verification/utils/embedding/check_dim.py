@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-import sys
 import argparse
+import sys
+
 import numpy as np
+
 from kiwano.embedding import open_input_reader
 
 
@@ -26,7 +28,7 @@ def main():
         help="Optional maximum number of embeddings to check.",
     )
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
 
     reader, proc = open_input_reader(args.input_spec)
 
@@ -75,4 +77,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-import sys
 import argparse
+import sys
+
 import torch
+
 from kiwano.embedding import open_input_reader
 
 
@@ -56,7 +58,6 @@ def main():
                 emb = torch.tensor(emb)
             emb = emb.to(torch.float32)
 
-
             # Duplicate IDs
             if utt_id in seen_ids:
                 n_duplicates += 1
@@ -69,7 +70,10 @@ def main():
             # Dimension
             if emb.ndim != 1:
                 if not args.quiet:
-                    print(f"[ERROR] utt_id={utt_id}: embedding ndim={emb.ndim} != 1", file=sys.stderr)
+                    print(
+                        f"[ERROR] utt_id={utt_id}: embedding ndim={emb.ndim} != 1",
+                        file=sys.stderr,
+                    )
                 status_ok = False
             dim = emb.shape[0]
             dims.add(dim)
@@ -77,7 +81,10 @@ def main():
                 n_zero_dim += 1
                 status_ok = False
                 if not args.quiet:
-                    print(f"[ERROR] utt_id={utt_id}: zero dimension embedding", file=sys.stderr)
+                    print(
+                        f"[ERROR] utt_id={utt_id}: zero dimension embedding",
+                        file=sys.stderr,
+                    )
 
             if args.expected_dim is not None and dim != args.expected_dim:
                 status_ok = False
@@ -126,4 +133,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

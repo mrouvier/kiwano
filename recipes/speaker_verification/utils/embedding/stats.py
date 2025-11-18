@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-import sys
 import argparse
+import sys
+
 import torch
+
 from kiwano.embedding import open_input_reader
 
 
@@ -87,8 +89,7 @@ def main():
     mean_val = sum_vals / total_count_vals
     var_val = sum_sq_vals / total_count_vals - mean_val * mean_val
     var_val = max(var_val, 0.0)  # éviter -0.0
-    std_val = var_val ** 0.5
-
+    std_val = var_val**0.5
 
     print("----- Embedding statistics -----")
     print(f"#utterances       : {n_vecs}")

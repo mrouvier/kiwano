@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-import sys
 import argparse
-import torch
-from kiwano.embedding import open_input_reader, open_output_writer
+import sys
 
-def compute_mean(emb_dict):
-    arr = np.stack(list(emb_dict.values()))
-    return arr.mean(axis=0)
+import torch
+
+from kiwano.embedding import open_input_reader, open_output_writer
 
 
 def compute_mean(emb_dict: dict) -> torch.Tensor:
@@ -21,18 +19,17 @@ def compute_mean(emb_dict: dict) -> torch.Tensor:
 def main():
     parser = argparse.ArgumentParser(
         description="Compute mean embeddings.\n\n"
-            "Usage:\n"
-            "  prog input_spec output_spec\n"
-            "    -> global mean over all embeddings in input_spec, written as 'mean' in output_spec.\n\n"
-            "  prog spk2utt input_spec output_spec\n"
-            "    -> per-speaker means using spk2utt mapping, written with keys = speaker IDs."
+        "Usage:\n"
+        "  prog input_spec output_spec\n"
+        "    -> global mean over all embeddings in input_spec, written as 'mean' in output_spec.\n\n"
+        "  prog spk2utt input_spec output_spec\n"
+        "    -> per-speaker means using spk2utt mapping, written with keys = speaker IDs."
     )
     parser.add_argument("arg1", help="arg1")
     parser.add_argument("arg2", help="arg2")
     parser.add_argument("arg3", help="arg3", nargs="?")
 
     args = parser.parse_args()
-
 
     if args.arg3 is None:
         input_spec = args.arg1
@@ -79,7 +76,6 @@ def main():
                     model[line[1]] = []
                 model[line[1]].append(line[0])
 
-
         tmp_dict = {}
         for m in model:
             for k in model[m]:
@@ -88,10 +84,8 @@ def main():
                 else:
                     tmp_dict[m] = tmp_dict[m] + emb_dict[k] / len(model[m])
 
-
         for u in tmp_dict:
             writer.write(u, tmp_dict[u])
-
 
         reader.close()
         writer.close()
@@ -100,9 +94,5 @@ def main():
             proc.wait()
 
 
-
-
-
 if __name__ == "__main__":
     main()
-

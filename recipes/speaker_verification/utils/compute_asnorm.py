@@ -1,10 +1,9 @@
-import torch
-
 import argparse
 
-from kiwano.utils import read_keys
-from kiwano.embedding import load_embeddings
+import torch
 
+from kiwano.embedding import load_embeddings
+from kiwano.utils import read_keys
 
 cosine = torch.nn.CosineSimilarity(dim=0)
 mean_std_cache = {}
@@ -15,7 +14,9 @@ def compute_v(xvector, impostors):
     return torch.stack([cosine(xvector, impostors[imp]) for imp in impostors])
 
 
-def compute_score_asnorm(xvectorEnrollment, xvectorTest, enrollmentName, testName, impostors, k):
+def compute_score_asnorm(
+    xvectorEnrollment, xvectorTest, enrollmentName, testName, impostors, k
+):
     """
     Compute S-Norm score between enrollment and test xvectors.
     mean_std_cache: dict mapping embedding name -> (mean, std) of impostor scores.
@@ -37,13 +38,20 @@ def compute_score_asnorm(xvectorEnrollment, xvectorTest, enrollmentName, testNam
     mean_e, std_e = mean_std_cache[enrollmentName]
     mean_t, std_t = mean_std_cache[testName]
 
-    return ( ( (score - mean_e) / (std_e) ) + ( (score - mean_t) / (std_t) ) ) * 0.5
+    return (((score - mean_e) / (std_e)) + ((score - mean_t) / (std_t))) * 0.5
 
 
 def asnorm(trials, xvector_enrollment, xvector_test, xvector_impostor, k):
 
     for enrollment_name, test_name in trials:
-        score = compute_score_asnorm(xvector_enrollment[enrollment_name], xvector_test[test_name], enrollment_name, test_name, xvector_impostor, k)
+        score = compute_score_asnorm(
+            xvector_enrollment[enrollment_name],
+            xvector_test[test_name],
+            enrollment_name,
+            test_name,
+            xvector_impostor,
+            k,
+        )
         print(f"{enrollment_name} {test_name} {score}")
 
 
@@ -77,7 +85,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "k", metavar="k", type=int, help="numbers of impostors in the cohort"
     )
-
 
     args = parser.parse_args()
 
