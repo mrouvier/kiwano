@@ -1,13 +1,14 @@
-import sys
+import io
 import struct
 import subprocess
+import sys
 from pathlib import Path
-from typing import Iterator, Tuple, Union, Optional
+from typing import Iterator, Optional, Tuple, Union
 
 import torch
 
-MAGIC = b"SPKEMB01"   # 8-byte magic, identifies our format
-VERSION = 1           # bump if format changes
+MAGIC = b"SPKEMB01"  # 8-byte magic, identifies our format
+VERSION = 1  # bump if format changes
 
 DTYPE_TO_CODE = {
     torch.float32: b"f",
@@ -22,13 +23,12 @@ DTYPE_ITEMSIZE = {
     torch.float64: 8,
 }
 
+
 def _read_exact(f, n: int) -> bytes:
     b = f.read(n)
     if len(b) != n:
         raise EOFError("Unexpected EOF")
     return b
-
-
 
 
 class SpeakerEmbeddingWriter:
@@ -69,7 +69,6 @@ class SpeakerEmbeddingWriter:
             raise TypeError("utt_id must be str")
         if not isinstance(embedding, torch.Tensor):
             raise TypeError("embedding must be a torch.Tensor")
-
 
         dt = embedding.dtype
         if dt not in DTYPE_TO_CODE:
@@ -203,7 +202,6 @@ class SpeakerEmbeddingReader:
             embedding = torch.frombuffer(buf, dtype=dtype_type, count=dim)
             embedding = embedding.clone()
 
-
             yield utt_id, embedding
 
     # ---------- Texte ----------
@@ -221,11 +219,12 @@ class SpeakerEmbeddingReader:
             if len(parts) == 1:
                 raise ValueError(f"No embedding values for utt_id {utt_id!r}")
 
-
             try:
                 values = [float(x) for x in parts[1:]]
             except ValueError as e:
-                raise ValueError(f"Failed to parse embedding for {utt_id!r}: {e}") from e
+                raise ValueError(
+                    f"Failed to parse embedding for {utt_id!r}: {e}"
+                ) from e
 
             emb = torch.tensor(values, dtype=torch.float32)
             yield utt_id, emb
@@ -252,6 +251,7 @@ class SpeakerEmbeddingReader:
 # ---------------------------------------------------------------------
 # Specs pkl:...
 # ---------------------------------------------------------------------
+
 
 def parse_pkl_spec(spec: str):
     """
@@ -345,6 +345,7 @@ def open_input_reader(spec: str):
 # Chargement des embeddings
 # ---------------------------------------------------------------------
 
+
 def load_embeddings(spec: str) -> dict:
     reader, proc = open_input_reader(spec)
     emb_dict = {}
@@ -356,4 +357,3 @@ def load_embeddings(spec: str) -> dict:
         if proc is not None:
             proc.wait()
     return emb_dict
-
