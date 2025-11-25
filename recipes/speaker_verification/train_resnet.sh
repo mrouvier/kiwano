@@ -3,12 +3,7 @@
 #SBATCH --ntasks-per-node=4
 #SBATCH --gres=gpu:4
 #SBATCH --job-name=Kiwano
-#SBATCH --cpus-per-task=10
-#SBATCH --time=20:00:00
-#SBATCH --qos=qos_gpu-t3
-#SBATCH --partition=gpu_p13
-#SBATCH -A hho@v100
-#SBATCH -C v100-32g
+#SBATCH --cpus-per-task=15
 
 
 export OMP_NUM_THREADS=10

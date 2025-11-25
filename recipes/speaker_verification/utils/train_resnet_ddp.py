@@ -85,7 +85,6 @@ if __name__ == "__main__":
     RANK = int(os.environ["RANK"])
     LOCAL_RANK = os.environ["LOCAL_RANK"]
 
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--local_rank", type=int)
     parser.add_argument("--musan", type=str, default="data/musan/")
@@ -115,7 +114,7 @@ if __name__ == "__main__":
         output_device=LOCAL_RANK,
     )
 
-    gpu = torch.device(f"cuda:{local_rank}")
+    gpu = torch.device(f"cuda:{LOCAL_RANK}")
 
     musan = SegmentSet()
     musan.from_dict(Path(args.musan))
@@ -176,7 +175,7 @@ if __name__ == "__main__":
     resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)
 
     resnet_model = torch.nn.parallel.DistributedDataParallel(
-        resnet_model, device_ids=[idr_torch.local_rank]
+        resnet_model, device_ids=LOCAL_RANK
     )
 
     optimizer = torch.optim.SGD(

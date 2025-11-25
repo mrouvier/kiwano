@@ -10,10 +10,9 @@ from typing import List, Optional, Union
 
 import numpy as np
 import torch
+from accelerate import Accelerator
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-
-from accelerate import Accelerator
 
 from kiwano.augmentation import (
     CMVN,
@@ -79,15 +78,10 @@ class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
 
 if __name__ == "__main__":
 
-    print(str(idr_torch.master_addr))
-    print(str(idr_torch.master_port))
-    print(str(idr_torch.local_rank))
-
     NODE_ID = os.environ["SLURM_NODEID"]
     MASTER_ADDR = os.environ["MASTER_ADDR"]
 
     accelerator = Accelerator(mixed_precision="fp16")  # or "no", "bf16" as you like
-
 
     if accelerator.is_main_process:
         print(
@@ -119,8 +113,6 @@ if __name__ == "__main__":
     epochs_start = 0
     if args.checkpoint:
         epochs_start = checkpoint["epochs"]
-
-
 
     musan = SegmentSet()
     musan.from_dict(Path(args.musan))
@@ -156,7 +148,6 @@ if __name__ == "__main__":
 
     training_data.describe()
 
-
     train_dataloader = DataLoader(
         training_data,
         batch_size=32,
@@ -170,9 +161,7 @@ if __name__ == "__main__":
     resnet_model = KiwanoResNet()
     if args.checkpoint:
         resnet_model.load_state_dict(checkpoint["model"])
-    resnet_model.to(gpu)
     resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)
-
 
     optimizer = torch.optim.SGD(
         [
@@ -197,7 +186,6 @@ if __name__ == "__main__":
     )
     if args.checkpoint:
         optimizer.load_state_dict(checkpoint["optimizer"])
-
 
     resnet_model, optimizer, train_dataloader = accelerator.prepare(
         resnet_model, optimizer, train_dataloader
@@ -274,4 +262,6 @@ if __name__ == "__main__":
                 "name": type(unwrapped_model).__name__,
                 "config": unwrapped_model.extra_repr(),
             }
-            accelerator.save(checkpoint, args.exp_dir + "/model" + str(epochs) + ".ckpt")
+            accelerator.save(
+                checkpoint, args.exp_dir + "/model" + str(epochs) + ".ckpt"
+            )
