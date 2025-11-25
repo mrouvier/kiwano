@@ -28,7 +28,7 @@ You can train a speaker embedding extractor (ResNet-based) in different ways dep
 Run the following command to train ResNet locally:
 
 ```
-python  utils/train_resnet.py data/voxceleb2/ exp/resnet/
+torchrun --standalone --nproc_per_node=4 utils/train_resnet_ddp.py data/voxceleb2/ exp/resnet/
 ```
 
 ### Training with Hugging Face Accelerate
@@ -37,7 +37,7 @@ python  utils/train_resnet.py data/voxceleb2/ exp/resnet/
 Run the following command to train ResNet using multi-GPU or distributed training, use the Accelerate toolkit:
 
 ```
-python  utils/train_resnet.py data/voxceleb2/ exp/resnet/
+accelerate launch utils/train_resnet_accelerate.py data/voxceleb2/ exp/resnet/
 ```
 
 ### Training with SLURM
