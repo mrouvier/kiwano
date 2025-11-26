@@ -293,6 +293,6 @@ if __name__ == "__main__":
                 "optimizer": optimizer.state_dict(),
                 "model": resnet_model.module.state_dict(),
                 "name": type(resnet_model.module).__name__,
-                "config": resnet_model.extra_repr(),
+                "config": resnet_model.module.extra_repr(),
             }
             torch.save(checkpoint, args.exp_dir + "/model" + str(epochs) + ".ckpt")

@@ -11,7 +11,7 @@ class AutoModel(torch.nn.Module):
 
     @classmethod
     def from_pretrained(cls, ckpt):
-        extra_repr = ckpt["extra_repr"]
+        extra_repr = ckpt["config"]
         pairs = extra_repr.split(", ")
         result_dict = {}
         for pair in pairs:

@@ -26,10 +26,10 @@ from kiwano.augmentation import (
     OneOf,
 )
 from kiwano.dataset import Segment, SegmentSet
-from kiwano.embedding import EmbeddingSet, write_pkl
+from kiwano.embedding import SpeakerEmbeddingWriter
 from kiwano.features import Fbank, FbankV2
-from kiwano.model import ResNet
 from kiwano.utils import Pathlike
+from kiwano.model import AutoModel
 
 
 class SpeakerExtractingSegmentSet(Dataset, SegmentSet):
@@ -139,25 +139,22 @@ if __name__ == "__main__":
     )
     iterator = iter(extracting_dataloader)
 
-    resnet_model = ResNet()
-    resnet_model.load_state_dict(torch.load(args.model)["model"])
-    resnet_model.to(device)
+    model = AutoModel.from_pretrained(torch.load(args.model))
+    model.to(device)
 
-    resnet_model.eval()
+    model.eval()
 
-    emb = EmbeddingSet()
+    emb = SpeakerEmbeddingWriter(Path(args.output_dir), binary=True)
 
     for feat, key in extracting_dataloader:
         feat = feat.unsqueeze(1)
 
         feat = feat.float().to(device)
 
-        pred = resnet_model(feat)
+        pred = model(feat)
 
-        emb[key[0]] = torch.Tensor(pred.cpu().detach()[0])
+        emb.write(key[0], torch.Tensor(pred.cpu().detarch()[0]))
 
         print("Processed x-vector for key : " + key[0])
-
-    write_pkl(args.output_dir, emb)
 
     print("# Ended at " + time.ctime())
