@@ -55,7 +55,7 @@ sbatch train_resnet.sh
 Run the following command to extract speaker embedding:
 
 ```
-python utils/extract_resnet.py data/voxceleb1/ exp/resnet/model51.ckpt pkl:exp/resnet/voxceleb1.51/xvector.pkl
+python utils/extract_resnet.py data/voxceleb1/ exp/resnet/model51.ckpt pkl:exp/resnet/voxceleb1/xvector.pkl
 ```
 
 Run the following command to extract speaker embedding using SLURM:
@@ -71,6 +71,13 @@ Run the following command to score speaker embedding on VoxCeleb-1 O/E/H :
 
 ```
 sh compute_score.sh exp/resnet/ 51
+```
+
+Run the following command to score embedding on specific corpus :
+
+```
+python utils/compute_cosine.py  data/voxceleb1/voxceleb1-o-cleaned.trials  "pkl:cat exp/resnet/voxceleb1/xvector.*.pkl |"   "pkl:cat exp/resnet/voxceleb1/xvector.*.pkl |" > exp/resnet/voxceleb1/scores.txt
+python utils/compute_eer.py data/voxceleb1/voxceleb1-o-cleaned.trials exp/resnet/voxceleb1/scores.txt
 ```
 
 
