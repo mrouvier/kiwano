@@ -55,7 +55,7 @@ sbatch train_resnet.sh
 Run the following command to extract speaker embedding:
 
 ```
-python utils/extract_resnet.py data/voxceleb1/ exp/resnet/model51.ckpt pkl:exp/resnet/voxceleb1/xvector.pkl
+python utils/extract_resnet.py data/voxceleb1/ exp/resnet/model51.ckpt pkl:exp/resnet/voxceleb1/xvector.0.pkl
 ```
 
 Run the following command to extract speaker embedding using SLURM:
