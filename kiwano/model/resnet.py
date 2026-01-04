@@ -906,27 +906,46 @@ class PreResNet(nn.Module):
     torch.Size([16, 256 * 11, time'])  # Example: depends on downsampling
     """
 
-    def __init__(self, channels=[128, 128, 256, 256], num_blocks=[3, 8, 18, 3]):
+    def __init__(
+        self,
+        stage_channels: tuple[int, ...] = (128, 128, 256, 256),
+        stage_blocks: tuple[int, ...] = (3, 8, 18, 3),
+        stage_strides: tuple[int, ...] = (1, 2, 2, 2),
+    ):
+
         super(PreResNet, self).__init__()
 
-        self.channels = channels
-        self.num_blocks = num_blocks
+        self.stage_channels = stage_channels
+        self.stage_blocks = stage_blocks
+        self.stage_strides = stage_strides
 
-        self.pre_conv1 = nn.Conv2d(1, channels[0], 3, 1, 1, bias=False)
-        self.pre_bn1 = nn.BatchNorm2d(channels[0])
+        self.pre_conv1 = nn.Conv2d(1, self.stage_channels[0], 3, 1, 1, bias=False)
+        self.pre_bn1 = nn.BatchNorm2d(self.stage_channels[0])
         self.pre_activation1 = nn.SiLU()
 
         self.layer1 = self._make_layer_se(
-            channels[0], channels[0], num_blocks[0], stride=1
+            self.stage_channels[0],
+            self.stage_channels[0],
+            self.stage_blocks[0],
+            self.stage_strides[0],
         )
         self.layer2 = self._make_layer_se(
-            channels[0], channels[1], num_blocks[1], stride=2
+            self.stage_channels[0],
+            self.stage_channels[1],
+            self.stage_blocks[1],
+            self.stage_strides[1],
         )
         self.layer3 = self._make_layer(
-            channels[1], channels[2], num_blocks[2], stride=2
+            self.stage_channels[1],
+            self.stage_channels[2],
+            self.stage_blocks[2],
+            self.stage_strides[2],
         )
         self.layer4 = self._make_layer(
-            channels[2], channels[3], num_blocks[3], stride=2
+            self.stage_channels[2],
+            self.stage_channels[3],
+            self.stage_blocks[3],
+            self.stage_strides[3],
         )
 
         for m in self.modules():
@@ -1024,27 +1043,45 @@ class KiwanoPreResNet(nn.Module):
     torch.Size([16, 256 * 11, time'])  # Example: depends on downsampling
     """
 
-    def __init__(self, channels=[128, 128, 256, 256], num_blocks=[3, 8, 18, 3]):
+    def __init__(
+        self,
+        stage_channels: tuple[int, ...] = (128, 128, 256, 256),
+        stage_blocks: tuple[int, ...] = (3, 8, 18, 3),
+        stage_strides: tuple[int, ...] = (1, 2, 2, 2),
+    ):
         super(KiwanoPreResNet, self).__init__()
 
-        self.channels = channels
-        self.num_blocks = num_blocks
+        self.stage_channels = stage_channels
+        self.stage_blocks = stage_blocks
+        self.stage_strides = stage_strides
 
-        self.pre_conv1 = nn.Conv2d(1, channels[0], 3, 1, 1, bias=False)
-        self.pre_bn1 = nn.BatchNorm2d(channels[0])
+        self.pre_conv1 = nn.Conv2d(1, self.stage_channels[0], 3, 1, 1, bias=False)
+        self.pre_bn1 = nn.BatchNorm2d(self.stage_channels[0])
         self.pre_activation1 = nn.SiLU()
 
         self.layer1 = self._make_layer_se(
-            channels[0], channels[0], num_blocks[0], stride=1
+            self.stage_channels[0],
+            self.stage_channels[0],
+            self.stage_blocks[0],
+            self.stage_strides[0],
         )
         self.layer2 = self._make_layer_se(
-            channels[0], channels[1], num_blocks[1], stride=2
+            self.stage_channels[0],
+            self.stage_channels[1],
+            self.stage_blocks[1],
+            self.stage_strides[1],
         )
         self.layer3 = self._make_layer(
-            channels[1], channels[2], num_blocks[2], stride=2
+            self.stage_channels[1],
+            self.stage_channels[2],
+            self.stage_blocks[2],
+            self.stage_strides[2],
         )
         self.layer4 = self._make_layer(
-            channels[2], channels[3], num_blocks[3], stride=2
+            self.stage_channels[2],
+            self.stage_channels[3],
+            self.stage_blocks[3],
+            self.stage_strides[3],
         )
 
         for m in self.modules():
@@ -1209,30 +1246,44 @@ class ResNet(nn.Module):
 
     def __init__(
         self,
-        input_features=81,
-        embed_features=256,
-        num_classes=6000,
-        channels=[128, 128, 256, 256],
-        num_blocks=[3, 8, 18, 3],
+        in_channels: int = 81,
+        embed_dim: int = 256,
+        num_classes: int = 6000,
+        stage_channels: tuple[int, ...] = (128, 128, 256, 256),
+        stage_blocks: tuple[int, ...] = (3, 8, 18, 3),
+        stage_strides: tuple[int, ...] = (1, 2, 2, 2),
     ):
         super(ResNet, self).__init__()
 
-        self.embed_features = embed_features
+        self.in_channels = in_channels
+        self.embed_dim = embed_dim
         self.num_classes = num_classes
-        self.channels = channels
-        self.num_blocks = num_blocks
+        self.stage_channels = stage_channels
+        self.stage_blocks = stage_blocks
+        self.stage_strides = stage_strides
 
-        self.preresnet = PreResNet(self.channels, self.num_blocks)
+        self.preresnet = PreResNet(
+            self.stage_channels, self.stage_blocks, self.stage_stides
+        )
 
-        self.temporal_pooling = ASTP(channels[3] * 11, channels[3] // 2)
+        self.temporal_pooling = ASTP(
+            self.stage_channels[3] * 11, self.stage_channels[3] // 2
+        )
 
-        self.embedding = SpeakerEmbedding(2 * 11 * channels[3], self.embed_features)
+        self.embedding = SpeakerEmbedding(
+            2 * 11 * self.stage_channels[3], self.embed_dim
+        )
 
-        self.output = AMSMLoss(self.embed_features, self.num_classes)
+        self.output = AMSMLoss(self.embed_dim, self.num_classes)
 
     def extra_repr(self):
-        return "embed_features={}, num_classes={}".format(
-            self.embed_features, self.num_classes
+        return "in_channels={}; embed_dim={}; num_classes={}; stage_channels={}; stage_blocks={}; stage_strides={}".format(
+            self.in_channels,
+            self.embed_dim,
+            self.num_classes,
+            ",".join(map(str, self.stage_channels)),
+            ",".join(map(str, self.stage_blocks)),
+            ",".join(map(str, self.stage_strides)),
         )
 
     def get_m(self):
@@ -1334,30 +1385,44 @@ class KiwanoResNet(nn.Module):
 
     def __init__(
         self,
-        input_features=81,
-        embed_features=256,
-        num_classes=6000,
-        channels=[128, 128, 256, 256],
-        num_blocks=[3, 8, 18, 3],
+        in_channels: int = 81,
+        embed_dim: int = 256,
+        num_classes: int = 6000,
+        stage_channels: tuple[int, ...] = (128, 128, 256, 256),
+        stage_blocks: tuple[int, ...] = (3, 8, 18, 3),
+        stage_strides: tuple[int, ...] = (1, 2, 2, 2),
     ):
         super(KiwanoResNet, self).__init__()
 
-        self.embed_features = embed_features
+        self.in_channels = in_channels
+        self.embed_dim = embed_dim
         self.num_classes = num_classes
-        self.channels = channels
-        self.num_blocks = num_blocks
+        self.stage_channels = stage_channels
+        self.stage_blocks = stage_blocks
+        self.stage_strides = stage_strides
 
-        self.preresnet = KiwanoPreResNet(self.channels, self.num_blocks)
+        self.preresnet = KiwanoPreResNet(
+            self.stage_channels, self.stage_blocks, self.stage_strides
+        )
 
-        self.temporal_pooling = ASTP(channels[3] * 11, channels[3] // 2)
+        self.temporal_pooling = ASTP(
+            self.stage_channels[3] * 11, self.stage_channels[3] // 2
+        )
 
-        self.embedding = SpeakerEmbedding(2 * 11 * channels[3], self.embed_features)
+        self.embedding = SpeakerEmbedding(
+            2 * 11 * self.stage_channels[3], self.embed_dim
+        )
 
-        self.output = AMSMLoss(self.embed_features, self.num_classes)
+        self.output = AMSMLoss(self.embed_dim, self.num_classes)
 
     def extra_repr(self):
-        return "embed_features={}, num_classes={}".format(
-            self.embed_features, self.num_classes
+        return "in_channels={}; embed_dim={}; num_classes={}; stage_channels={}; stage_blocks={}; stage_strides={}".format(
+            self.in_channels,
+            self.embed_dim,
+            self.num_classes,
+            ",".join(map(str, self.stage_channels)),
+            ",".join(map(str, self.stage_blocks)),
+            ",".join(map(str, self.stage_strides)),
         )
 
     def get_m(self):
@@ -1397,8 +1462,7 @@ class XIKiwanoResNet(nn.Module):
     representations, an attentive statistics pooling (ASTP) aggregates temporal
     information, and a projection head (SpeakerEmbedding) maps to a fixed-dimensional
     speaker embedding space. During training, an additive margin softmax (AMSMLoss)
-    is used for discriminative supervision over speaker identities.
-
+    is used for discriminative supervision over speaker identities.)
     Parameters
     ----------
     input_features : int, default=81
@@ -1436,30 +1500,40 @@ class XIKiwanoResNet(nn.Module):
 
     def __init__(
         self,
-        input_features=81,
-        embed_features=256,
-        num_classes=6000,
-        channels=[128, 128, 256, 256],
-        num_blocks=[3, 8, 18, 3],
+        in_channels: int = 81,
+        embed_dim: int = 256,
+        num_classes: int = 6000,
+        stage_channels: tuple[int, ...] = (128, 128, 256, 256),
+        stage_blocks: tuple[int, ...] = (3, 8, 18, 3),
+        stage_strides: tuple[int, ...] = (1, 2, 2, 2),
     ):
         super(XIKiwanoResNet, self).__init__()
 
-        self.embed_features = embed_features
+        self.in_channels = in_channels
+        self.embed_dim = embed_dim
         self.num_classes = num_classes
-        self.channels = channels
-        self.num_blocks = num_blocks
+        self.stage_channels = stage_channels
+        self.stage_blocks = stage_blocks
+        self.stage_strides = stage_strides
 
-        self.preresnet = KiwanoPreResNet(self.channels, self.num_blocks)
+        self.preresnet = KiwanoPreResNet(
+            self.stage_channels, self.stage_blocks, self.stage_strides
+        )
 
-        self.temporal_pooling = XI(in_dim=channels[3] * 11)
+        self.temporal_pooling = XI(in_dim=self.stage_channels[3] * 11)
 
-        self.embedding = SpeakerEmbedding(channels[3] * 11, self.embed_features)
+        self.embedding = SpeakerEmbedding(self.stage_channels[3] * 11, self.embed_dim)
 
-        self.output = AMSMLoss(self.embed_features, self.num_classes)
+        self.output = AMSMLoss(self.embed_dim, self.num_classes)
 
     def extra_repr(self):
-        return "embed_features={}, num_classes={}".format(
-            self.embed_features, self.num_classes
+        return "in_channels={}; embed_dim={}; num_classes={}; stage_channels={}; stage_blocks={}; stage_strides={}".format(
+            self.in_channels,
+            self.embed_dim,
+            self.num_classes,
+            ",".join(map(str, self.stage_channels)),
+            ",".join(map(str, self.stage_blocks)),
+            ",".join(map(str, self.stage_strides)),
         )
 
     def get_m(self):

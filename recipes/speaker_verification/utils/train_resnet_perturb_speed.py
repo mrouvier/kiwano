@@ -34,7 +34,7 @@ from kiwano.augmentation import (
 )
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.features import Fbank
-from kiwano.model import IDRDScheduler, JeffreysLoss, KiwanoResNet
+from kiwano.model import JeffreysLoss, KiwanoResNet, WarmupPlateauScheduler
 from kiwano.utils import Pathlike
 
 logger = logging.getLogger(__name__)
@@ -230,15 +230,15 @@ if __name__ == "__main__":
         optimizer.load_state_dict(checkpoint["optimizer"])
     criterion = JeffreysLoss(coeff1=0.1, coeff2=0.025)
 
-    scheduler = IDRDScheduler(
+    scheduler = WarmupPlateauScheduler(
         optimizer,
-        num_epochs=args.max_epochs,
+        max_epochs=args.max_epochs,
         initial_lr=0.2,
         warm_up_epoch=5,
         plateau_epoch=15,
         patience=10,
         factor=5,
-        amsmloss=0.3,
+        margin_loss=0.3,
     )
     if args.checkpoint:
         scheduler.set_epoch(checkpoint["epochs"])
@@ -248,7 +248,7 @@ if __name__ == "__main__":
     for epochs in range(epochs_start, args.max_epochs):
         iterations = 0
         train_sampler.set_epoch(epochs)
-        resnet_model.module.set_m(scheduler.get_amsmloss())
+        resnet_model.module.set_m(scheduler.get_margin_loss())
         torch.distributed.barrier()
         for feats, iden in train_dataloader:
 
