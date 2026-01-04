@@ -96,10 +96,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rirs_noises", type=str, default="data/rirs_noises/")
     parser.add_argument("--checkpoint", type=str)
     parser.add_argument("--max_epochs", type=int, default=51)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--num_workers", type=int, default=15)
     parser.add_argument(
-        "--num_classes", type=int, default=6000, help="Number of classes (integer)"
+        "--num_classes", type=int, default=18000, help="Number of classes (integer)"
     )
     parser.add_argument("training_corpus", type=str, metavar="training_corpus")
     parser.add_argument("exp_dir", type=str, metavar="exp_dir")
