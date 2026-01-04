@@ -184,8 +184,9 @@ def main() -> None:
 
     args = parse_args()
     validate_directories(args)
-    args.blocks = list(map(int, args.blocks.split(",")))
-    args.feature_maps = list(map(int, args.feature_maps.split(",")))
+    args.stage_blocks = list(map(int, args.stage_blocks.split(",")))
+    args.stage_channels = list(map(int, args.stage_channels.split(",")))
+    args.stage_strides = list(map(int, args.stage_strides.split(",")))
 
     print("#" + " ".join(sys.argv[0:]))
     print("# Started at " + time.ctime())
