@@ -28,8 +28,8 @@ from kiwano.augmentation import (
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.embedding import SpeakerEmbeddingWriter
 from kiwano.features import Fbank, FbankV2
-from kiwano.utils import Pathlike
 from kiwano.model import AutoModel
+from kiwano.utils import Pathlike
 
 
 class SpeakerExtractingSegmentSet(Dataset, SegmentSet):
