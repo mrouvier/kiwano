@@ -3,5 +3,7 @@
 from .resnet import *
 from .automodel import *
 from .loss import *
-from .MHFA import *
+from .ecapa2 import *
+
+# from .MHFA import *
 from .schedulers import *
