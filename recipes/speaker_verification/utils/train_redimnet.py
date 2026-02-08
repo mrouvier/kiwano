@@ -32,9 +32,8 @@ from kiwano.dataset import Segment, SegmentSet
 from kiwano.features import Fbank
 from kiwano.model import (
     JeffreysLoss,
+    ReDimNet,
     WarmupPlateauScheduler,
-    XIKiwanoResNet,
-    XIKiwanoResNetConfig,
 )
 from kiwano.utils import Pathlike
 
@@ -272,14 +271,14 @@ def main() -> None:
         pin_memory=True,
     )
 
-    xiresnet_cfg = XIKiwanoResNetConfig(
+    resnet_cfg = KiwanoResNetConfig(
         num_classes=args.num_classes,
         stage_channels=args.stage_channels,
         stage_blocks=args.stage_blocks,
         stage_strides=args.stage_strides,
     )
 
-    resnet_model = XIKiwanoResNet(xiresnet_cfg)
+    resnet_model = KiwanoResNet(resnet_cfg)
     resnet_model.to(device)
     resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)
     resnet_model = torch.nn.parallel.DistributedDataParallel(
@@ -387,7 +386,7 @@ def main() -> None:
                 "optimizer": optimizer.state_dict(),
                 "model": resnet_model.module.state_dict(),
                 "name": type(resnet_model.module).__name__,
-                "config": xiresnet_cfg,
+                "config": resnet_cfg,
             }
             ckpt_path = os.path.join(args.exp_dir, f"model{epoch}.ckpt")
             torch.save(checkpoint, ckpt_path)

@@ -1,36 +1,45 @@
 #!/usr/bin/env python3
 
-import sys
-from pathlib import Path
-from typing import Optional, Union, List
-
-import numpy as np
-import torch
-import time
-from torch import nn
-
-from kiwano.utils import Pathlike
-from kiwano.features import Spectrogram
-from kiwano.augmentation import Augmentation, Noise, Codec, Filtering, Normal, OneOf, Compose, CMVN, Crop, SpecAugment, Reverb
-from kiwano.dataset import Segment, SegmentSet
-from kiwano.model import ECAPA2V3SubCenter, WarmupPlateauScheduler, JeffreysLoss
-
-from torch.utils.data import Dataset, DataLoader, Sampler
-
-import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel as DDP
-
-from torch.utils.data.distributed import DistributedSampler
-
 import argparse
-
-import idr_torch
-import hostlist
 import logging
 import os
+import sys
+import time
+from pathlib import Path
+from typing import List, Optional, Union
 
+import hostlist
+import idr_torch
+import torch
+import torch.distributed as dist
+from torch.utils.data import DataLoader, Dataset, Sampler
+from torch.utils.data.distributed import DistributedSampler
+
+from kiwano.augmentation import (
+    CMVN,
+    Augmentation,
+    Codec,
+    Compose,
+    Crop,
+    Filtering,
+    Noise,
+    Normal,
+    OneOf,
+    Reverb,
+    SpecAugment,
+)
+from kiwano.dataset import Segment, SegmentSet
+from kiwano.features import Spectrogram
+from kiwano.model import (
+    ECAPA2Config,
+    ECAPA2V3SubCenter,
+    JeffreysLoss,
+    WarmupPlateauScheduler,
+)
+from kiwano.utils import Pathlike
 
 logger = logging.getLogger(__name__)
+
 
 def setup_logging() -> None:
     level = logging.INFO
@@ -41,12 +50,18 @@ def setup_logging() -> None:
     )
 
 
-def get_lr(optimizer):
+def get_lr(optimizer: torch.optim.Optimizer) -> float:
     for param_group in optimizer.param_groups:
-        return param_group['lr']
+        return param_group["lr"]
+
 
 class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
-    def __init__(self, audio_transforms: List[Augmentation] = None, feature_extractor = None, feature_transforms: List[Augmentation] = None):
+    def __init__(
+        self,
+        audio_transforms: List[Augmentation] = None,
+        feature_extractor=None,
+        feature_transforms: List[Augmentation] = None,
+    ):
         super().__init__()
         self.audio_transforms = audio_transforms
         self.feature_transforms = feature_transforms
@@ -57,21 +72,30 @@ class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
         if isinstance(segment_id_or_index, str):
             segment = self.segments[segment_id_or_index]
         else:
-            segment = next(val for idx, val in enumerate(self.segments.values()) if idx == segment_id_or_index)
+            segment = next(
+                val
+                for idx, val in enumerate(self.segments.values())
+                if idx == segment_id_or_index
+            )
 
         audio, sample_rate = segment.load_audio()
-        if self.audio_transforms != None:
+        if self.audio_transforms is not None:
             audio, sample_rate = self.audio_transforms(audio, sample_rate)
 
-        if self.feature_extractor != None:
-            feature = self.feature_extractor.extract(audio, sampling_rate=sample_rate)
+        if self.feature_extractor is None:
+            raise RuntimeError(
+                "feature_extractor must be set for SpeakerTrainingSegmentSet"
+            )
 
-        if self.feature_transforms != None:
+        feature = self.feature_extractor.extract(audio, sampling_rate=sample_rate)
+
+        if self.feature_transforms is not None:
             feature = self.feature_transforms(feature)
-        
-        feature = feature.transpose(0,1)
 
-        return feature, self.labels[ segment.spkid ]
+        feature = feature.transpose(0, 1)
+
+        return feature, self.labels[segment.spkid]
+
 
 def validate_directories(args) -> None:
     def check_dir(path: str, name: str):
@@ -234,7 +258,8 @@ def main() -> None:
         pin_memory=True,
     )
 
-    ecapa2_model = ECAPA2V3SubCenter(num_classes=args.num_classes)
+    ecapa2_cfg = ECAPA2Config(num_classes=args.num_classes)
+    ecapa2_model = ECAPA2V3SubCenter(ecapa2_cfg)
     ecapa2_model.to(device)
     ecapa2_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(ecapa2_model)
     ecapa2_model = torch.nn.parallel.DistributedDataParallel(
@@ -290,7 +315,7 @@ def main() -> None:
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
 
-    for epoch in range(start_epoch, args.max_epochs):
+    for epoch in range(start_epoch, args.max_epochs + 1):
         iterations = 0
         train_sampler.set_epoch(epoch)
         ecapa2_model.module.set_m(scheduler.get_margin_loss())
@@ -337,11 +362,12 @@ def main() -> None:
         if dist.get_rank() == 0:
             os.makedirs(args.exp_dir, exist_ok=True)
             checkpoint = {
+                "version": "1.0",
                 "epoch": epoch + 1,
                 "optimizer": optimizer.state_dict(),
                 "model": ecapa2_model.module.state_dict(),
                 "name": type(ecapa2_model.module).__name__,
-                "config": ecapa2_model.module.extra_repr(),
+                "config": ecapa2_cfg,
             }
             ckpt_path = os.path.join(args.exp_dir, f"model{epoch}.ckpt")
             torch.save(checkpoint, ckpt_path)
@@ -350,4 +376,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

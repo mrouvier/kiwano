@@ -30,7 +30,12 @@ from kiwano.augmentation import (
 )
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.features import Fbank
-from kiwano.model import JeffreysLoss, KiwanoResNet, WarmupPlateauScheduler
+from kiwano.model import (
+    JeffreysLoss,
+    KiwanoResNet,
+    KiwanoResNetConfig,
+    WarmupPlateauScheduler,
+)
 from kiwano.utils import Pathlike
 
 logger = logging.getLogger(__name__)
@@ -118,14 +123,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--stage_blocks",
         type=str,
-        default="3,4,6,3",
-        help='Block configuration, e.g. "4,30,30,4"',
+        default="3,8,18,3",
+        help='Block configuration, e.g. "3,8,18,3"',
     )
     parser.add_argument(
         "--stage_channels",
         type=str,
-        default="32,64,128,256",
-        help='Channel configuration, e.g. "32,64,128,256"',
+        default="128,128,256,256",
+        help='Channel configuration, e.g. "128,128,256,256"',
     )
     parser.add_argument(
         "--stage_strides",
@@ -267,12 +272,14 @@ def main() -> None:
         pin_memory=True,
     )
 
-    resnet_model = KiwanoResNet(
+    resnet_cfg = KiwanoResNetConfig(
         num_classes=args.num_classes,
         stage_channels=args.stage_channels,
         stage_blocks=args.stage_blocks,
         stage_strides=args.stage_strides,
     )
+
+    resnet_model = KiwanoResNet(resnet_cfg)
     resnet_model.to(device)
     resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)
     resnet_model = torch.nn.parallel.DistributedDataParallel(
@@ -328,7 +335,7 @@ def main() -> None:
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
 
-    for epoch in range(start_epoch, args.max_epochs):
+    for epoch in range(start_epoch, args.max_epochs + 1):
         iterations = 0
         train_sampler.set_epoch(epoch)
         resnet_model.module.set_m(scheduler.get_margin_loss())
@@ -375,11 +382,12 @@ def main() -> None:
         if dist.get_rank() == 0:
             os.makedirs(args.exp_dir, exist_ok=True)
             checkpoint = {
+                "version": "1.0",
                 "epoch": epoch + 1,
                 "optimizer": optimizer.state_dict(),
                 "model": resnet_model.module.state_dict(),
                 "name": type(resnet_model.module).__name__,
-                "config": resnet_model.module.extra_repr(),
+                "config": resnet_cfg,
             }
             ckpt_path = os.path.join(args.exp_dir, f"model{epoch}.ckpt")
             torch.save(checkpoint, ckpt_path)

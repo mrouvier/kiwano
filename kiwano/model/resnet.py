@@ -1,8 +1,34 @@
 import math
+from dataclasses import asdict, dataclass
+from typing import Tuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+
+@dataclass
+class KiwanoResNetConfig:
+    in_channels: int = 81
+    embed_dim: int = 256
+    num_classes: int = 6000
+    stage_channels: Tuple[int, ...] = (128, 128, 256, 256)
+    stage_blocks: Tuple[int, ...] = (3, 8, 18, 3)
+    stage_strides: Tuple[int, ...] = (1, 2, 2, 2)
+    scale: float = 30.0
+    margin: float = 0.3
+
+
+@dataclass
+class XIKiwanoResNetConfig:
+    in_channels: int = 81
+    embed_dim: int = 256
+    num_classes: int = 6000
+    stage_channels: Tuple[int, ...] = (128, 128, 256, 256)
+    stage_blocks: Tuple[int, ...] = (3, 8, 18, 3)
+    stage_strides: Tuple[int, ...] = (1, 2, 2, 2)
+    scale: float = 30.0
+    margin: float = 0.3
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -1385,45 +1411,52 @@ class KiwanoResNet(nn.Module):
 
     def __init__(
         self,
-        in_channels: int = 81,
-        embed_dim: int = 256,
-        num_classes: int = 6000,
-        stage_channels: tuple[int, ...] = (128, 128, 256, 256),
-        stage_blocks: tuple[int, ...] = (3, 8, 18, 3),
-        stage_strides: tuple[int, ...] = (1, 2, 2, 2),
+        config: KiwanoResNetConfig,
     ):
         super(KiwanoResNet, self).__init__()
 
-        self.in_channels = in_channels
-        self.embed_dim = embed_dim
-        self.num_classes = num_classes
-        self.stage_channels = stage_channels
-        self.stage_blocks = stage_blocks
-        self.stage_strides = stage_strides
+        self.config = config
 
         self.preresnet = KiwanoPreResNet(
-            self.stage_channels, self.stage_blocks, self.stage_strides
+            self.config.stage_channels,
+            self.config.stage_blocks,
+            self.config.stage_strides,
         )
 
         self.temporal_pooling = ASTP(
-            self.stage_channels[3] * 11, self.stage_channels[3] // 2
+            self.config.stage_channels[3] * 11, self.config.stage_channels[3] // 2
         )
 
         self.embedding = SpeakerEmbedding(
-            2 * 11 * self.stage_channels[3], self.embed_dim
+            2 * 11 * self.config.stage_channels[3], self.config.embed_dim
         )
 
-        self.output = AMSMLoss(self.embed_dim, self.num_classes)
+        self.output = AMSMLoss(
+            self.config.embed_dim,
+            self.config.num_classes,
+            s=self.config.scale,
+            m=self.config.margin,
+        )
 
     def extra_repr(self):
-        return "in_channels={}; embed_dim={}; num_classes={}; stage_channels={}; stage_blocks={}; stage_strides={}".format(
-            self.in_channels,
-            self.embed_dim,
-            self.num_classes,
-            ",".join(map(str, self.stage_channels)),
-            ",".join(map(str, self.stage_blocks)),
-            ",".join(map(str, self.stage_strides)),
+        cfg = self.config
+        return (
+            f"in_channels={cfg.in_channels}, "
+            f"embed_dim={cfg.embed_dim}, "
+            f"num_classes={cfg.num_classes}, "
+            f"stage_channels={cfg.stage_channels}, "
+            f"stage_blocks={cfg.stage_blocks}, "
+            f"stage_strides={cfg.stage_strides}, "
+            f"margin={cfg.margin}, "
+            f"scale={cfg.scale}, "
         )
+
+    @classmethod
+    def from_config(cls, config: KiwanoResNetConfig) -> "KiwanoResNet":
+        return cls(config)
+
+    def get_config(self) -> KiwanoResNetConfig:
+        return self.config
 
     def get_m(self):
         return self.output.get_m()
@@ -1500,41 +1533,50 @@ class XIKiwanoResNet(nn.Module):
 
     def __init__(
         self,
-        in_channels: int = 81,
-        embed_dim: int = 256,
-        num_classes: int = 6000,
-        stage_channels: tuple[int, ...] = (128, 128, 256, 256),
-        stage_blocks: tuple[int, ...] = (3, 8, 18, 3),
-        stage_strides: tuple[int, ...] = (1, 2, 2, 2),
+        config: XIKiwanoResNetConfig,
     ):
         super(XIKiwanoResNet, self).__init__()
 
-        self.in_channels = in_channels
-        self.embed_dim = embed_dim
-        self.num_classes = num_classes
-        self.stage_channels = stage_channels
-        self.stage_blocks = stage_blocks
-        self.stage_strides = stage_strides
+        self.config = config
 
         self.preresnet = KiwanoPreResNet(
-            self.stage_channels, self.stage_blocks, self.stage_strides
+            self.config.stage_channels,
+            self.config.stage_blocks,
+            self.config.stage_strides,
         )
 
-        self.temporal_pooling = XI(in_dim=self.stage_channels[3] * 11)
+        self.temporal_pooling = XI(in_dim=self.config.stage_channels[3] * 11)
 
-        self.embedding = SpeakerEmbedding(self.stage_channels[3] * 11, self.embed_dim)
+        self.embedding = SpeakerEmbedding(
+            self.config.stage_channels[3] * 11, self.config.embed_dim
+        )
 
-        self.output = AMSMLoss(self.embed_dim, self.num_classes)
+        self.output = AMSMLoss(
+            self.config.embed_dim,
+            self.config.num_classes,
+            s=self.config.scale,
+            m=self.config.margin,
+        )
 
     def extra_repr(self):
-        return "in_channels={}; embed_dim={}; num_classes={}; stage_channels={}; stage_blocks={}; stage_strides={}".format(
-            self.in_channels,
-            self.embed_dim,
-            self.num_classes,
-            ",".join(map(str, self.stage_channels)),
-            ",".join(map(str, self.stage_blocks)),
-            ",".join(map(str, self.stage_strides)),
+        cfg = self.config
+        return (
+            f"in_channels={cfg.in_channels}, "
+            f"embed_dim={cfg.embed_dim}, "
+            f"num_classes={cfg.num_classes}, "
+            f"stage_channels={cfg.stage_channels}, "
+            f"stage_blocks={cfg.stage_blocks}, "
+            f"stage_strides={cfg.stage_strides}, "
+            f"margin={cfg.margin}, "
+            f"scale={cfg.scale}, "
         )
+
+    @classmethod
+    def from_config(cls, config: XIKiwanoResNetConfig) -> "XIKiwanoResNet":
+        return cls(config)
+
+    def get_config(self) -> XIKiwanoResNetConfig:
+        return self.config
 
     def get_m(self):
         return self.output.get_m()

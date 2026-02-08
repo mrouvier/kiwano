@@ -1,10 +1,29 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
 from abc import ABCMeta, abstractmethod
 from dataclasses import asdict, dataclass, is_dataclass
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 import torchaudio
+
+
+def asdict_nonull(dclass) -> Dict[str, Any]:
+    """
+    Recursively convert a dataclass into a dict, removing all the fields with `None` value.
+    Intended to use in place of dataclasses.asdict(), when the null values are not desired in the serialized document.
+    """
+
+    def non_null_dict_factory(collection):
+        d = dict(collection)
+        remove_keys = []
+        for key, val in d.items():
+            if val is None:
+                remove_keys.append(key)
+        for k in remove_keys:
+            del d[k]
+        return d
+
+    return asdict(dclass, dict_factory=non_null_dict_factory)
 
 
 class FeatureExtractor(metaclass=ABCMeta):
@@ -20,7 +39,6 @@ class FeatureExtractor(metaclass=ABCMeta):
         pass
 
 
-
 @dataclass
 class SpectrogramConfig:
     sampling_rate: int = 16000
@@ -32,7 +50,6 @@ class SpectrogramConfig:
         return SpectrogramConfig(**data)
 
 
-
 class Spectrogram(FeatureExtractor):
     name = "spectrogram"
     config_type = SpectrogramConfig
@@ -40,8 +57,18 @@ class Spectrogram(FeatureExtractor):
     def __init__(self, config: Optional[SpectrogramConfig] = None):
         super().__init__(config=config)
 
-        self.extractor = torchaudio.transforms.Spectrogram(n_fft=511, win_length=400, hop_length=160, pad=0, power=2.0, normalized=False, center=True, pad_mode="reflect", onesided=True, window_fn=torch.hamming_window)
-
+        self.extractor = torchaudio.transforms.Spectrogram(
+            n_fft=511,
+            win_length=400,
+            hop_length=160,
+            pad=0,
+            power=2.0,
+            normalized=False,
+            center=True,
+            pad_mode="reflect",
+            onesided=True,
+            window_fn=torch.hamming_window,
+        )
 
     def extract(
         self, samples: Union[np.ndarray, torch.Tensor], sampling_rate: int
@@ -51,7 +78,6 @@ class Spectrogram(FeatureExtractor):
             f"{self.config.sampling_rate}, but "
             f"sampling_rate={sampling_rate} was passed to extract()."
         )
-
 
         is_numpy = False
         if not isinstance(samples, torch.Tensor):
@@ -67,7 +93,7 @@ class Spectrogram(FeatureExtractor):
 
         feats = feats - torch.mean(feats, [-1], True)
 
-        feats = feats.transpose(0,1)
+        feats = feats.transpose(0, 1)
 
         if is_numpy:
             return feats.cpu().numpy()
