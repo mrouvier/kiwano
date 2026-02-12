@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
         pred = model(feat)
 
-        emb.write(key[0], torch.Tensor(pred.cpu().detarch()[0]))
+        emb.write(key[0], torch.Tensor(pred.cpu().detach()[0]))
 
         print("Processed x-vector for key : " + key[0])
 
