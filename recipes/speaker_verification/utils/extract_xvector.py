@@ -26,8 +26,8 @@ from kiwano.augmentation import (
     OneOf,
 )
 from kiwano.dataset import Segment, SegmentSet
-from kiwano.embedding import SpeakerEmbeddingWriter
-from kiwano.features import Fbank, FbankV2
+from kiwano.embedding import SpeakerEmbeddingWriter, open_output_writer
+from kiwano.features import Fbank
 from kiwano.model import AutoModel
 from kiwano.utils import Pathlike
 
@@ -144,7 +144,7 @@ if __name__ == "__main__":
 
     model.eval()
 
-    emb = SpeakerEmbeddingWriter(Path(args.output_dir), binary=True)
+    emb = open_output_writer(args.output_dir)
 
     for feat, key in extracting_dataloader:
         feat = feat.unsqueeze(1)

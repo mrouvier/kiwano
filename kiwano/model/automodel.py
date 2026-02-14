@@ -40,10 +40,10 @@ class AutoModel(torch.nn.Module):
         model_cls = cls._MODEL_REGISTRY[name]
 
         # dataclass → dict → constructor
-        if hasattr(config, "__dataclass_fields__"):
-            config = asdict(config)
+        #if hasattr(config, "__dataclass_fields__"):
+        #    config = asdict(config)
 
-        model = model_cls(**config)
+        model = model_cls.from_config(config)
         model.load_state_dict(state_dict, strict=strict)
 
         if device is not None:
