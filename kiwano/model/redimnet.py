@@ -16,6 +16,113 @@ ConvNd = {1: nn.Conv1d, 2: nn.Conv2d}
 BatchNormNd = {1: nn.BatchNorm1d, 2: nn.BatchNorm2d}
 
 
+def fun_g(z, t: int):
+    gz = 2 * torch.pow((z + 1) / 2, t) - 1
+    return gz
+
+
+class SphereFace2(nn.Module):
+    r"""Implement of sphereface2 for speaker verification:
+        Reference:
+            [1] Exploring Binary Classification Loss for Speaker Verification
+            https://ieeexplore.ieee.org/abstract/document/10094954
+            [2] Sphereface2: Binary classification is all you need for deep face recognition
+            https://arxiv.org/pdf/2108.01513
+        Args:
+            in_features: size of each input sample
+            out_features: size of each output sample
+            scale: norm of input feature
+            margin: margin
+            lanbuda: weight of positive and negative pairs
+            t: parameter for adjust score distribution
+            margin_type: A:cos(theta+margin) or C:cos(theta)-margin
+            recommend margin 0.2 for C and 0.15 for A
+        """
+
+    def __init__(self,
+                 in_features,
+                 out_features,
+                 scale=32.0,
+                 margin=0.2,
+                 lanbuda=0.7,
+                 t=3,
+                 margin_type='C'):
+        super(SphereFace2, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.scale = scale
+        self.weight = nn.Parameter(torch.FloatTensor(out_features,
+                                                     in_features))
+        nn.init.xavier_uniform_(self.weight)
+        self.bias = nn.Parameter(torch.zeros(1, 1))
+        self.t = t
+        self.lanbuda = lanbuda
+        self.margin_type = margin_type
+
+        ########
+        self.margin = margin
+        self.cos_m = math.cos(margin)
+        self.sin_m = math.sin(margin)
+        self.th = math.cos(math.pi - margin)
+        self.mm = math.sin(math.pi - margin)
+        self.mmm = 1.0 + + math.cos(math.pi - margin)
+        ########
+
+    def update(self, margin=0.2):
+        self.margin = margin
+        self.cos_m = math.cos(margin)
+        self.sin_m = math.sin(margin)
+        self.th = math.cos(math.pi - margin)
+        self.mm = math.sin(math.pi - margin)
+        self.mmm = 1.0 + + math.cos(math.pi - margin)
+
+    def get_m(self):
+        return self.margin
+
+    def get_s(self):
+        return self.scale
+
+    def set_m(self, m):
+        self.update(m)
+
+    def set_s(self, s):
+        self.scale = s
+
+    def forward(self, input, label):
+        # compute similarity
+        cos = F.linear(F.normalize(input), F.normalize(self.weight))
+
+        if self.margin_type == 'A': # arcface type
+            sin = torch.sqrt(1.0 - torch.pow(cos, 2))
+            cos_m_theta_p = self.scale * fun_g(torch.where(cos > self.th, cos * self.cos_m - sin * self.sin_m, cos-self.mmm), self.t) + self.bias[0][0]
+            cos_m_theta_n = self.scale * fun_g(cos * self.cos_m + sin * self.sin_m, self.t) + self.bias[0][0]
+            cos_p_theta = self.lanbuda * torch.log(1 + torch.exp(-1.0 * cos_m_theta_p))
+            cos_n_theta =  (1-self.lanbuda) * torch.log(1 + torch.exp(cos_m_theta_n))
+        else: # cosface type
+            cos_m_theta_p = self.scale * (fun_g(cos, self.t) - self.margin) + self.bias[0][0]
+            cos_m_theta_n = self.scale * (fun_g(cos, self.t) + self.margin) + self.bias[0][0]
+            cos_p_theta = self.lanbuda * torch.log(1 + torch.exp(-1.0 * cos_m_theta_p))
+            cos_n_theta = (1-self.lanbuda) * torch.log(1 + torch.exp(cos_m_theta_n))
+
+        target_mask = input.new_zeros(cos.size())
+        target_mask.scatter_(1, label.view(-1, 1).long(), 1.0)
+        nontarget_mask = 1 - target_mask
+        cos1 = (cos - self.margin) * target_mask + cos * nontarget_mask
+        output = self.scale * cos1 # for compute the accuracy
+        loss = (target_mask * cos_p_theta + nontarget_mask * cos_n_theta).sum(1).mean()
+
+
+        return output, loss
+
+    def extra_repr(self):
+        return '''in_features={}, out_features={}, scale={}, lanbuda={},
+                  margin={}, t={}, margin_type={}'''.format(self.in_features,
+                                                      self.out_features,
+                                                      self.scale, self.lanbuda, self.margin,
+                                                      self.t, self.margin_type)
+
+
+
 class fwSEBlock(nn.Module):
     """
     Squeeze-and-Excitation block
@@ -120,6 +227,7 @@ class AMSMLoss(nn.Module):
         # feature re-scale
         output *= self.s
         return output
+
 
 
 class SpeakerEmbedding(nn.Module):
@@ -904,11 +1012,13 @@ class ReDimNetBackbone(nn.Module):
         f = F
         self.num_stages = len(stages_setup)
 
+
         self.stem = nn.Sequential(
             nn.Conv2d(1, int(c), kernel_size=3, stride=1, padding="same"),
             LayerNorm(int(c), eps=1e-6, data_format="channels_first"),
             to1d(),
         )
+
 
         Block1d = functools.partial(TimeContextBlock1d, block_type=self.block_1d_type)
         Block2d = functools.partial(ConvBlock2d, block_type=self.block_2d_type)
@@ -941,6 +1051,7 @@ class ReDimNetBackbone(nn.Module):
                 ),
             ]
 
+
             self.stages_cfs.append((c, f))
 
             c = stride * c
@@ -949,6 +1060,7 @@ class ReDimNetBackbone(nn.Module):
 
             for _ in range(num_blocks):
                 layers.append(Block2d(c=int(c * conv_exp), f=f, Gdiv=group_divisor))
+
 
             if conv_exp != 1:
                 _group_divisor = group_divisor
@@ -976,6 +1088,7 @@ class ReDimNetBackbone(nn.Module):
                 layers.append(Block1d(C * F, hC=(C * F) // att_block_red))
 
             setattr(self, f"stage{stage_ind}", nn.Sequential(*layers))
+
 
         num_feats_to_weight_fin = offset_fm_weights + len(stages_setup) + 1
         self.fin_wght1d = weigth1d(
@@ -1053,6 +1166,7 @@ class ReDimNet(nn.Module):
         self.embedding = SpeakerEmbedding(out_channels * 2, emb_dim)
 
         self.output = AMSMLoss(emb_dim, num_classes)
+        #self.output = SphereFace2(emb_dim, num_classes)
 
     def get_m(self):
         return self.output.get_m()

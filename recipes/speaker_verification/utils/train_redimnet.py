@@ -29,7 +29,7 @@ from kiwano.augmentation import (
     SpecAugment,
 )
 from kiwano.dataset import Segment, SegmentSet
-from kiwano.features import Fbank
+from kiwano.features import Fbank, FbankConfig
 from kiwano.model import (
     JeffreysLoss,
     ReDimNet,
@@ -91,6 +91,8 @@ class SpeakerTrainingSegmentSet(Dataset, SegmentSet):
         if self.feature_transforms is not None:
             feature = self.feature_transforms(feature)
 
+        feature = feature.transpose(0, 1)
+
         return feature, self.labels[segment.spkid]
 
 
@@ -119,24 +121,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max_epochs", type=int, default=51)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--num_workers", type=int, default=15)
-    parser.add_argument(
-        "--stage_blocks",
-        type=str,
-        default="3,8,18,3",
-        help='Block configuration, e.g. "3,8,18,3"',
-    )
-    parser.add_argument(
-        "--stage_channels",
-        type=str,
-        default="128,128,256,256",
-        help='Channel configuration, e.g. "128,128,256,256"',
-    )
-    parser.add_argument(
-        "--stage_strides",
-        type=str,
-        default="1,2,2,2",
-        help='Stride configuration, e.g. "1,2,2,2"',
-    )
 
     parser.add_argument(
         "--num_classes", type=int, default=6000, help="Number of classes (integer)"
@@ -188,9 +172,6 @@ def main() -> None:
 
     args = parse_args()
     validate_directories(args)
-    args.stage_blocks = list(map(int, args.stage_blocks.split(",")))
-    args.stage_channels = list(map(int, args.stage_channels.split(",")))
-    args.stage_strides = list(map(int, args.stage_strides.split(",")))
 
     print("#" + " ".join(sys.argv[0:]))
     print("# Started at " + time.ctime())
@@ -230,6 +211,8 @@ def main() -> None:
     reverb = SegmentSet()
     reverb.from_dict(Path(args.rirs_noises))
 
+    fbcfg = FbankConfig(num_filters=71)
+
     training_data = SpeakerTrainingSegmentSet(
         audio_transforms=OneOf(
             [
@@ -240,7 +223,7 @@ def main() -> None:
                 Reverb(reverb),
             ]
         ),
-        feature_extractor=Fbank(),
+        feature_extractor=Fbank(fbcfg),
         feature_transforms=Compose(
             [
                 CMVN(),
@@ -250,8 +233,16 @@ def main() -> None:
         ),
     )
 
-    training_data.from_dict(Path(args.training_corpus))
+    #training_data.from_dict(Path(args.training_corpus))
+    s0 = SegmentSet()
+    s0.from_dict(Path(args.training_corpus))
 
+    s1 = s0.perturb_speed(0.9)
+
+    s2 = s0.perturb_speed(1.1)
+
+    training_data.combine([s0, s1, s2])
+    training_data.truncate(min_duration=4.0, max_duration=200.0)
     training_data.describe()
 
     train_sampler = DistributedSampler(
@@ -271,18 +262,27 @@ def main() -> None:
         pin_memory=True,
     )
 
-    resnet_cfg = KiwanoResNetConfig(
-        num_classes=args.num_classes,
-        stage_channels=args.stage_channels,
-        stage_blocks=args.stage_blocks,
-        stage_strides=args.stage_strides,
-    )
-
-    resnet_model = KiwanoResNet(resnet_cfg)
-    resnet_model.to(device)
-    resnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(resnet_model)
-    resnet_model = torch.nn.parallel.DistributedDataParallel(
-        resnet_model,
+    redimnet_model = ReDimNet(
+            F=72,
+            C=32,
+            block_1d_type="conv+att",
+            block_2d_type="basic_resnet",
+            stages_setup=(
+                (1, 4, 4, [(3, 3)], 32),
+                (2, 6, 2, [(3, 3)], 32),
+                (1, 6, 2, [(3, 3)], 24),
+                (3, 8, 1, [(3, 3)], 24),
+                (1, 8, 1, [(3, 3)], 16),
+                (2, 8, 1, [(3, 3)], 16),
+                ),
+            group_divisor=32,
+            out_channels=256,
+            num_classes=18000,
+            )
+    redimnet_model.to(device)
+    redimnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(redimnet_model)
+    redimnet_model = torch.nn.parallel.DistributedDataParallel(
+        redimnet_model,
         device_ids=[idr_torch.local_rank],
         output_device=idr_torch.local_rank,
     )
@@ -290,21 +290,21 @@ def main() -> None:
     optimizer = torch.optim.SGD(
         [
             {
-                "params": resnet_model.module.preresnet.parameters(),
+                "params": redimnet_model.module.backbone.parameters(),
                 "weight_decay": 0.0001,
                 "lr": 0.00001,
             },
             {
-                "params": resnet_model.module.temporal_pooling.parameters(),
+                "params": redimnet_model.module.temporal_pooling.parameters(),
                 "weight_decay": 0.0001,
                 "lr": 0.00001,
             },
             {
-                "params": resnet_model.module.embedding.parameters(),
+                "params": redimnet_model.module.embedding.parameters(),
                 "weight_decay": 0.0001,
                 "lr": 0.00001,
             },
-            {"params": resnet_model.module.output.parameters(), "lr": 0.00001},
+            {"params": redimnet_model.module.output.parameters(), "lr": 0.00001},
         ],
         momentum=0.9,
     )
@@ -314,7 +314,7 @@ def main() -> None:
     scheduler = WarmupPlateauScheduler(
         optimizer,
         max_epochs=args.max_epochs,
-        initial_lr=0.2,
+        initial_lr=0.1,
         warm_up_epoch=5,
         plateau_epoch=15,
         patience=10,
@@ -324,7 +324,7 @@ def main() -> None:
 
     start_epoch = load_checkpoint_if_any(
         args.checkpoint,
-        model=resnet_model.module,
+        model=redimnet_model.module,
         optimizer=optimizer,
         scheduler=scheduler,
         map_location="cpu",
@@ -337,7 +337,7 @@ def main() -> None:
     for epoch in range(start_epoch, args.max_epochs + 1):
         iterations = 0
         train_sampler.set_epoch(epoch)
-        resnet_model.module.set_m(scheduler.get_margin_loss())
+        redimnet_model.module.set_m(scheduler.get_margin_loss())
 
         torch.distributed.barrier()
 
@@ -349,7 +349,7 @@ def main() -> None:
             optimizer.zero_grad(set_to_none=True)
 
             with torch.cuda.amp.autocast(enabled=True):
-                preds = resnet_model(feats, iden)
+                preds = redimnet_model(feats, iden)
                 loss = criterion(preds, iden)
 
             scaler.scale(loss).backward()
@@ -371,7 +371,7 @@ def main() -> None:
                     rmean_loss,
                     loss.item(),
                     get_lr(optimizer),
-                    resnet_model.module.get_m(),
+                    redimnet_model.module.get_m(),
                 )
 
             iterations += 1
@@ -384,9 +384,8 @@ def main() -> None:
                 "version": "1.0",
                 "epoch": epoch + 1,
                 "optimizer": optimizer.state_dict(),
-                "model": resnet_model.module.state_dict(),
-                "name": type(resnet_model.module).__name__,
-                "config": resnet_cfg,
+                "model": redimnet_model.module.state_dict(),
+                "name": type(redimnet_model.module).__name__,
             }
             ckpt_path = os.path.join(args.exp_dir, f"model{epoch}.ckpt")
             torch.save(checkpoint, ckpt_path)
