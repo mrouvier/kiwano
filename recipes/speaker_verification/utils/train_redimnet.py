@@ -30,11 +30,7 @@ from kiwano.augmentation import (
 )
 from kiwano.dataset import Segment, SegmentSet
 from kiwano.features import Fbank, FbankConfig
-from kiwano.model import (
-    JeffreysLoss,
-    ReDimNet,
-    WarmupPlateauScheduler,
-)
+from kiwano.model import JeffreysLoss, ReDimNet, WarmupPlateauScheduler
 from kiwano.utils import Pathlike
 
 logger = logging.getLogger(__name__)
@@ -233,7 +229,7 @@ def main() -> None:
         ),
     )
 
-    #training_data.from_dict(Path(args.training_corpus))
+    # training_data.from_dict(Path(args.training_corpus))
     s0 = SegmentSet()
     s0.from_dict(Path(args.training_corpus))
 
@@ -263,22 +259,22 @@ def main() -> None:
     )
 
     redimnet_model = ReDimNet(
-            F=72,
-            C=32,
-            block_1d_type="conv+att",
-            block_2d_type="basic_resnet",
-            stages_setup=(
-                (1, 4, 4, [(3, 3)], 32),
-                (2, 6, 2, [(3, 3)], 32),
-                (1, 6, 2, [(3, 3)], 24),
-                (3, 8, 1, [(3, 3)], 24),
-                (1, 8, 1, [(3, 3)], 16),
-                (2, 8, 1, [(3, 3)], 16),
-                ),
-            group_divisor=32,
-            out_channels=256,
-            num_classes=18000,
-            )
+        F=72,
+        C=32,
+        block_1d_type="conv+att",
+        block_2d_type="basic_resnet",
+        stages_setup=(
+            (1, 4, 4, [(3, 3)], 32),
+            (2, 6, 2, [(3, 3)], 32),
+            (1, 6, 2, [(3, 3)], 24),
+            (3, 8, 1, [(3, 3)], 24),
+            (1, 8, 1, [(3, 3)], 16),
+            (2, 8, 1, [(3, 3)], 16),
+        ),
+        group_divisor=32,
+        out_channels=256,
+        num_classes=18000,
+    )
     redimnet_model.to(device)
     redimnet_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(redimnet_model)
     redimnet_model = torch.nn.parallel.DistributedDataParallel(

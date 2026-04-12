@@ -45,16 +45,18 @@ def assemble(group: ResourceGroup, target_dir: Path, dataset_name: str = "") -> 
 
     elif aspec.method in ("concat_parts", "concat_clean"):
         parts = sorted(
-            p for p in target_dir.glob(aspec.pattern or "*")
+            p
+            for p in target_dir.glob(aspec.pattern or "*")
             if p.is_file() and p != output
         )
         if not parts:
-            raise AssemblyError(
-                f"No parts found matching pattern '{aspec.pattern}'"
-            )
+            raise AssemblyError(f"No parts found matching pattern '{aspec.pattern}'")
         log.info(
             "%sAssembling (%s, %d parts) -> %s",
-            label, aspec.method, len(parts), output.name,
+            label,
+            aspec.method,
+            len(parts),
+            output.name,
         )
         with output.open("wb") as out_f:
             for part in parts:

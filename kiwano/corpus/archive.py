@@ -22,7 +22,9 @@ def _extract_tar_path(archive: Path, target_dir: Path) -> None:
         raise ExtractionError(f"Échec d'extraction de {archive.name} : {exc}") from exc
 
 
-def extract(group: ResourceGroup, target_dir: Path, num_jobs: int = 1, dataset_name: str = "") -> None:
+def extract(
+    group: ResourceGroup, target_dir: Path, num_jobs: int = 1, dataset_name: str = ""
+) -> None:
     """
     Extract the archive described by ``group.extract``.
 
@@ -55,9 +57,7 @@ def extract(group: ResourceGroup, target_dir: Path, num_jobs: int = 1, dataset_n
     except ExtractionError:
         raise
     except Exception as exc:
-        raise ExtractionError(
-            f"Failed to extract {archive.name}: {exc}"
-        ) from exc
+        raise ExtractionError(f"Failed to extract {archive.name}: {exc}") from exc
 
     if espec.remove_after:
         archive.unlink()

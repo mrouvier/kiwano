@@ -1,12 +1,10 @@
 import argparse
 
-import torch
-
 import matplotlib.pyplot as plt
+import torch
 
 from kiwano.embedding import load_embeddings
 from kiwano.utils import read_keys
-
 
 
 def scoring_xvector(keys, xvectors_enrollment, xvectors_test):

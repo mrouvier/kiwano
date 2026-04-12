@@ -6,7 +6,7 @@ Principle: each corpus is a *configuration*, not a script.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Literal, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional
 
 if TYPE_CHECKING:
     from .prep_models import PrepareSpec
@@ -21,6 +21,7 @@ ResourceKind = Literal["part", "metadata", "file"]
 AssembleMethod = Literal["none", "concat_parts", "copy_glob", "concat_clean"]
 ExtractMethod = Literal["none", "zip", "tar", "tgz"]
 DownloaderBackend = Literal["http", "github", "youtube"]
+
 
 @dataclass
 class ChecksumSpec:
@@ -38,7 +39,7 @@ class ResourceSpec:
     optional: bool = False
     backend: DownloaderBackend = "http"
     # Clé dans le JSON de manifeste pour les corpus à structure dynamique (ex. ArabCeleb)
-    #manifest_key: Optional[str] = None
+    # manifest_key: Optional[str] = None
 
     @property
     def filename(self) -> str:
@@ -50,8 +51,8 @@ class AssembleSpec:
     """Describes how to reconstruct an archive from split parts."""
 
     method: AssembleMethod = "none"
-    output_name: Optional[str] = None   # e.g. "vox2_aac.zip"
-    pattern: Optional[str] = None       # e.g. "vox2_dev_aac_part*"
+    output_name: Optional[str] = None  # e.g. "vox2_aac.zip"
+    pattern: Optional[str] = None  # e.g. "vox2_dev_aac_part*"
     remove_parts: bool = False
 
 
@@ -111,7 +112,6 @@ class DatasetSpec:
     postprocess_kwargs: Dict[str, Any] = field(default_factory=dict)
     prepare_spec: Optional[PrepareSpec] = None
 
-
     @property
     def can_download(self) -> bool:
         return bool(self.resources or self.groups)
@@ -136,8 +136,10 @@ class DatasetSpec:
         """Return a list of ResourceGroup regardless of mode."""
         if self.groups:
             return self.groups
-        return [ResourceGroup(
-            resources=self.resources,
-            assemble=self.assemble,
-            extract=self.extract,
-        )]
+        return [
+            ResourceGroup(
+                resources=self.resources,
+                assemble=self.assemble,
+                extract=self.extract,
+            )
+        ]

@@ -40,7 +40,7 @@ class AutoModel(torch.nn.Module):
         model_cls = cls._MODEL_REGISTRY[name]
 
         # dataclass → dict → constructor
-        #if hasattr(config, "__dataclass_fields__"):
+        # if hasattr(config, "__dataclass_fields__"):
         #    config = asdict(config)
 
         model = model_cls.from_config(config)

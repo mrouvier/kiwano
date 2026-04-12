@@ -12,8 +12,8 @@ from typing import Optional
 
 from kiwano.utils import urlretrieve_progress
 
-from .exceptions import ChecksumError, DownloadError
 from .checksum import _compute
+from .exceptions import ChecksumError, DownloadError
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +55,11 @@ def download_file(
                 log.warning(
                     "Checksum mismatch for %s (expected %s, got %s). "
                     "Deleting and re-downloading (attempt %d/%d).",
-                    destination.name, expected_value, computed, attempt, max_retries,
+                    destination.name,
+                    value,
+                    computed,
+                    attempt,
+                    max_retries,
                 )
                 destination.unlink()
 
@@ -64,7 +68,10 @@ def download_file(
         except Exception as exc:
             log.warning(
                 "Attempt %d/%d failed (network) for %s: %s",
-                attempt, max_retries, destination.name, exc,
+                attempt,
+                max_retries,
+                destination.name,
+                exc,
             )
             if attempt < max_retries:
                 time.sleep(_RETRY_DELAY)
@@ -77,7 +84,9 @@ def download_file(
             if computed != value:
                 log.warning(
                     "Checksum mismatch after downloading %s (attempt %d/%d). Retrying...",
-                    destination.name, attempt, max_retries,
+                    destination.name,
+                    attempt,
+                    max_retries,
                 )
                 destination.unlink()
                 if attempt < max_retries:

@@ -47,7 +47,12 @@ class DownloadState:
                     return json.load(f)
             except (json.JSONDecodeError, OSError):
                 log.warning("Corrupted state file — resetting.")
-        return {"resources": {}, "assembled": False, "extracted": False, "completed": False}
+        return {
+            "resources": {},
+            "assembled": False,
+            "extracted": False,
+            "completed": False,
+        }
 
     def _save(self):
         with self._path.open("w") as f:
@@ -87,12 +92,15 @@ class DownloadState:
         self._save()
         log.info("[%s] State: download complete.", self._name)
 
-
     def reset(self):
-        self._state = {"resources": {}, "assembled": False, "extracted": False, "completed": False}
+        self._state = {
+            "resources": {},
+            "assembled": False,
+            "extracted": False,
+            "completed": False,
+        }
         self._save()
         log.info("[%s] State reset.", self._name)
-
 
     @property
     def is_assembled(self) -> bool:
@@ -110,9 +118,13 @@ class DownloadState:
         return self._state.get("groups", {}).get(group_key, {}).get("extracted", False)
 
     def mark_assembled_group(self, group_key: str):
-        self._state.setdefault("groups", {}).setdefault(group_key, {})["assembled"] = True
+        self._state.setdefault("groups", {}).setdefault(group_key, {})[
+            "assembled"
+        ] = True
         self._save()
 
     def mark_extracted_group(self, group_key: str):
-        self._state.setdefault("groups", {}).setdefault(group_key, {})["extracted"] = True
+        self._state.setdefault("groups", {}).setdefault(group_key, {})[
+            "extracted"
+        ] = True
         self._save()

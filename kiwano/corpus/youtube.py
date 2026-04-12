@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 try:
     import pytubefix
     from pytubefix import YouTube
+
     _PYTUBE_AVAILABLE = True
 except ImportError:
     _PYTUBE_AVAILABLE = False
@@ -34,7 +35,7 @@ def _download_one(celeb_dir: Path, video_id: str, url: str) -> Optional[str]:
     Returns the URL if unavailable (for logging), None on success.
     """
     if not _PYTUBE_AVAILABLE:
-       raise ImportError(
+        raise ImportError(
             "pytubefix is required for ArabCeleb. "
             "Install it with: pip install pytubefix"
         )
@@ -50,10 +51,8 @@ def _download_one(celeb_dir: Path, video_id: str, url: str) -> Optional[str]:
         stream.download(str(celeb_dir), filename=dest.name)
         return None
     except Exception as exc:
-        log.warning(
-            "Video unavailable (%s): %s", type(exc).__name__, url
-        )
-       return url
+        log.warning("Video unavailable (%s): %s", type(exc).__name__, url)
+        return url
 
 
 def download_from_manifest(
@@ -76,7 +75,7 @@ def download_from_manifest(
     }
     """
     if not manifest_path.exists():
-        raise DownloadError(f"Manifeste introuvable : {manifest_path}")
+        raise DownloadError(f"Manifest not found: {manifest_path}")
 
     with manifest_path.open() as f:
         utterances = json.load(f)
@@ -90,15 +89,20 @@ def download_from_manifest(
 
     not_available = []
     with ThreadPoolExecutor(max_workers=num_jobs) as pool:
-        futures = {pool.submit(_download_one, celeb_dir, vid_id, url): url
-                   for celeb_dir, vid_id, url in tasks}
-        for future in tqdm(as_completed(futures), total=len(futures),
-                           desc="Téléchargement ArabCeleb (YouTube)"):
+        futures = {
+            pool.submit(_download_one, celeb_dir, vid_id, url): url
+            for celeb_dir, vid_id, url in tasks
+        }
+        for future in tqdm(
+            as_completed(futures),
+            total=len(futures),
+            desc="Downloading ArabCeleb (YouTube)",
+        ):
             result = future.result()
             if result:
                 not_available.append(result)
 
     if not_available:
-        log.warning("%d video(s) unavailable:", len(unavailable))
+        log.warning("%d video(s) unavailable:", len(not_available))
         for url in not_available:
             log.warning(f"  {url}")

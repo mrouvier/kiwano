@@ -13,13 +13,13 @@ from typing import Dict, List, Optional
 
 from tqdm import tqdm
 
-from .concat import assemble
-from .exceptions import DownloadError, DatasetDownloaderError
-from .models import DatasetSpec, ResourceGroup, ResourceSpec
-from .state import DownloadState
 from .archive import extract
 from .checksum import verify_resources_parallel
+from .concat import assemble
+from .exceptions import DatasetDownloaderError, DownloadError
+from .models import DatasetSpec, ResourceGroup, ResourceSpec
 from .prep_models import PrepareSpec
+from .state import DownloadState
 
 log = logging.getLogger(__name__)
 
@@ -33,18 +33,20 @@ def _worker_init(use_vad: bool = False) -> None:
     """
     try:
         import torch
+
         torch.set_num_threads(1)  # Avoid CPU contention
     except ImportError:
         pass
 
     try:
-        import soundfile # noqa: F401
+        import soundfile  # noqa: F401
     except ImportError:
         pass
 
     if use_vad:
         try:
             from silero_vad import load_silero_vad
+
             load_silero_vad()
         except ImportError:
             pass
@@ -86,12 +88,15 @@ class PreparePipeline:
         wav_lst = self._discover_files(search_root, pspec)
         log.info("[%s] %d file(s) found in %s", spec.name, len(wav_lst), search_root)
 
-
         # 2. Parallel processing
         if pspec.file_processor is not None:
-            self._run_single_list(spec, pspec, wav_lst, out_data, sampling_frequency, vad, num_jobs)
+            self._run_single_list(
+                spec, pspec, wav_lst, out_data, sampling_frequency, vad, num_jobs
+            )
         else:
-            self._run_multi_list(spec, pspec, wav_lst, out_data, sampling_frequency, vad, num_jobs)
+            self._run_multi_list(
+                spec, pspec, wav_lst, out_data, sampling_frequency, vad, num_jobs
+            )
 
         # 3. Convert trial files
         if pspec.trials is not None:
@@ -106,16 +111,15 @@ class PreparePipeline:
 
     # ── File discovery ────────────────────────────────────────
 
-
     def _discover_files(self, root: Path, pspec: PrepareSpec) -> List[Path]:
         from kiwano.utils import get_all_files
+
         # files = get_all_files(root, match_and=pspec.file_extensions)
         files = [Path(f) for f in get_all_files(root, match_and=pspec.file_extensions)]
 
         if pspec.match_or:
             files = [
-                f for f in files
-                if any(token in str(f) for token in pspec.match_or)
+                f for f in files if any(token in str(f) for token in pspec.match_or)
             ]
         return files
 
@@ -136,12 +140,12 @@ class PreparePipeline:
 
         with list_path.open("w") as liste:
             with ProcessPoolExecutor(
-                    max_workers=num_jobs,
-                    initializer=_worker_init,
-                    initargs=(vad,)
+                max_workers=num_jobs, initializer=_worker_init, initargs=(vad,)
             ) as ex:
                 futures = {
-                    ex.submit(pspec.file_processor, seg, out_data, sampling_frequency, vad): seg
+                    ex.submit(
+                        pspec.file_processor, seg, out_data, sampling_frequency, vad
+                    ): seg
                     for seg in wav_lst
                 }
                 for future in tqdm(
@@ -156,9 +160,7 @@ class PreparePipeline:
                     except Exception as exc:
                         log.warning("Error processing %s: %s", seg.name, exc)
 
-
         log.info("[%s] List written: %s", spec.name, list_path)
-
 
     # ── Multi-list mode (CN-Celeb: train / dev / test) ────────
 
@@ -173,19 +175,16 @@ class PreparePipeline:
         num_jobs: int,
     ) -> None:
         # Ouvre tous les fichiers liste
-        handles = {
-            name: (out_data / name).open("w")
-            for name in pspec.output_lists
-        }
+        handles = {name: (out_data / name).open("w") for name in pspec.output_lists}
 
         try:
             with ProcessPoolExecutor(
-                max_workers=num_jobs,
-                initializer=_worker_init,
-                initargs=(vad,)
+                max_workers=num_jobs, initializer=_worker_init, initargs=(vad,)
             ) as ex:
                 futures = {
-                    ex.submit(pspec.multi_processor, seg, out_data, sampling_frequency, vad): seg
+                    ex.submit(
+                        pspec.multi_processor, seg, out_data, sampling_frequency, vad
+                    ): seg
                     for seg in wav_lst
                 }
                 for future in tqdm(
@@ -218,7 +217,6 @@ class PreparePipeline:
 # ══════════════════════════════════════════════════════════════════
 
 
-
 class DownloadPipeline:
     """
     Execute: download -> verify -> assemble -> extract -> post-process.
@@ -239,9 +237,7 @@ class DownloadPipeline:
         state = DownloadState(target_dir, spec.name)
 
         if state.is_completed() and not force:
-            log.info(
-                    "[%s] Already complete. Use --force to re-download.", spec.name
-                    )
+            log.info("[%s] Already complete. Use --force to re-download.", spec.name)
 
             return
 
@@ -284,7 +280,9 @@ class DownloadPipeline:
                 state.mark_verified(r.filename)
 
         # 3. Assemble
-        group_key = group.assemble.output_name or (group.resources[0].filename if group.resources else "_")
+        group_key = group.assemble.output_name or (
+            group.resources[0].filename if group.resources else "_"
+        )
         if not state.is_assembled_group(group_key):
             assemble(group, target_dir, dataset_name=spec.name)
             state.mark_assembled_group(group_key)
@@ -316,15 +314,15 @@ class DownloadPipeline:
                 if resource.optional:
                     log.warning(
                         "Optional resource skipped: %s (%s)",
-                        resource.filename, exc,
+                        resource.filename,
+                        exc,
                     )
                 else:
                     errors.append(str(exc))
 
         if errors:
             raise DatasetDownloaderError(
-                f"[{spec.name}] {len(errors)} download(s) failed:\n"
-                + "\n".join(errors)
+                f"[{spec.name}] {len(errors)} download(s) failed:\n" + "\n".join(errors)
             )
 
     def _download_one(
@@ -338,7 +336,8 @@ class DownloadPipeline:
         dest = target_dir / resource.filename
         checksum_tuple = (
             (resource.checksum.algo, resource.checksum.value)
-            if resource.checksum else None
+            if resource.checksum
+            else None
         )
         kwargs = dict(
             destination=dest,
@@ -350,13 +349,13 @@ class DownloadPipeline:
 
         if resource.backend == "http":
             from .http import download_file
+
             download_file(url=resource.url, **kwargs)
         elif resource.backend == "github":
             from .github import download_file
+
             download_file(url=resource.url, **kwargs)
         elif resource.backend == "youtube":
             pass  # Handled in bulk by postprocess_fn
         else:
-            raise DatasetDownloaderError(
-                f"Unknown backend: '{resource.backend}'"
-            )
+            raise DatasetDownloaderError(f"Unknown backend: '{resource.backend}'")

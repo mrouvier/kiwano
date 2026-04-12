@@ -15,19 +15,35 @@ from typing import Dict, Optional, Tuple
 
 import soundfile as sf
 
-from .audio_utils import apply_vad, ffmpeg_to_tensor, ffmpeg_to_wav, get_duration, load_audio
+from .audio_utils import (
+    apply_vad,
+    ffmpeg_to_tensor,
+    ffmpeg_to_wav,
+    get_duration,
+    load_audio,
+)
 from .prep_models import PrepareSpec, TrialsSpec
 
 log = logging.getLogger(__name__)
 
 # ── BUT ReverbDB ──────────────────────────────────────────────────
 
+
 def _process_butreverb(
     segment: Path, out_data: Path, sampling_frequency: int, vad: bool
 ) -> Tuple[str, str, str, Path]:
     parts = segment.parts
-    name = "_".join([parts[-6], parts[-5], parts[-4], parts[-3], parts[-2],
-                     segment.stem, segment.suffix.lstrip(".")])
+    name = "_".join(
+        [
+            parts[-6],
+            parts[-5],
+            parts[-4],
+            parts[-3],
+            parts[-2],
+            segment.stem,
+            segment.suffix.lstrip("."),
+        ]
+    )
     duration = str(round(get_duration(segment), 2))
     return name, "butreverb", duration, segment
 
@@ -39,6 +55,7 @@ prepare_butreverb = PrepareSpec(
 
 
 # ── MUSAN ─────────────────────────────────────────────────────────
+
 
 def _process_musan(
     segment: Path, out_data: Path, sampling_frequency: int, vad: bool
@@ -66,6 +83,7 @@ prepare_musan = PrepareSpec(
 
 # ── RIRS Noises ───────────────────────────────────────────────────
 
+
 def _process_rirs(
     segment: Path, out_data: Path, sampling_frequency: int, vad: bool
 ) -> Tuple[str, str, str, Path]:
@@ -73,7 +91,13 @@ def _process_rirs(
     name = f"{spkid}_{segment.stem}"
 
     if sampling_frequency != 16000:
-        out_dir = out_data / segment.parts[-5] / segment.parts[-4] / segment.parts[-3] / segment.parts[-2]
+        out_dir = (
+            out_data
+            / segment.parts[-5]
+            / segment.parts[-4]
+            / segment.parts[-3]
+            / segment.parts[-2]
+        )
         out_dir.mkdir(parents=True, exist_ok=True)
         output = out_dir / segment.name
         ffmpeg_to_wav(segment, output, sampling_frequency)
@@ -93,6 +117,7 @@ prepare_rirs_noises = PrepareSpec(
 
 
 # ── VoxCeleb 1 ────────────────────────────────────────────────────
+
 
 def _process_voxceleb1(
     segment: Path, out_data: Path, sampling_frequency: int, vad: bool
@@ -120,9 +145,9 @@ def _process_voxceleb1(
 
 def _convert_voxceleb1_trials(in_data: Path, out_data: Path) -> None:
     mapping = {
-        "veri_test2.txt":       "voxceleb1-o-cleaned.trials",
-        "list_test_hard2.txt":  "voxceleb1-h-cleaned.trials",
-        "list_test_all2.txt":   "voxceleb1-e-cleaned.trials",
+        "veri_test2.txt": "voxceleb1-o-cleaned.trials",
+        "list_test_hard2.txt": "voxceleb1-h-cleaned.trials",
+        "list_test_all2.txt": "voxceleb1-e-cleaned.trials",
     }
     for src_name, dst_name in mapping.items():
         src = in_data / src_name
@@ -159,6 +184,7 @@ prepare_voxceleb1 = PrepareSpec(
 )
 
 # ── VoxCeleb 2 ────────────────────────────────────────────────────
+
 
 def _process_voxceleb2(
     segment: Path, out_data: Path, sampling_frequency: int, vad: bool
@@ -199,6 +225,7 @@ prepare_voxceleb2 = PrepareSpec(
 
 # ── CN-Celeb (multi-list: train / dev / test) ────────────────────
 
+
 def _process_cnceleb_multi(
     segment: Path, out_data: Path, sampling_frequency: int, vad: bool
 ) -> Dict[str, Optional[Tuple]]:
@@ -208,7 +235,9 @@ def _process_cnceleb_multi(
     Returns a dict {list_name: row_tuple | None}.
     """
     result: Dict[str, Optional[Tuple]] = {
-        "listeTrain": None, "listeDev": None, "listeTest": None,
+        "listeTrain": None,
+        "listeDev": None,
+        "listeTest": None,
     }
 
     str_seg = str(segment)
@@ -267,7 +296,7 @@ def _process_cnceleb_multi(
 def _convert_cnceleb_trials(in_data: Path, out_data: Path) -> None:
     enroll_path = in_data / "CN-Celeb_flac" / "eval" / "lists" / "enroll.lst"
     trials_path = in_data / "CN-Celeb_flac" / "eval" / "lists" / "trials.lst"
-    out_path    = in_data / "CN-Celeb_flac" / "eval" / "lists" / "new_trials.txt"
+    out_path = in_data / "CN-Celeb_flac" / "eval" / "lists" / "new_trials.txt"
 
     if not enroll_path.exists() or not trials_path.exists():
         log.warning(
@@ -286,7 +315,7 @@ def _convert_cnceleb_trials(in_data: Path, out_data: Path) -> None:
             col1, col2, col3 = line.strip().split()
             label = "target" if col3 != "0" else "nontarget"
             utt1 = "eval_enroll_" + enroll[col1][7:-4]
-            utt2 = "eval_test_"   + col2[5:-4]
+            utt2 = "eval_test_" + col2[5:-4]
             f_out.write(f"{utt1} {utt2} {label}\n")
 
 
@@ -335,7 +364,3 @@ prepare_esc50 = PrepareSpec(
     file_extensions=[".wav"],
     search_root="ESC-50-master/audio",
 )
-
-
-
-

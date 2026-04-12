@@ -8,12 +8,13 @@ from subprocess import PIPE, run
 from typing import Optional
 
 import numpy as np
-import torch
 import soundfile as sf
+import torch
 
 log = logging.getLogger(__name__)
 
 # ── Duration ──────────────────────────────────────────────────────
+
 
 def get_duration(path: Path) -> float:
     """Return audio duration in seconds."""
@@ -24,7 +25,10 @@ def get_duration(path: Path) -> float:
 # ── FFmpeg conversion ─────────────────────────────────────────────
 
 
-_FFMPEG_BASE = "ffmpeg -y -threads 1 -i {src} -acodec pcm_s16le -ac 1 -ar {sr} -ab 48 -threads 1"
+_FFMPEG_BASE = (
+    "ffmpeg -y -threads 1 -i {src} -acodec pcm_s16le -ac 1 -ar {sr} -ab 48 -threads 1"
+)
+
 
 def ffmpeg_to_wav(src: Path, dst: Path, sampling_rate: int = 16000) -> None:
     """Convert/resample `src` to a WAV file at `dst`."""
@@ -53,19 +57,25 @@ def get_vad_model():
     global _vad_model
     if _vad_model is None:
         from silero_vad import load_silero_vad
+
         _vad_model = load_silero_vad()
     return _vad_model
 
 
-def apply_vad(wav: torch.Tensor, sampling_rate: int = 16000, threshold: float = 0.6) -> torch.Tensor:
+def apply_vad(
+    wav: torch.Tensor, sampling_rate: int = 16000, threshold: float = 0.6
+) -> torch.Tensor:
     """
     Apply Silero VAD and return only speech segments.
 
     If no speech is detected, returns the original tensor unchanged.
     """
     from silero_vad import collect_chunks, get_speech_timestamps
+
     model = get_vad_model()
-    timestamps = get_speech_timestamps(wav, model, sampling_rate=sampling_rate, threshold=threshold)
+    timestamps = get_speech_timestamps(
+        wav, model, sampling_rate=sampling_rate, threshold=threshold
+    )
     if timestamps:
         return collect_chunks(timestamps, wav)
     log.warning("VAD: no speech detected — keeping original audio.")
@@ -73,6 +83,7 @@ def apply_vad(wav: torch.Tensor, sampling_rate: int = 16000, threshold: float = 
 
 
 # ── Combined load: resample + optional VAD → tensor ──────────────
+
 
 def load_audio(
     src: Path,
@@ -96,4 +107,3 @@ def load_audio(
         wav = apply_vad(wav, sampling_rate)
 
     return wav
-

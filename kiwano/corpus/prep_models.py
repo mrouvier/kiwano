@@ -23,8 +23,8 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 # Standard file_processor signature
 FileProcessorFn = Callable[
-    [Path, Path, int, bool],       # segment, out_data, sampling_freq, vad
-    Tuple[str, str, str, Path],    # name, spkid, duration, output_path
+    [Path, Path, int, bool],  # segment, out_data, sampling_freq, vad
+    Tuple[str, str, str, Path],  # name, spkid, duration, output_path
 ]
 
 
@@ -83,9 +83,9 @@ class PrepareSpec:
     def __post_init__(self):
         if self.file_processor is None and self.multi_processor is None:
             raise ValueError(
-                    "PrepareSpec requires either file_processor or multi_processor."
-                    )
+                "PrepareSpec requires either file_processor or multi_processor."
+            )
         if self.file_processor is not None and self.multi_processor is not None:
             raise ValueError(
-                    "file_processor and multi_processor are mutually exclusive."
-                    )
+                "file_processor and multi_processor are mutually exclusive."
+            )
