@@ -142,6 +142,20 @@ class PreparePipeline:
             with ProcessPoolExecutor(
                 max_workers=num_jobs, initializer=_worker_init, initargs=(vad,)
             ) as ex:
+                iterator = ex.map(
+                    pspec.file_processor,
+                    wav_lst,
+                    [out_data] * len(wav_lst),
+                    [sampling_frequency] * len(wav_lst),
+                    [vad] * len(wav_lst),
+                    chunksize=128,
+                )
+                for name, spkid, duration, segment in tqdm(
+                    iterator, total=len(wav_lst), desc=f"[{spec.name}] Preparing"
+                ):
+                    liste.write(f"{name} {spkid} {duration} {segment}\n")
+
+                """
                 futures = {
                     ex.submit(
                         pspec.file_processor, seg, out_data, sampling_frequency, vad
@@ -159,6 +173,7 @@ class PreparePipeline:
                         liste.write(f"{name} {spkid} {duration} {segment}\n")
                     except Exception as exc:
                         log.warning("Error processing %s: %s", seg.name, exc)
+                """
 
         log.info("[%s] List written: %s", spec.name, list_path)
 

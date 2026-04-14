@@ -50,57 +50,74 @@ def _download_arab_celeb_videos(target_dir: Path, num_jobs: int = 1, **kwargs) -
 voxceleb1 = DatasetSpec(
     name="voxceleb1",
     description="Large-scale celebrity speech corpus from YouTube for speaker verification for speaker training and evaluation.",
-    resources=[
-        ResourceSpec(
-            "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_dev_wav_partaa",
-            ChecksumSpec("md5", "e395d020928bc15670b570a21695ed96"),
-            kind="part",
+    groups=[
+        ResourceGroup(
+            resources=[
+                ResourceSpec(
+                    "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_dev_wav_partaa",
+                    ChecksumSpec("md5", "e395d020928bc15670b570a21695ed96"),
+                    kind="part",
+                ),
+                ResourceSpec(
+                    "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_dev_wav_partab",
+                    ChecksumSpec("md5", "bbfaaccefab65d82b21903e81a8a8020"),
+                    kind="part",
+                ),
+                ResourceSpec(
+                    "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_dev_wav_partac",
+                    ChecksumSpec("md5", "017d579a2a96a077f40042ec33e51512"),
+                    kind="part",
+                ),
+                ResourceSpec(
+                    "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_dev_wav_partad",
+                    ChecksumSpec("md5", "7bb1e9f70fddc7a678fa998ea8b3ba19"),
+                    kind="part",
+                ),
+                ResourceSpec(
+                    "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_test_wav.zip",
+                    ChecksumSpec("md5", "185fdc63c3c739954633d50379a3d102"),
+                    kind="file",
+                ),
+                ResourceSpec(
+                    "http://kiwano-toolkit.com/files/voxceleb1/meta/veri_test2.txt",
+                    ChecksumSpec("md5", "b73110731c9223c1461fe49cb48dddfc"),
+                    kind="metadata",
+                ),
+                ResourceSpec(
+                    "http://kiwano-toolkit.com/files/voxceleb1/meta/list_test_hard2.txt",
+                    ChecksumSpec("md5", "857790e09d579a68eb2e339a090343c8"),
+                    kind="metadata",
+                ),
+                ResourceSpec(
+                    "http://kiwano-toolkit.com/files/voxceleb1/meta/list_test_all2.txt",
+                    ChecksumSpec("md5", "a53e059deb562ffcfc092bf5d90d9f3a"),
+                    kind="metadata",
+                ),
+                ResourceSpec(
+                    "https://www.openslr.org/resources/49/vox1_meta.csv",
+                    ChecksumSpec("md5", "f5067cae5157ca27904c4b0a926e2661"),
+                    kind="metadata",
+                ),
+            ],
+            assemble=AssembleSpec(
+                method="copy_glob",
+                output_name="vox1_dev_wav.zip",
+                pattern="vox1_dev_wav_part*",
+            ),
+            extract=ExtractSpec(method="zip", archive_name="vox1_dev_wav.zip"),
         ),
-        ResourceSpec(
-            "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_dev_wav_partab",
-            ChecksumSpec("md5", "bbfaaccefab65d82b21903e81a8a8020"),
-            kind="part",
-        ),
-        ResourceSpec(
-            "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_dev_wav_partac",
-            ChecksumSpec("md5", "017d579a2a96a077f40042ec33e51512"),
-            kind="part",
-        ),
-        ResourceSpec(
-            "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_dev_wav_partad",
-            ChecksumSpec("md5", "7bb1e9f70fddc7a678fa998ea8b3ba19"),
-            kind="part",
-        ),
-        ResourceSpec(
-            "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_test_wav.zip",
-            ChecksumSpec("md5", "185fdc63c3c739954633d50379a3d102"),
-            kind="file",
-        ),
-        ResourceSpec(
-            "http://kiwano-toolkit.com/files/voxceleb1/meta/veri_test2.txt",
-            ChecksumSpec("md5", "b73110731c9223c1461fe49cb48dddfc"),
-            kind="metadata",
-        ),
-        ResourceSpec(
-            "http://kiwano-toolkit.com/files/voxceleb1/meta/list_test_hard2.txt",
-            ChecksumSpec("md5", "857790e09d579a68eb2e339a090343c8"),
-            kind="metadata",
-        ),
-        ResourceSpec(
-            "http://kiwano-toolkit.com/files/voxceleb1/meta/list_test_all2.txt",
-            ChecksumSpec("md5", "a53e059deb562ffcfc092bf5d90d9f3a"),
-            kind="metadata",
-        ),
-        ResourceSpec(
-            "https://www.openslr.org/resources/49/vox1_meta.csv",
-            ChecksumSpec("md5", "f5067cae5157ca27904c4b0a926e2661"),
-            kind="metadata",
+        ResourceGroup(
+            resources=[
+                ResourceSpec(
+                    "http://kiwano-toolkit.com/files/voxceleb1/vox1a/vox1_test_wav.zip",
+                    ChecksumSpec("md5", "185fdc63c3c739954633d50379a3d102"),
+                    kind="part",
+                ),
+            ],
+            assemble=AssembleSpec(method="none"),
+            extract=ExtractSpec(method="zip"),
         ),
     ],
-    assemble=AssembleSpec(
-        method="copy_glob", output_name="vox1_dev_wav.zip", pattern="vox1_dev_wav_part*"
-    ),
-    extract=ExtractSpec(method="zip", archive_name="vox1_dev_wav.zip"),
     max_retries=3,
     prepare_spec=prepare_voxceleb1,
 )
